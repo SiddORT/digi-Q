@@ -58,6 +58,7 @@ import { DateTimePreferencesProvider } from "./components/DateTimePreferences";
 import { AppointmentRows, appointmentColumns, type AppointmentDateSort } from "./components/appointments/AppointmentRows";
 import { AppointmentTicket } from "./components/appointments/AppointmentTicket";
 import { SessionQueue } from "./components/queue/SessionQueue";
+import { QueueOverview, PatientQueueList, QueueBackLink } from "./components/queue/QueueOverview";
 import { appointmentStatusOptions, statusFilter } from "./components/queue/StatusTabs";
 import { useFreshWorkspace } from "./components/queue/useFreshWorkspace";
 import { useSoleCareDefaults } from "./components/queue/useSoleCareDefaults";
@@ -319,7 +320,14 @@ function Dashboard({role}:{role:string}){
  const timezone=useConfiguredTimezone(dashIdentity.data);
  const me=api.useGetMe();
  const pin=useWorkspaceBranch();
- const dashboardParams=pin?{clinicId:pin.clinicId,branchId:pin.branchId}:undefined;
+ // Optional, URL-backed care filters narrow the authorized scope; omitted means every authorized location.
+ const dashSearch=useSearch();const [dashLocation,dashNavigate]=useLocation();const dashUrl=new URLSearchParams(dashSearch);
+ const isDoctorRole=role==="doctor";
+ const fClinic=role==="patient"?"":dashUrl.get("clinic")||"",fBranch=role==="patient"?"":dashUrl.get("branch")||"",fDoctor=role==="patient"||isDoctorRole?"":dashUrl.get("doctor")||"";
+ const setDashFilter=(patch:Record<string,string>)=>{const next=new URLSearchParams(dashSearch);for(const [k,v] of Object.entries(patch)){if(v)next.set(k,v);else next.delete(k);}const qs=next.toString();dashNavigate(`${dashLocation}${qs?`?${qs}`:""}`);};
+ const dashFiltered=!!(fClinic||fBranch||fDoctor);
+ const dashboardParams=pin?{clinicId:pin.clinicId,branchId:pin.branchId}:dashFiltered?{...fClinic?{clinicId:fClinic}:{},...fBranch?{branchId:fBranch}:{},...fDoctor?{doctorId:fDoctor}:{}}:undefined;
+ const careQuery=[fClinic&&`clinic=${encodeURIComponent(fClinic)}`,fBranch&&`branch=${encodeURIComponent(fBranch)}`,fDoctor&&`doctor=${encodeURIComponent(fDoctor)}`].filter(Boolean).join("&");
  const q=api.useGetDashboard(dashboardParams,{query:{queryKey:api.getGetDashboardQueryKey(dashboardParams),refetchInterval:30000}});
  const [columnsSlot,setColumnsSlot]=useState<HTMLElement|null>(null);
  const averageWait=q.data?.averageWaitMinutes;
@@ -328,8 +336,13 @@ function Dashboard({role}:{role:string}){
  const auditRoute=me.data?.user?.role==="superAdmin"?"/admin/audit":"";
    return <div className="dashboard-compact"><ErrorNotice error={q.error}/>{q.error&&<button onClick={()=>q.refetch()}>Retry Dashboard</button>}{q.error&&q.data&&<p role="status" className="notice">Showing the last available overview; refresh to see current activity.</p>}
     {role==="patient"&&<PatientBookingNotices timezone={timezone}/>}
+    {role!=="patient"&&<section className="panel padded dashboard-filters" aria-label="Overview filters" data-testid="dashboard-filters"><div className="form-grid">
+     <ResourceLookup autoSole={false} resource="clinics" label="Clinic (optional)" value={fClinic} params={{status:"active"}} onChange={(id:any)=>setDashFilter({clinic:id||"",branch:"",doctor:""})}/>
+     <ResourceLookup autoSole={false} resource="branches" label="Location (optional)" value={fBranch} params={{status:"active",...fClinic?{clinicId:fClinic}:{}}} onChange={(id:any)=>setDashFilter({branch:id||"",doctor:""})}/>
+     {!isDoctorRole&&<ResourceLookup autoSole={false} resource="doctors" label="Doctor (optional)" value={fDoctor} params={{status:"active",...fClinic?{clinicId:fClinic}:{},...fBranch?{branchId:fBranch}:{}}} onChange={(id:any)=>setDashFilter({doctor:id||""})}/>}
+    </div>{dashFiltered&&<button type="button" onClick={()=>setDashFilter({clinic:"",branch:"",doctor:""})} data-testid="button-reset-dashboard-filters">Reset filters</button>}</section>}
     <div className="stat-grid">{[["Today's Appointments",q.data?.todayAppointments,CalendarDays,"Visits scheduled for today"],["Waiting in Queue",q.data?.waiting,Clock3,"Patients ready for their next step"],["Completed Visits",q.data?.completed,Check,"Visits checked out today"],["Average Queue Wait",averageWaitDisplay,Activity,"Minutes since booking or session start, whichever is later"]].map(([label,value,Icon,caption]:any)=><div className="stat-card" key={label}><div><span>{label}{label==="Average Queue Wait"&&<HelpTip text="Sum of recorded queue-wait minutes divided by visits with a recorded wait in this dashboard's scope. Wait is measured when consultation starts, from booking or session start, whichever is later, and cannot be negative. Visits without a recorded wait are excluded; no recorded waits displays 0. This is not time since physical arrival."/>}</span><span className="stat-icon"><Icon size={19}/></span></div><strong className={value==null&&!q.isLoading?"stat-unavailable":undefined}>{q.isLoading?"…":value??"Unavailable"}</strong><small>{caption}</small></div>)}</div>
-    <section className="panel"><div className="panel-heading section-head"><div><h2>{role==="patient"?"Your Appointments":"Today's Appointments"}</h2></div><div className="section-head-actions"><span ref={setColumnsSlot} className="columns-slot"/><Link href={role==="patient"?`/${role}/appointments`:`/${role}/appointments?view=all&from=${today(timezone)}&to=${today(timezone)}`} className="text-link" data-testid="link-view-all-today">{role==="patient"?"View All":"View All Today"} <ChevronRight size={16}/></Link></div></div>{q.isLoading?<div className="skeleton">Loading appointments…</div>:q.data?.recentAppointments?.length?<AppointmentRows appointments={q.data.recentAppointments} columnsTarget={columnsSlot} disabled={!!q.error||q.isFetching}/>:q.error?null:<p className="empty-inline" data-testid="status-empty">{role==="patient"?"No appointments yet. Book a visit from Appointments.":"No appointments scheduled for today."}</p>}</section>
+    <section className="panel"><div className="panel-heading section-head"><div><h2>{role==="patient"?"Your Appointments":"Today's Appointments"}</h2></div><div className="section-head-actions"><span ref={setColumnsSlot} className="columns-slot"/><Link href={role==="patient"?`/${role}/appointments`:`/${role}/appointments?view=all&from=${today(timezone)}&to=${today(timezone)}${careQuery?`&${careQuery}`:""}`} className="text-link" data-testid="link-view-all-today">{role==="patient"?"View All":"View All Today"} <ChevronRight size={16}/></Link></div></div>{q.isLoading?<div className="skeleton">Loading appointments…</div>:q.data?.recentAppointments?.length?<AppointmentRows appointments={q.data.recentAppointments} columnsTarget={columnsSlot} disabled={!!q.error||q.isFetching}/>:q.error?null:<p className="empty-inline" data-testid="status-empty">{role==="patient"?"No appointments yet. Book a visit from Appointments.":"No appointments scheduled for today."}</p>}</section>
     <section className="panel"><div className="panel-heading section-head"><div><h2>Operational Activity <HelpTip text="Recent care and business updates. Authentication and password-verification events remain in the separate security audit, not this feed."/></h2></div><div className="section-head-actions"><span className="badge">{q.error?"Last Available":"Live Data"}</span>{auditRoute&&<Link href={auditRoute} className="text-link" data-testid="link-activity-view-all">View All <ChevronRight size={16}/></Link>}</div></div>{q.isLoading?<div className="skeleton">Loading operational activity…</div>:activity.length?<div className="activity-list activity-compact">{activity.slice(0,6).map(a=><div key={a.id} className="activity-row"><span className="activity-dot" aria-hidden/><OverflowText as="strong" value={readableActivity(a.summary)}/><small>{a.actorName} · {formatConfiguredTimestamp(a.createdAt,timezone)}</small></div>)}</div>:q.error?null:<p className="empty-inline" data-testid="status-empty">No operational updates yet. Bookings, check-ins and schedule changes appear here.</p>}</section></div>;
 }
 function PatientBookingNotices({timezone}:{timezone?:string}){
@@ -522,7 +535,12 @@ function BookingForm({identity,context,entryPoint}:{identity:api.Identity;contex
  </section></DateTimePreferencesProvider>;
 }
 function Queue({identity,initial}:{identity:api.Identity;initial?:api.Appointment}){
- return <SessionQueue key={identity.user!.id} identity={identity} initial={initial}/>;
+ const search=useSearch();const params=new URLSearchParams(search);
+ const isPatient=identity.user?.role==="patient";const isDoctor=identity.user?.role==="doctor";
+ // Bare Queue lists sessions (staff) or own visits (patient); exact URLs drill into one operational session.
+ const drill=!!initial||!!params.get("appointment")||(!isPatient&&params.get("view")!=="sessions"&&!!params.get("branch")&&(!!params.get("doctor")||isDoctor));
+ if(!drill)return isPatient?<PatientQueueList identity={identity}/>:<QueueOverview identity={identity}/>;
+ return <><QueueBackLink date={params.get("date")||""} patient={isPatient}/><SessionQueue key={`${identity.user!.id}:${search}`} identity={identity} initial={initial}/></>;
 }
 function Profile({identity}:{identity:api.Identity}){
  const [recordsOpen,setRecordsOpen]=useState(false);

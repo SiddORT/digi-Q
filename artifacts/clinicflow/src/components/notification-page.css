@@ -145,3 +145,11 @@
   .event-controls .cm-event-toolbar { grid-template-columns:minmax(0,1fr) 40px; }
   .event-controls .cm-event-toolbar > .cm-switch-spacer { display:none }
 }
+
+/* Read-only notification scope browser */
+.cm-scope-details { margin-bottom: var(--space-4); }
+.cm-scope-details > summary { cursor: pointer; font-weight: 600; font-size: var(--type-label); color: var(--teal); padding: var(--space-2) 0; }
+.cm-scope-list { margin-bottom: var(--space-4); display: grid; gap: var(--space-3); }
+.cm-scope-rows { list-style: none; margin: 0; padding: 0; }
+.cm-scope-rows li { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: var(--space-3); align-items: center; padding: var(--space-2) 0; border-bottom: 1px solid hsl(var(--border)); }
+.cm-scope-rows li small { margin: 0; }

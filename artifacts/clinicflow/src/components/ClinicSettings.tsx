@@ -10,6 +10,7 @@ import { Link, useLocation, useSearch } from "wouter";
 import { PageHeader } from "./PageHeader";
 import { Building2, Phone, Copy, Check, ExternalLink, Info, ChevronRight, MapPin, Settings2, CalendarDays, Pencil } from "lucide-react";
 import { clinicsReturnHref, clinicWorkspaceHref, parseClinicWorkspace } from "../lib/clinic-navigation";
+import { Pagination, SearchInput } from "./ListingControls";
 import { useWorkspaceLeaveGuard } from "../lib/use-workspace-leave-guard";
 import * as api from "@workspace/api-client-react";
 import { Editor, ErrorNotice, ResourcePage, resources } from "../resources";
@@ -134,7 +135,7 @@ export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;sco
    <PageHeader title="Clinic" actions={<div className="settings-scope" data-testid="settings-scope">{scopeSwitch}<div className="settings-scope-lookup"><ResourceLookup resource="clinics" label={identity.user?.role==="superAdmin"?"Clinic Group":"Your Clinic Group"} value={clinicId} onChange={id=>{if(id!==clinicId)void guarded(()=>setClinic(id));}}/></div></div>}/>
   {identity.user?.role==="superAdmin"&&<Link className="cs-back" href={clinicsReturnHref(search)} data-testid="link-all-clinic-groups">&larr; Back to Clinics</Link>}
   <ErrorNotice error={query.error||clinics.error}/>{query.error&&<button type="button" onClick={()=>query.refetch()}>Retry Clinic Settings</button>}
-  {!clinicId?<p className="empty">Select a clinic to manage.</p>:query.isLoading?<p role="status">Loading clinic settings…</p>:data&&clinic&&!query.error&&<>
+  {!clinicId?<ClinicScopeList section={parsed?.section}/>:query.isLoading?<p role="status">Loading clinic settings…</p>:data&&clinic&&!query.error&&<>
    <header className="panel padded cs-overview" data-testid="clinic-overview">
     <div className="cs-mark" aria-hidden><Building2 size={44}/></div>
     <div className="cs-identity">
@@ -278,4 +279,21 @@ function BranchSettings({branch,clinicId,busy,onDirtyChange,onSave}:{branch:api.
 export function OpeningHoursEditor({value,onChange}:{value:api.OpeningHour[];onChange:(value:api.OpeningHour[])=>void}){
  const week=newWeek().map(day=>({...day,isOpen:value.some(item=>item.dayOfWeek===day.dayOfWeek),sessions:value.filter(item=>item.dayOfWeek===day.dayOfWeek)}));
  return <fieldset className="branch-hours"><legend>Clinic opening days &amp; hours</legend><p className="muted">Opening hours do not create bookable doctor sessions <HelpTip text="An explicitly closed week stays closed until you choose opening hours."/></p><button type="button" onClick={()=>onChange([])}>Close All Days</button><ClinicRegistrationHours value={week} onChange={days=>onChange(days.filter(day=>day.isOpen).flatMap(day=>day.sessions.map(session=>({...session,dayOfWeek:day.dayOfWeek}))))}/></fieldset>;
+}
+
+/** Context-free Clinic entry: list authorized clinics instead of demanding a selection. Rows open the
+ *  canonical per-clinic section; nothing is edited from this list. */
+function ClinicScopeList({section}:{section?:string}){
+ const [search,setSearch]=useState("");const [page,setPage]=useState(1);const [pageSize,setPageSize]=useState(20);
+ const params={search:search.trim()||undefined,page,pageSize};
+ const list=api.useListClinics(params,{query:{queryKey:api.getListClinicsQueryKey(params)}});
+ const target=section&&sections.some(([key])=>key===section)?section:"details";
+ return <section className="panel padded" aria-label="Your clinics" data-testid="clinic-scope-list">
+  <p className="muted">Open a clinic to manage it.</p>
+  <SearchInput value={search} onChange={v=>{setSearch(v);setPage(1);}} placeholder="Search clinics…" label="Search Clinics"/>
+  {list.error&&<div className="error-box" role="alert">Clinics could not be loaded. <button type="button" onClick={()=>void list.refetch()}>Retry</button></div>}
+  {list.isLoading?<div className="skeleton" role="status">Loading clinics…</div>:!(list.data?.items.length)?<div className="empty" role="status"><h3>No clinics</h3><p>{search?"No clinics match.":"No clinics are assigned to your account."}</p></div>:
+   <div className="table-scroll"><table><thead><tr><th>Clinic</th><th>Status</th><th aria-label="Open"/></tr></thead><tbody>{list.data.items.map((c:any)=><tr key={c.id} data-testid={`row-clinic-scope-${c.id}`}><td><strong>{c.name}</strong>{c.city?<small>{c.city}</small>:null}</td><td><span className={`badge ${c.status||""}`}>{c.status==="inactive"?"Inactive":"Active"}</span></td><td><Link className="button secondary small" href={clinicWorkspaceHref(c.id,target)} data-testid={`link-open-clinic-${c.id}`}>Open</Link></td></tr>)}</tbody></table></div>}
+  <Pagination page={page} pageSize={pageSize} total={list.data?.total||0} onPageChange={setPage} onPageSizeChange={setPageSize} state={list.error?"error":list.isLoading?"loading":"ready"}/>
+ </section>;
 }

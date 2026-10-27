@@ -242,10 +242,11 @@ test("public picker, booking summary and sole defaults remain wired to shared se
   assert.match(care,/options.unshift\(\{ value, label: display\(record\), disabled: true \}\)/,"hydrated labels are not selectable menu membership");
   assert.match(booking,/useSelectedCare\("branches",!committed&&!receipt\?branchId:"",true,\{clinicId:context.clinicId,doctorId:context.doctorId\|\|undefined,status:"active"\}\)/);
   assert.match(booking,/useSelectedCare\("doctors",!committed&&!receipt\?doctorId:"",true,\{clinicId:context.clinicId,branchId,status:"active"\}\)/);
-  for (const source of [booking,finder]) {
-    assert.match(source,/retainPublicSelectedCare\(client,actor,"branches"/);
-  }
-  assert.match(finder,/retainPublicSelectedCare\(client,actor,"clinics"/);
+  assert.match(booking,/retainPublicSelectedCare\(client,actor,"branches"/);
+  // Finder retains labels only on the explicit Book handoff, never as an automatic default.
+  assert.match(finder,/const handoff = \(b: PublicBranch\) => \{\n\s*retainPublicSelectedCare\(client, actor, "clinics"/);
+  assert.match(finder,/retainPublicSelectedCare\(client, actor, "branches", \{ clinicId: clinic\.id, status: "active" \}, b, branches\.dataUpdatedAt\)/);
+  assert.match(finder,/onClick=\{\(\) => handoff\(b\)\}/);
   assert.match(booking,/retainPublicSelectedCare\(client,actor,"doctors"/);
 });
 test("sign-out cancellation cannot repopulate complete directories with late responses", async () => {

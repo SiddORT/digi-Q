@@ -1,5 +1,4 @@
 import { usePageSizeState } from "../../lib/page-size-preference";
-import { PageDescription } from "../PageDescription";
 import { ArrivalGuidance } from "../tickets/ArrivalGuidance";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearch } from "wouter";
@@ -16,7 +15,6 @@ import { StatusTabs, statusFilter } from "./StatusTabs";
 import { useFreshWorkspace } from "./useFreshWorkspace";
 import { useSoleCareDefaults } from "./useSoleCareDefaults";
 import { HelpTip } from "../HelpTip";
-import { AppDialog } from "../AppDialog";
 import { openQrInline } from "../../lib/qr-inline";
 import { DateFormatInput } from "../DateFormatInput";
 import { GuestRequests } from "./GuestRequests";
@@ -30,11 +28,11 @@ export function SessionQueue({identity,initial}:{identity:api.Identity;initial?:
  const queuePin=useWorkspaceBranch();
  const searchParams=new URLSearchParams(useSearch());
  const {isDoctor,doctorId:restrictedDoctorId}=doctorWorkspaceScope(identity);
- const [retained]=useState(()=>{try{const value=JSON.parse(sessionStorage.getItem("clinicflow-staff-session")||"null");return identity.user?.role!=="patient"&&value?.staffId===identity.user?.id&&(!queuePin||value?.branchId===queuePin.branchId)?value:null;}catch{return null;}});
+ // Explicit URLs drive the session; the last session is never restored automatically (see QueueOverview "Resume").
+ const retained=null as null|{clinicId?:string;branchId?:string;doctorId?:string;date?:string;sessionId?:string;startTime?:string};
  const queueUrlStale=!!queuePin&&!!searchParams.get("branch")&&searchParams.get("branch")!==queuePin.branchId;const [clinicId,setClinic]=useState(queuePin?.clinicId||initial?.clinicId||searchParams.get("clinic")||retained?.clinicId||"");const [branchId,setBranch]=useState(queuePin?.branchId||initial?.branchId||searchParams.get("branch")||retained?.branchId||"");const [doctorId,setDoctor]=useState(restrictedDoctorId||(initial&&(!queuePin||initial.branchId===queuePin.branchId)?initial.doctorId:"")||(queueUrlStale?"":searchParams.get("doctor"))||retained?.doctorId||"");const [date,setDate]=useState(initial?.date||searchParams.get("date")||retained?.date||today());const [appointmentId,setAppointment]=useState(initial?.id||searchParams.get("appointment")||"");
  const [status,setStatus]=useState("");const [search,setSearch]=useState("");const debounced=useDebouncedValue(search);const [page,setPage]=useState(1);const [pageSize,setSize]=usePageSizeState(20);const client=useQueryClient();const lock=useRef(false);
   const autoDate=useRef(!initial?.id&&!initial?.date&&!searchParams.get("appointment")&&!searchParams.get("date")&&!retained?.date);
- const [showSummary,setShowSummary]=useState(false);
  const [callPreview,setCallPreview]=useState<{scope:string;token:string}|null>(null);
  const [sort,setSort]=useState("queueRank");
  const isPatient=identity.user?.role==="patient";const root=["superAdmin","clinicAdmin"].includes(identity.user!.role)?"admin":identity.user!.role;
@@ -58,8 +56,6 @@ export function SessionQueue({identity,initial}:{identity:api.Identity;initial?:
   const params={doctorId,branchId,date,sessionId,startTime,appointmentId:appointmentId||undefined,search:!isPatient?debounced||undefined:undefined,sort:!isPatient?sort:undefined,...statusFilter(status),page,pageSize};
  const queue=api.useGetQueue(params,{query:{queryKey:api.getGetQueueQueryKey(params),enabled,refetchInterval:30000}});
  const next=api.useCallNext({mutation:{onSuccess:()=>client.invalidateQueries(),onError:()=>client.invalidateQueries()}});
- const doctorsParams={clinicId,branchId,status:"active" as const,page:1,pageSize:20};
- const doctors=api.useListDoctors(doctorsParams,{query:{queryKey:api.getListDoctorsQueryKey(doctorsParams),enabled:showSummary&&!isPatient&&!isDoctor&&!!branchId,refetchInterval:30000,refetchIntervalInBackground:false}});
  const [online,setOnline]=useState(navigator.onLine);
  useEffect(()=>{const on=()=>setOnline(navigator.onLine);window.addEventListener("online",on);window.addEventListener("offline",on);return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",on);};},[]);
  const q=queue.data;
@@ -73,14 +69,17 @@ export function SessionQueue({identity,initial}:{identity:api.Identity;initial?:
  const sortLabels:Record<string,string>={queueRank:"Queue position",tokenNumber:"Token ascending","-tokenNumber":"Token descending",status:"Status","-createdAt":"Newest bookings"};
  const clearListFilters=()=>{setSearch("");setStatus("");setSort("queueRank");setPage(1);};
   const locationName=queuePin?.name||String(branch.data?.name||"selected location");
-  const bookingQrHref=root==="doctor"?"/doctor/clinics?area=qrs":root==="receptionist"?"/receptionist/qrs":"/admin/clinic?section=locations";
+  // Booking QR opens the existing QR list narrowed to this session's exact clinic and location.
+  const qrScope=[clinicId&&`clinicId=${encodeURIComponent(clinicId)}`,branchId&&`branchId=${encodeURIComponent(branchId)}`].filter(Boolean).join("&");
+  const bookingQrHref=root==="doctor"?`/doctor/clinics?area=qrs${qrScope?`&${qrScope}`:""}`:`/${root==="receptionist"?"receptionist":"admin"}/qrs${qrScope?`?${qrScope}`:""}`;
+  const otherSessionsHref=`/${root}/queue?view=sessions&${[clinicId&&`clinic=${encodeURIComponent(clinicId)}`,branchId&&`branch=${encodeURIComponent(branchId)}`,date&&`date=${encodeURIComponent(date)}`].filter(Boolean).join("&")}`;
   const listControls=!isPatient&&<FilterBar title={<h2>Session Appointments</h2>} label="Queue Search and Actions">
    <SearchInput value={search} onChange={setSearch} placeholder="Search queue…" label="Search This Session" suggestions={queue.error?[]:listingSuggestions(q?.entries,a=>({id:a.id,label:a.patientName,description:a.tokenNumber!=null?`Token ${a.tokenNumber}`:undefined,value:a.reference}))} loading={queue.isFetching} error={queue.error?"Unable to load this session queue.":null} onRetry={()=>void queue.refetch()} total={q?.entriesTotal} settledQuery={debounced} scopeKey={JSON.stringify({doctorId,branchId,date,sessionId,startTime,status,sort,pageSize})}/>
    <StatusTabs value={status} onChange={setStatus} counts={debounced||!q?undefined:{...(q as typeof q&{statusCounts?:Record<string,number>}).statusCounts,inConsultation:q.inConsultation}}/>
    <div className="sq-list-sort"><SearchableSelect label="Sort Queue Listing" value={sort} onChange={value=>{if(value)setSort(value);}} options={Object.entries(sortLabels).map(([value,label])=>({value,label}))}/>{listFiltered&&<HelpTip text="Clear all resets search, status and sorting while keeping the selected doctor, date, session and page size."><button type="button" onClick={clearListFilters} data-testid="button-clear-queue-filters">Clear All</button></HelpTip>}</div>
   </FilterBar>;
  return <div className="session-queue">
-  <PageHeader title="Queue" description={<p>Live queue for {locationName} · Updated every 30 seconds</p>} actions={!isPatient&&<><Link className="button secondary small" href={bookingQrHref} data-testid="link-queue-booking-qr"><QrCode size={15} aria-hidden/> Booking QR</Link>{!isDoctor&&branchId&&<button type="button" className="button secondary small" aria-haspopup="dialog" onClick={()=>setShowSummary(true)} data-testid="button-queue-quick-switch"><ArrowLeftRight size={15} aria-hidden/> Quick Switch</button>}<button type="button" className="button secondary small" aria-label="Validate Appointment QR" onClick={openQrInline} data-testid="button-validate-qr"><ScanLine size={15} aria-hidden/> Validate QR</button>{sessionSelection.snapshotOnly?<span className="badge">Historical session · no new bookings</span>:enabled&&<Link className="button small" href={`/${root}/book?clinic=${encodeURIComponent(clinicId)}&branch=${encodeURIComponent(branchId)}&doctor=${encodeURIComponent(doctorId)}&sessionId=${encodeURIComponent(sessionId||"")}&source=walkIn`}><UserPlus size={15} aria-hidden/> Register Walk-In</Link>}</>}/>
+  <PageHeader title="Queue" description={<p>Live queue for {locationName} · Updated every 30 seconds</p>} actions={!isPatient&&<><Link className="button secondary small" href={bookingQrHref} data-testid="link-queue-booking-qr"><QrCode size={15} aria-hidden/> Booking QR</Link>{!isDoctor&&branchId&&<Link className="button secondary small" href={otherSessionsHref} data-testid="link-queue-other-sessions"><ArrowLeftRight size={15} aria-hidden/> Other sessions here</Link>}<button type="button" className="button secondary small" aria-label="Validate Appointment QR" onClick={openQrInline} data-testid="button-validate-qr"><ScanLine size={15} aria-hidden/> Validate QR</button>{sessionSelection.snapshotOnly?<span className="badge">Historical session · no new bookings</span>:enabled&&<Link className="button small" href={`/${root}/book?clinic=${encodeURIComponent(clinicId)}&branch=${encodeURIComponent(branchId)}&doctor=${encodeURIComponent(doctorId)}&sessionId=${encodeURIComponent(sessionId||"")}&source=walkIn`}><UserPlus size={15} aria-hidden/> Register Walk-In</Link>}</>}/>
  <section className="panel padded sq-session-scope" aria-label="Selected queue session">
   <div className="sq-session-fields">
  {isPatient?<CareLookup kind="appointments" label="Your Appointment" value={appointmentId} onChange={id=>{autoDate.current=false;setAppointment(id);setDoctor("");setBranch("");}}/>:<>
@@ -91,7 +90,6 @@ export function SessionQueue({identity,initial}:{identity:api.Identity;initial?:
  </div></section>
    {!queuePin&&branch.data&&<div className="sq-context" data-testid="text-queue-context"><strong>{String(branch.data.name||"Selected branch")}</strong><span className="muted"> · {formatDate(date,q)}</span>{branch.data.address?<span className="muted"> · {String(branch.data.address)}</span>:null}</div>}
 
-  {!isPatient&&!isDoctor&&branchId&&showSummary&&<AppDialog open variant="drawer" onClose={()=>setShowSummary(false)} title="Multi-doctor sessions · quick switch"><PageDescription text="Choose a doctor’s queue for this location and date." help="Choose a session if more than one is listed." label="About quick switch"/><p>Switching does not call or check in a patient.</p><ErrorNotice error={doctors.error}/>{doctors.error&&<button type="button" onClick={()=>doctors.refetch()}>Retry Doctors</button>}{doctors.isLoading?<p>Loading doctors…</p>:<div className="toolbar">{doctors.data?.items.map(d=><DoctorSummary key={d.id} doctor={d} branchId={branchId} date={date} selected={doctorId===d.id} onSelect={()=>{setDoctor(d.id);setAppointment("");setShowSummary(false);}}/>)}</div>}{(doctors.data?.total??0)>20&&<p>Showing the first 20 doctors; use Doctor search for all results.</p>}</AppDialog>}
  <ErrorNotice error={selected.error||queue.error||next.error}/>
   {!isPatient&&sort!=="queueRank"&&<p className="muted sq-sort-note">Sorting the list does not change who is called next.</p>}
 
@@ -124,11 +122,4 @@ function DoctorPresence({identity,doctorId,branchId,date,sessionId,startTime,pre
  const update=api.useUpdateDoctorPresence({mutation:{onSettled:()=>client.invalidateQueries()}});
  const allowed=identity.doctorId===doctorId||["superAdmin","clinicAdmin"].includes(identity.user!.role);
   return <section className="notice sq-presence"><ErrorNotice error={update.error}/><strong><span className="live-dot" aria-hidden/> Doctor status: {presence?title(presence.status):"Unavailable"}</strong><small>Live presence only — weekly hours and future bookings are unchanged.</small>{allowed&&<div className="row-actions">{Object.values(api.DoctorPresenceInputStatus).map(status=><button type="button" key={status} aria-pressed={presence?.status===status} disabled={stale||update.isPending} onClick={async()=>{if(lock.current)return;lock.current=true;try{await update.mutateAsync({id:doctorId,data:{...params,status}});}catch{/* The backend error remains visible. */}finally{lock.current=false;}}}>{title(status)}</button>)}</div>}{presence&&presence.status!=="available"&&<p>Automatic calling is paused. A current consultation can still be completed.</p>}</section>;
-}
-
-function DoctorSummary({doctor,branchId,date,selected,onSelect}:{doctor:api.Doctor;branchId:string;date:string;selected:boolean;onSelect:()=>void}){
- const selection=useOperationalSession({doctorId:doctor.id,branchId,date});
- const params={doctorId:doctor.id,branchId,date,sessionId:selection.sessionId||undefined,startTime:selection.startTime,page:1,pageSize:1};
- const q=api.useGetQueue(params,{query:{queryKey:api.getGetQueueQueryKey(params),enabled:!!selection.startTime,refetchInterval:30000}});
-  return <button type="button" className={selected?"button small":"button secondary small"} onClick={onSelect} aria-pressed={selected}>{doctor.fullName}<small>{selection.sessions.length>1?`${selection.sessions.length} sessions · choose a session`:q.error?"Summary unavailable":q.isLoading?"Loading…":`${q.data?.waiting??"—"} waiting · current ${q.data?.currentToken||"—"}`}</small></button>;
 }

@@ -1,8 +1,11 @@
 import { useLocation, useSearch } from "wouter";
+import { useRef } from "react";
 import * as api from "@workspace/api-client-react";
 import { ResourcePage, ErrorNotice } from "../resources";
 import { DateTimePreferencesProvider } from "./DateTimePreferences";
-import { useWorkspaceBranch } from "./WorkspaceBranch";
+import { useWorkspaceBranch, useWorkspaceBranchContext } from "./WorkspaceBranch";
+import { useConfirm } from "./ConfirmDialog";
+import { notifyWarning } from "../lib/notify";
 import { TabIcon } from "./TabIcon";
 import "./tab-presentation.css";
 import { tabListKeyDown } from "../lib/tabs-a11y";
@@ -11,6 +14,9 @@ import { useTabStripVisibility } from "../lib/tab-strip-visibility";
 /** Both the clinic section and legacy schedule URLs render this one workflow. */
 export function SchedulingWorkspace({identity,page,clinicId:fixedClinicId}:{identity:api.Identity;page:"availability"|"exceptions";clinicId?:string}){
  const [,navigate]=useLocation();
+ const {dirty,busy}=useWorkspaceBranchContext();
+ const confirmation=useConfirm();
+ const confirming=useRef(false);
  const search=useSearch();
  const params=new URLSearchParams(search);
  const pin=useWorkspaceBranch();
@@ -22,16 +28,25 @@ export function SchedulingWorkspace({identity,page,clinicId:fixedClinicId}:{iden
  const tabStrip = useTabStripVisibility(selectedPage);
  const role=identity.user?.role;
  const admin=role==="clinicAdmin"||role==="superAdmin";
- const doctorId=role==="doctor"||role==="clinicAdmin"?identity.doctorId:undefined;
+ // Browsing lists every authorized schedule row; the doctor filter is optional for every role.
+ const doctorId=undefined as string|undefined;
  const settings=api.useGetClinicSettings(clinicId,{query:{queryKey:api.getGetClinicSettingsQueryKey(clinicId),enabled:admin&&!!clinicId}});
  const clinic=api.useGetClinic(clinicId,{query:{queryKey:api.getGetClinicQueryKey(clinicId),enabled:!admin&&!!clinicId}});
- const go=(target:"availability"|"exceptions")=>{
+ const go=async(target:"availability"|"exceptions")=>{
+  if(confirming.current)return;
+  if(busy){notifyWarning("Finish saving before changing schedule tabs.");return;}
+  if(dirty){
+   confirming.current=true;
+   try{
+    if(!await confirmation.ask({title:"Discard schedule draft?",description:"Changing tabs discards unsaved schedule changes. Saved sessions are kept.",confirmLabel:"Discard and Continue",tone:"danger"}))return;
+   }finally{confirming.current=false;}
+  }
   const url=new URL(window.location.href);
-  for(const key of ["page","sort","search","status"])url.searchParams.delete(key);
+  for(const key of ["page","sort","search","status","manage"])url.searchParams.delete(key);
   if(fixedClinicId){url.searchParams.set("schedule",target);navigate(`${url.pathname}${url.search}`);}
   else {url.searchParams.delete("schedule");navigate(`/${role==="doctor"?"doctor":role==="receptionist"?"receptionist":"admin"}/${target}${url.search}`);}
  };
- return <DateTimePreferencesProvider value={settings.data?.clinic||clinic.data}><section aria-label="Scheduling workspace">
+ return <DateTimePreferencesProvider value={settings.data?.clinic||clinic.data}>{confirmation.dialog}<section aria-label="Scheduling workspace">
   <div className="schedule-bar" data-testid="schedule-bar">
    <div ref={tabStrip} className="dq-tabs workspace-tabs" role="tablist" aria-label="Schedule sections" onKeyDown={e=>tabListKeyDown(e,["availability","exceptions"],selectedPage,go)}>{([["availability","Weekly"],["exceptions","Exceptions"]] as const).map(([value,label])=><button className="dq-tab" key={value} type="button" role="tab" tabIndex={selectedPage===value?0:-1} aria-selected={selectedPage===value} onClick={()=>{if(selectedPage!==value)go(value);}} data-testid={`button-schedule-${value}`}><TabIcon name={value==="availability"?"weekly":"exceptions"}/>{label}</button>)}</div>
       <div className="schedule-bar-actions">

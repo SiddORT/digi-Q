@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode, type MutableRefOb
 import { useQueries } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { useConfirm } from "./ConfirmDialog";
-import { FilterBar, ListingRegion } from "./ListingControls";
+import { FilterBar, ListingRegion, Pagination, SearchInput } from "./ListingControls";
 import { useWorkspaceLeaveGuard } from "../lib/use-workspace-leave-guard";
 import { AppDialog } from "./AppDialog";
 import { EmailTemplates, RECIPIENTS } from "./EmailTemplates";
@@ -230,15 +230,42 @@ function NotificationScope({ identity, initial = "", clinics }: { identity: api.
   };
   return <>
     {confirm.dialog}
-    <EventTemplates key={`${identity.user?.id}|${identity.user?.role}|${clinicId}`} identity={identity} clinicId={clinicId} onDirty={setDirty} onPending={setPending} interactionLock={interactionLock} scopeChanging={scopeChanging} changeScope={changeScope} scopeControl={
+    {!superAdmin && (clinics?.length ?? 0) > 1 && <NotificationScopeList superAdmin={false} clinics={clinics} activeId={clinicId} disabled={pending || scopeChanging} onOpen={id => void changeScope(id)} />}
+    {!superAdmin && !clinicId ? null : <EventTemplates key={`${identity.user?.id}|${identity.user?.role}|${clinicId}`} identity={identity} clinicId={clinicId} onDirty={setDirty} onPending={setPending} interactionLock={interactionLock} scopeChanging={scopeChanging} changeScope={changeScope} scopeControl={
       <div className="cm-notification-scope" data-testid="notification-scope">
         <span className="sr-only" id="notification-scope-label">Notification Clinic</span>
         {superAdmin ? <ResourceLookup resource="clinics" aria-labelledby="notification-scope-label" compactLabel clearable={false} emptyOption={{ value: "__system_default__", label: "System Default" }} value={clinicId} disabled={pending || scopeChanging} onChange={v => void changeScope(v)} placeholder="System Default" />
           : clinics?.length === 1 ? <OverflowText value={clinics[0].name} />
           : <SearchableSelect aria-labelledby="notification-scope-label" compactLabel clearable={false} value={clinicId} disabled={pending || scopeChanging} onChange={v => { if(v) void changeScope(v); }} placeholder="Choose a Clinic" options={clinics?.map(c => ({ value: c.id, label: c.name })) ?? []} />}
       </div>
-    } />
+    } />}
+    {superAdmin && <NotificationScopeList superAdmin clinics={clinics} activeId={clinicId} disabled={pending || scopeChanging} onOpen={id => void changeScope(id)} />}
   </>;
+}
+
+/** Read-only browsing of notification configuration scopes. Opening a row loads that one scope's existing
+ *  matrix; nothing is merged, saved or activated from this list. */
+function NotificationScopeList({ superAdmin, clinics, activeId, disabled, onOpen }: { superAdmin: boolean; clinics?: { id: string; name: string }[]; activeId: string; disabled: boolean; onOpen: (id: string) => void }) {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [search, setSearch] = useState("");
+  const params = { search: search.trim() || undefined, page, pageSize };
+  const remote = api.useListClinics(params, { query: { queryKey: api.getListClinicsQueryKey(params), enabled: superAdmin } });
+  const local = (clinics ?? []).filter(c => !search.trim() || c.name.toLowerCase().includes(search.trim().toLowerCase()));
+  const rows = superAdmin ? (remote.data?.items ?? []).map((c: any) => ({ id: c.id as string, name: c.name as string })) : local.slice((page - 1) * pageSize, page * pageSize);
+  const total = superAdmin ? remote.data?.total ?? 0 : local.length;
+  const body = <section className="panel padded cm-scope-list" aria-label="Notification scopes" data-testid="notification-scope-list">
+    <p className="muted">{superAdmin ? "System Default applies to every clinic without its own setting. Open a scope to review or edit it." : "Choose a clinic to review its notification settings."}</p>
+    <SearchInput value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search clinics…" label="Search Notification Scopes" />
+    {superAdmin && remote.isError && <div className="error-box" role="alert">Clinics could not be loaded. <button type="button" onClick={() => void remote.refetch()}>Retry</button></div>}
+    <ul className="cm-scope-rows">
+      {superAdmin && !search.trim() && page === 1 && <li><strong>System Default</strong><small>Platform scope</small><button type="button" className="button secondary small" disabled={disabled || activeId === ""} aria-current={activeId === "" ? "true" : undefined} onClick={() => onOpen("")} data-testid="button-open-scope-default">{activeId === "" ? "Open now" : "Open"}</button></li>}
+      {superAdmin && remote.isLoading ? <li className="skeleton">Loading clinics…</li> : rows.map(c => <li key={c.id} data-testid={`row-notification-scope-${c.id}`}><strong>{c.name}</strong><small>Clinic scope</small><button type="button" className="button secondary small" disabled={disabled || activeId === c.id} aria-current={activeId === c.id ? "true" : undefined} onClick={() => onOpen(c.id)} data-testid={`button-open-scope-${c.id}`}>{activeId === c.id ? "Open now" : "Open"}</button></li>)}
+      {!rows.length && !(superAdmin && remote.isLoading) && <li className="muted">No clinics match.</li>}
+    </ul>
+    <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} onPageSizeChange={setPageSize} state={superAdmin && remote.isError ? "error" : superAdmin && remote.isLoading ? "loading" : "ready"} />
+  </section>;
+  return superAdmin ? <details className="cm-scope-details"><summary data-testid="toggle-notification-scopes">Browse notification scopes</summary>{body}</details> : body;
 }
 export function NotificationTemplatesPage({ identity }: { identity: api.Identity }) {
   if (!["superAdmin", "clinicAdmin"].includes(identity.user?.role ?? "")) return <p role="alert">You are not authorized to manage notifications.</p>;

@@ -1576,6 +1576,58 @@ export const UpdateDemoSetupResponse = zod.object({
 
 
 /**
+ * Paginated staff-only session overview in the effective authorized workspace. Includes empty scheduled sessions and persisted appointment session snapshots for one local date. Counts contain no patient records. available describes an open session template, not booking eligibility or permission to perform actions; drill down to the operational queue for authoritative checks.
+ */
+export const listQueueSessionsQuerySearchMax = 200;
+
+export const listQueueSessionsQueryPageDefault = 1;
+export const listQueueSessionsQueryPageMax = 100000;
+
+export const listQueueSessionsQueryPageSizeDefault = 20;
+export const listQueueSessionsQueryPageSizeMax = 100;
+
+
+
+export const ListQueueSessionsQueryParams = zod.object({
+  "date": zod.date(),
+  "clinicId": zod.coerce.string().optional(),
+  "branchId": zod.coerce.string().optional(),
+  "doctorId": zod.coerce.string().optional(),
+  "search": zod.coerce.string().max(listQueueSessionsQuerySearchMax).optional(),
+  "page": zod.coerce.number().int().min(1).max(listQueueSessionsQueryPageMax).default(listQueueSessionsQueryPageDefault),
+  "pageSize": zod.coerce.number().int().min(1).max(listQueueSessionsQueryPageSizeMax).default(listQueueSessionsQueryPageSizeDefault)
+})
+
+export const ListQueueSessionsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "clinicId": zod.string(),
+  "clinicName": zod.string(),
+  "branchId": zod.string(),
+  "branchName": zod.string(),
+  "doctorId": zod.string(),
+  "doctorName": zod.string(),
+  "date": zod.coerce.date(),
+  "timezone": zod.string(),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
+  "sessionId": zod.string().nullable(),
+  "startTime": zod.string().nullable(),
+  "endTime": zod.string().nullable(),
+  "snapshotOnly": zod.boolean(),
+  "available": zod.boolean().describe('Open session template only; not booking availability or action authority'),
+  "total": zod.number().int(),
+  "waiting": zod.number().int(),
+  "inConsultation": zod.number().int(),
+  "completed": zod.number().int(),
+  "cancelled": zod.number().int()
+})),
+  "total": zod.number().int(),
+  "page": zod.number().int(),
+  "pageSize": zod.number().int()
+})
+
+
+/**
  * Scope-checked staff operational sessions, merging current templates with persisted appointment snapshots. Historical-only sessions never authorize new booking. Select using startTime as well as sessionId because one template can have multiple historical timings.
  */
 export const GetSessionContextsQueryParams = zod.object({

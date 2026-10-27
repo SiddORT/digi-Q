@@ -5,6 +5,10 @@ export type WorkspaceBranchOption = { id: string; clinicId: string; name: string
  *  users, settings, masters, audit, templates, permissions, integrations, QR codes) are never restricted. */
 export const BRANCH_SCOPED_PAGES = ["dashboard", "appointments", "queue", "book", "availability", "exceptions", "patients", "reports"];
 
+/** List-first browsing pages: they list every authorized location and never apply the remembered
+ *  location as a mandatory filter. Booking keeps its explicit location context. */
+export const BROWSE_PAGES = ["dashboard", "appointments", "queue", "availability", "exceptions", "patients", "reports"];
+
 /** Staff roles that work at a location. Patients, guests (no identity) and super admins are never scoped. */
 export function branchSelectorMode(role?: string | null): "off" | "on" {
   return role === "doctor" || role === "receptionist" || role === "clinicAdmin" ? "on" : "off";

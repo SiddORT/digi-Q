@@ -13,8 +13,15 @@ import { getPresence } from "../lib/presence";
 import { clinicDisplayPreferences } from "../lib/display-preferences";
 import { staffQueueList } from "../lib/queue-list";
 import { arrivalEstimate } from "../lib/arrival-estimate";
+import { queueSessionOverview } from "../lib/queue-session-overview";
 export const queueRouter = Router();
 queueRouter.use("/queue", (_req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
+queueRouter.get("/queue-sessions", async (req, res) => {
+  const user = await requireUser(req);
+  roles(user, ["superAdmin", "clinicAdmin", "doctor", "receptionist"]);
+  const q = query(z.ListQueueSessionsQueryParams, req);
+  res.set("Cache-Control", "no-store").json(await queueSessionOverview(user, q));
+});
 async function selectQueue(q: any, conn: any, scopedRows?: any[]) {
   const rows = sessionRows(scopedRows ?? await all(appointments, conn), { doctorId: q.doctorId, branchId: q.branchId, date: q.date });
   if (q.appointmentId) {

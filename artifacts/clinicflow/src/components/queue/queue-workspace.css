@@ -85,3 +85,11 @@
 @media(max-width:760px){.workspace .sq-page-header{align-items:flex-start}.workspace .sq-header-actions{justify-content:flex-start}.workspace .sq-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.sq-list-controls>.workspace-search{max-width:none}.sq-list-sort{margin-left:0}}
 @media(max-width:700px){.workspace .sq-session-fields{flex-wrap:wrap}.workspace .sq-session-fields .sq-session-selector{flex-basis:100%}}
 @media(max-width:480px){.workspace .sq-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.sq-session-fields>.searchable-select-field,.sq-session-fields>label{flex:1 1 100%}.workspace .sq-header-actions .button{flex:1 1 auto}.sq-list-sort{flex-wrap:wrap}}
+
+/* List-first queue overview and patient visit cards */
+.sq-overview .sq-overview-filters { margin-bottom: var(--space-4); }
+.sq-overview .sq-overview-filters .form-grid { margin-top: 0; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3); }
+.sq-back { margin: 0 0 var(--space-3); }
+.sq-visit-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
+.sq-visit-card { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; }
+.sq-visit-card h3 { font-size: var(--type-body-lg); }

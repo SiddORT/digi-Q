@@ -6,7 +6,7 @@ import { ChevronDown, MapPin } from "lucide-react";
 import { LocationMenu } from "./LocationMenu";
 import { useConfirm } from "./ConfirmDialog";
 import { friendlyError } from "../lib/friendly-error";
-import { BRANCH_SCOPED_PAGES, branchSelectorMode, resolveSavedBranch, scopedQueryStrip, workspaceBranchKey, type WorkspaceBranchOption } from "../lib/workspace-branch";
+import { BRANCH_SCOPED_PAGES, BROWSE_PAGES, branchSelectorMode, resolveSavedBranch, scopedQueryStrip, workspaceBranchKey, type WorkspaceBranchOption } from "../lib/workspace-branch";
 import "./workspace-branch.css";
 import { notifyWarning } from "../lib/notify";
 import { completeDirectory, directoryActor, DIRECTORY_FRESH_MS } from "../lib/directory-cache";
@@ -92,7 +92,10 @@ export function WorkspaceBranchProvider({ identity, children }: { identity: api.
 const OFF: Ctx = { enabled: false, status: "off", branches: [], pin: null, error: null, retry: () => {}, select: async () => {}, registerUnsaved: () => {}, registerBusy:()=>{}, dirty:false, busy:false };
 export function useWorkspaceBranchContext() { return useContext(BranchContext) || OFF; }
 /** The enforced workspace location, or null when no location restriction applies (patients, guests, super admins, public booking). */
-export function useWorkspaceBranch() { return useWorkspaceBranchContext().pin; }
+export function useWorkspaceBranch() { const browse = useContext(BrowseScopeContext); const pin = useWorkspaceBranchContext().pin; return browse ? null : pin; }
+/** True inside list-first browsing pages: the remembered location is not applied as a hidden filter. */
+const BrowseScopeContext = createContext(false);
+export function useBrowseScope() { return useContext(BrowseScopeContext); }
 
 /** Registers a page's unsaved state so a location switch asks for confirmation first. */
 export function useRegisterUnsaved(dirty: boolean, busy=false) {
@@ -120,6 +123,8 @@ export function BranchScopeGate({ page, children }: { page: string; children: Re
   if (ctx.status === "loading") return <div className="skeleton" role="status" data-testid="status-branch-loading">Loading your locations…</div>;
   if (ctx.status === "error") return <div className="error-box" role="alert" data-testid="status-branch-error">Your locations could not be loaded, so location-specific data is hidden. {friendlyError(ctx.error, "load")} <button type="button" onClick={ctx.retry} data-testid="button-branch-retry">Retry Locations</button></div>;
   if (ctx.status === "none") return <div className="empty" role="status" data-testid="status-branch-none"><span className="empty-icon"><MapPin size={24} aria-hidden /></span><h3>No active location assigned</h3><p>Ask your clinic administrator to assign you to an active location.</p></div>;
+  // List-first browsing: every authorized location is listed; optional filters narrow it. No hidden pin.
+  if (BROWSE_PAGES.includes(page)) return <BrowseScopeContext.Provider value={true}>{children}</BrowseScopeContext.Provider>;
   if (ctx.status === "choice") return <section className="panel" aria-label="Choose operational location"><h2>Choose your clinic</h2><p>You have several assigned clinics. Choose one to continue.</p>{ctx.branches.map(b=><button key={b.id} type="button" className="button secondary" onClick={()=>void ctx.select(b.id)}>{b.name} · {b.clinicName}</button>)}</section>;
   return <div key={ctx.pin!.branchId} className="branch-scope" data-branch-id={ctx.pin!.branchId}>{children}</div>;
 }
@@ -127,6 +132,8 @@ export function BranchScopeGate({ page, children }: { page: string; children: Re
 /** Top-right location control: fixed label for one location, searchable picker for two or more. */
 export function LocationSelector() {
   const ctx = useWorkspaceBranchContext();
+  const [path] = useLocation();
+  const browsing = BROWSE_PAGES.includes(path.split("?")[0].split("/").filter(Boolean)[1] || "");
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -138,6 +145,7 @@ export function LocationSelector() {
   if (!ctx.enabled) return null;
   if (ctx.status === "loading") return <span className="loc-select is-fixed" role="status" data-testid="status-location-loading"><MapPin size={15} aria-hidden /><span className="loc-name">Loading location…</span></span>;
   if (ctx.status === "error") return <button type="button" className="loc-select is-error" onClick={ctx.retry} data-testid="button-location-retry"><MapPin size={15} aria-hidden /><span className="loc-name">Locations unavailable · Retry</span></button>;
+  if (browsing && ctx.status !== "none") return <span className="loc-select is-fixed" title="This page lists all your authorized locations. Use its filters to narrow." data-testid="text-location-all"><MapPin size={15} aria-hidden /><span className="loc-name">All my locations</span></span>;
   if (ctx.status === "choice") return <span className="loc-select is-fixed" role="status">Choose a clinic below</span>;
   if (ctx.status === "none" || !ctx.pin) return <span className="loc-select is-fixed" data-testid="text-location-none"><MapPin size={15} aria-hidden /><span className="loc-name">No location</span></span>;
   if (ctx.branches.length < 2) return <span className="loc-select is-fixed" title={`${ctx.pin.name} · ${ctx.pin.clinicName}`} data-testid="text-location-fixed"><MapPin size={15} aria-hidden /><span className="loc-name">{ctx.pin.name}</span></span>;

@@ -1867,6 +1867,40 @@ export interface DemoSetupStatus {
   password?: string;
 }
 
+export interface QueueSessionSummary {
+  clinicId: string;
+  clinicName: string;
+  branchId: string;
+  branchName: string;
+  doctorId: string;
+  doctorName: string;
+  date: string;
+  timezone: string;
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
+  /** @nullable */
+  sessionId: string | null;
+  /** @nullable */
+  startTime: string | null;
+  /** @nullable */
+  endTime: string | null;
+  snapshotOnly: boolean;
+  /** Open session template only; not booking availability or action authority */
+  available: boolean;
+  total: number;
+  waiting: number;
+  inConsultation: number;
+  completed: number;
+  cancelled: number;
+}
+
+export interface QueueSessionList {
+  items: QueueSessionSummary[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export type AvailabilityQueueMode = typeof AvailabilityQueueMode[keyof typeof AvailabilityQueueMode];
 
 
@@ -4012,6 +4046,27 @@ export const GetNotificationTemplatesChannel = {
 
 export type GetEventControlsParams = {
 clinicId?: string;
+};
+
+export type ListQueueSessionsParams = {
+date: string;
+clinicId?: string;
+branchId?: string;
+doctorId?: string;
+/**
+ * @maxLength 200
+ */
+search?: string;
+/**
+ * @minimum 1
+ * @maximum 100000
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
 };
 
 export type GetSessionContextsParams = {

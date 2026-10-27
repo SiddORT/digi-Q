@@ -103,7 +103,7 @@ export const resources:Record<string,Resource>={
  users:{name:"users",list:api.listUsers,create:api.createUser,update:api.updateUser,remove:api.deleteUser,fields:[f("fullName","text",true),f("email","email",true),f("mobile","tel"),f("role","select",true,["receptionist","clinicAdmin","patient"]),...addressFields(),relation("clinicIds","clinics"),relation("branchIds","branches"),status],columns:["fullName","email","role","clinicNames","branchNames","status"]},
  masters:{name:"master values",list:api.listMasters,create:api.createMaster,update:api.updateMaster,remove:api.deleteMaster,fields:[f("category","select",true,Object.values(api.MasterInputCategory)),f("name","text",true),f("code","text",true),relation("parentId","masters"),f("sortOrder","number"),status],columns:["name","category","code","status"]},
  availability:{name:"weekly schedules",list:api.listSchedules,create:api.createSchedule,update:api.updateSchedule,remove:api.deleteSchedule,fields:[relation("doctorId","doctors",true),relation("clinicId","clinics",true),relation("branchId","branches",true),{...f("dayOfWeek","select",true,["0","1","2","3","4","5","6"]),width:"md" as const},{...f("isOpen","checkbox"),label:"Session Open",width:"md" as const},f("startTime","time",true),f("endTime","time",true),...scheduleBreakFields,{...f("timezone"),width:"lg" as const},{...f("tokenPrefix","text",true),width:"sm" as const},{...f("maxTokens","number",true),label:"Max Tokens",width:"sm" as const},{...f("consultationMinutes","duration",true),label:"Consultation Duration",width:"sm" as const},{...f("bufferMinutes","number"),label:"Buffer (min)",width:"sm" as const},{...f("queueMode","select",false,["mixed","appointmentsOnly","walkInsOnly"]),width:"md" as const},f("queueOpenTime","time"),f("queueCloseTime","time")],columns:["doctorName","branchName","dayOfWeek","session","break","capacity","isOpen"]},
- exceptions:{name:"date exceptions",list:api.listAvailabilityExceptions,create:api.createAvailabilityException,update:api.updateAvailabilityException,remove:api.deleteAvailabilityException,fields:[relation("doctorId","doctors",true),relation("branchId","branches",true),f("date","date",true),{...f("sessionId","session"),label:"Session (Optional; Blank Applies to All)"},{...f("isClosed","checkbox"),label:"Day Off (Closed)",width:"md" as const},{...f("isExtra","checkbox"),label:"Extra Interval (Adds a Session)",width:"md" as const},{...f("reason","text",true),width:"lg" as const},{...f("startTime","time"),nullable:true},{...f("endTime","time"),nullable:true},...scheduleBreakFields,{...f("maxTokens","number"),nullable:true}],columns:["date","reason","isClosed","session","break","maxTokens"]},
+ exceptions:{name:"date exceptions",list:api.listAvailabilityExceptions,create:api.createAvailabilityException,update:api.updateAvailabilityException,remove:api.deleteAvailabilityException,fields:[relation("doctorId","doctors",true),relation("branchId","branches",true),f("date","date",true),{...f("sessionId","session"),label:"Session (Optional; Blank Applies to All)"},{...f("isClosed","checkbox"),label:"Day Off (Closed)",width:"md" as const},{...f("isExtra","checkbox"),label:"Extra Interval (Adds a Session)",width:"md" as const},{...f("reason","text",true),width:"lg" as const},{...f("startTime","time"),nullable:true},{...f("endTime","time"),nullable:true},...scheduleBreakFields,{...f("maxTokens","number"),nullable:true}],columns:["date","careScope","reason","isClosed","session","break","maxTokens"]},
   qrs:{name:"booking QR codes",list:api.listQrs,create:api.createQr,update:api.updateQr,remove:api.deleteQr,fields:[f("name","text",true),relation("clinicId","clinics",true),{...relation("branchId","branches"),nullable:true},{...relation("doctorId","doctors"),nullable:true},status],columns:["name","reference","status"]},
  audit:{name:"audit events",list:api.listAuditLogs,fields:[],columns:["createdAt","actorName","action","summary"]},
 };
@@ -491,13 +491,22 @@ function chipLabel(key:string,value:string){
  if(key.endsWith("Id"))return `${FILTER_LABELS[key]||title(key)} selected`;
  return `${FILTER_LABELS[key]||title(key)}: ${title(value)}`;
 }
-const COLUMN_LABELS:Record<string,string>={adminName:"Owning administrator",locality:"Locality",contact:"Phone / email",session:"Session hours",break:"Break",capacity:"Capacity",isOpen:"Open",isClosed:"Closed all day",maxTokens:"Max tokens",dayOfWeek:"Day"};
+const COLUMN_LABELS:Record<string,string>={adminName:"Owning administrator",locality:"Locality",contact:"Phone / email",session:"Session hours",break:"Break",capacity:"Capacity",isOpen:"Open",isClosed:"Closed all day",maxTokens:"Max tokens",dayOfWeek:"Day",careScope:"Doctor · Location"};
 const columnLabel=(c:string)=>COLUMN_LABELS[c]||title(c);
+/** Exception rows carry only IDs; resolve doctor and location names through the cached, authorized record reads. */
+function ExceptionCareScope({doctorId,branchId}:{doctorId?:string;branchId?:string}){
+ const doctor=api.useGetDoctor(doctorId||"",{query:{queryKey:api.getGetDoctorQueryKey(doctorId||""),enabled:!!doctorId,staleTime:60000}});
+ const branch=api.useGetBranch(branchId||"",{query:{queryKey:api.getGetBranchQueryKey(branchId||""),enabled:!!branchId,staleTime:60000}});
+ const name=(q:{isLoading:boolean;error:unknown},value?:string)=>q.isLoading?"Loading…":q.error?"Unavailable":value||"—";
+ return <span>{name(doctor,doctor.data?.fullName)}<span className="cell-sub">{name(branch,branch.data?.name)}{branch.data?.clinicName?` · ${branch.data.clinicName}`:""}</span></span>;
+}
 function renderComputed(c:string,row:any,schedule="dayOfWeek" in row&&!('isClosed' in row)){
  if(c==="locality")return <span className="clinic-list-value">{[row.area,row.city,row.state].filter(Boolean).join(" · ")||"Not set"}</span>;
  if(c==="contact")return <div className="clinic-list-value"><span>{row.phone||"Phone not set"}</span><small>{row.email||"Email not set"}</small></div>;
  if(c==="createdAt")return row[c]?formatConfiguredTimestamp(row[c],row.timezone,undefined,row):"—";
  if(c==="queueMode")return queueModeLabel(row.queueMode);
+ if(c==="careScope")return <ExceptionCareScope doctorId={row.doctorId} branchId={row.branchId}/>;
+ if(c==="branchName"&&schedule&&row.clinicName)return <span>{row.branchName||"—"}<span className="cell-sub">{row.clinicName}</span></span>;
  if(c==="timeFormat")return row.timeFormat==="24h"?"24-hour":"12-hour (AM/PM)";
  if(c==="session"){
   if(row.isClosed===true)return <span className="muted">Closed</span>;
@@ -549,8 +558,11 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  const [success,setSuccess]=useState("");
  const term=useDebouncedValue(search);
  const supportsSearch=true;
-  const roleDefaults=useMemo<Record<string,string>>(()=>({...identity?.doctorId&&["doctor","clinicAdmin"].includes(identity.user?.role||"")&&["availability","exceptions"].includes(resource)?{doctorId:identity.doctorId as string}:{},...fixedClinicId?{clinicId:fixedClinicId}:{},...pinDefaults}),[identity,branchPin,resource,fixedClinicId]);
+  const roleDefaults=useMemo<Record<string,string>>(()=>({...fixedClinicId?{clinicId:fixedClinicId}:{},...pinDefaults}),[identity,branchPin,resource,fixedClinicId]);
   const filters:Record<string,string>={...roleDefaults,...Object.fromEntries(LIST_FILTER_KEYS.flatMap(key=>urlParams.get(key)?[[key,urlParams.get(key)!]]:[])),...fixedClinicId?{clinicId:fixedClinicId}:{},...pinDefaults};
+  // Changing the browsed doctor never carries an open weekly editor over to another doctor.
+  const managedDoctor=useRef({doctorId:filters.doctorId||"",manage:urlParams.get("manage")==="1"});
+  useEffect(()=>{const prev=managedDoctor.current;const manage=urlParams.get("manage")==="1";managedDoctor.current={doctorId:filters.doctorId||"",manage};if(prev.doctorId!==(filters.doctorId||"")&&prev.manage&&manage)changeUrl({manage:""},true);}); // eslint-disable-line react-hooks/exhaustive-deps
   const scheduleLocation=api.useGetBranch(filters.branchId||"",{query:{queryKey:api.getGetBranchQueryKey(filters.branchId||""),enabled:resource==="availability"&&!!filters.branchId}});
   const scheduleClinicId=scheduleLocation.data?.clinicId||filters.clinicId||"";
   const scheduleClinic=api.useGetClinic(scheduleClinicId,{query:{queryKey:api.getGetClinicQueryKey(scheduleClinicId),enabled:resource==="availability"&&!!scheduleClinicId}});
@@ -571,11 +583,14 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
     }
     navigate(`${window.location.pathname}${next.size?`?${next}`:""}`,{replace});
      };
-     if(resource==="availability"&&"doctorId" in changes&&String(changes.doctorId||roleDefaults.doctorId||"")!==(filters.doctorId||"")){
+     const changesScheduleContext = ["doctorId","clinicId","branchId"].some(key =>
+       key in changes && String(changes[key] || roleDefaults[key] || "") !== (filters[key] || ""));
+     const closesWeeklyEditor = "manage" in changes && changes.manage !== "1" && urlParams.get("manage") === "1";
+     if(resource==="availability"&&(changesScheduleContext||closesWeeklyEditor)){
        if(scheduleContext.current.busy||scheduleContext.current.confirming)return;
        if(scheduleContext.current.dirty){
          scheduleContext.current.confirming=true;
-         void confirmation.ask({title:"Discard schedule draft?",description:"Changing doctors discards the unsaved schedule. Saved sessions and history are kept.",confirmLabel:"Discard and Change Doctor",tone:"danger"}).then(ok=>{
+         void confirmation.ask({title:"Discard schedule draft?",description:"Leaving this editor or changing its context discards the unsaved schedule. Saved sessions and history are kept.",confirmLabel:"Discard and Continue",tone:"danger"}).then(ok=>{
            if(ok){scheduleContext.current.dirty=false;commit();}
          }).finally(()=>{scheduleContext.current.confirming=false;});
          return;
@@ -749,7 +764,10 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  </p>}
  {!allowCreate&&resource==="patients"&&<p className="notice">New patient registration is available to receptionists and administrators. Ask your clinic staff to register a new patient.</p>}<ErrorNotice error={remove.error||statusUpdate.error}/>
  <ListingBulk selection={selection} resource={resource} columns={config.columns} identity={identity} context={selectionContext}/>
- {resource==="availability"&&filters.doctorId&&<AvailabilityScheduleEntry key={filters.doctorId} doctorId={filters.doctorId} fixedClinicId={fixedClinicId} canDelete onDisplayContextChange={setEditorDisplay} onDirtyChange={dirty=>{scheduleContext.current.dirty=dirty;}} onBusyChange={busy=>{scheduleContext.current.busy=busy;}}/>}
+ {resource==="availability"&&!filters.doctorId&&identity?.doctorId&&["doctor","clinicAdmin"].includes(identity.user?.role||"")&&<p className="schedule-manage-entry"><button type="button" className="button secondary small" onClick={()=>changeUrl({doctorId:identity.doctorId as string,manage:"1"})} data-testid="button-manage-own-weekly-schedule">Edit my weekly schedule</button></p>}
+ {resource==="availability"&&filters.doctorId&&urlParams.get("manage")!=="1"&&<p className="schedule-manage-entry"><button type="button" className="button secondary small" onClick={()=>changeUrl({manage:"1"})} data-testid="button-manage-weekly-schedule">Edit weekly schedule</button></p>}
+ {resource==="availability"&&filters.doctorId&&urlParams.get("manage")==="1"&&<p className="schedule-manage-entry"><button type="button" className="text-link" onClick={()=>changeUrl({manage:""})} data-testid="button-close-weekly-schedule">Close weekly editor</button></p>}
+ {resource==="availability"&&filters.doctorId&&urlParams.get("manage")==="1"&&<AvailabilityScheduleEntry key={filters.doctorId} doctorId={filters.doctorId} fixedClinicId={fixedClinicId} canDelete onDisplayContextChange={setEditorDisplay} onDirtyChange={dirty=>{scheduleContext.current.dirty=dirty;}} onBusyChange={busy=>{scheduleContext.current.busy=busy;}}/>}
  <ListingRegion className={`panel table-panel admin-listing-table density-${density}${superadminClinics?" superadmin-clinics-table":""}${["availability","exceptions"].includes(resource)?" schedule-list-table":""}`}>
    {resource==="availability"&&!editorHasDisplay&&<p className="schedule-list-context" data-testid="schedule-list-context">Display context{scheduleLocation.data?.name?` · ${scheduleLocation.data.name}`:""}: {scheduleDisplay.timezone||"Timezone not loaded"} · {scheduleDisplay.timeFormat==="24h"?"24-hour":"12-hour (AM/PM)"} <HelpTip label="About schedule display context" text="Timezone and time format come from clinic settings. Different session timezones remain in row details. Each session shows its own queue mode."/></p>}
    {query.isLoading?<div className="skeleton" role="status">Loading {listName}…</div>:query.error?<><div className="error-box" role="alert">{friendlyError(query.error,"load")}</div><button onClick={()=>query.refetch()}>Retry {listName}</button></>:query.data?.items?.length?<div className="table-scroll" inert={query.isPlaceholderData}><table aria-busy={query.isFetching}>

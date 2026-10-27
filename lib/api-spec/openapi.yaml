@@ -634,6 +634,26 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/DemoSetupStatus" }
+  /queue-sessions:
+    get:
+      operationId: listQueueSessions
+      description: Paginated staff-only session overview in the effective authorized workspace. Includes empty scheduled sessions and persisted appointment session snapshots for one local date. Counts contain no patient records. available describes an open session template, not booking eligibility or permission to perform actions; drill down to the operational queue for authoritative checks.
+      parameters:
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+        - { name: clinicId, in: query, schema: { type: string } }
+        - { name: branchId, in: query, schema: { type: string } }
+        - { name: doctorId, in: query, schema: { type: string } }
+        - { name: search, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, maximum: 100000, default: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        "200":
+          description: Authorized session summaries without patient data
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QueueSessionList" }
+        "401": { description: Authentication required }
+        "403": { description: Staff role required }
   /session-contexts:
     get:
       operationId: getSessionContexts
@@ -2901,6 +2921,38 @@ components:
         clinicPath: { type: string }
         alreadyExists: { type: boolean }
         password: { type: string, description: One-time secret only on creation or rotation }
+    QueueSessionSummary:
+      type: object
+      required: [clinicId, clinicName, branchId, branchName, doctorId, doctorName, date, timezone, sessionId, startTime, endTime, snapshotOnly, available, total, waiting, inConsultation, completed, cancelled]
+      properties:
+        clinicId: { type: string }
+        clinicName: { type: string }
+        branchId: { type: string }
+        branchName: { type: string }
+        doctorId: { type: string }
+        doctorName: { type: string }
+        date: { type: string, format: date }
+        timezone: { type: string }
+        dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
+        timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
+        sessionId: { type: [string, "null"] }
+        startTime: { type: [string, "null"] }
+        endTime: { type: [string, "null"] }
+        snapshotOnly: { type: boolean }
+        available: { type: boolean, description: Open session template only; not booking availability or action authority }
+        total: { type: integer }
+        waiting: { type: integer }
+        inConsultation: { type: integer }
+        completed: { type: integer }
+        cancelled: { type: integer }
+    QueueSessionList:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/QueueSessionSummary" } }
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
     SessionContext:
       allOf:
         - { $ref: "#/components/schemas/Availability" }

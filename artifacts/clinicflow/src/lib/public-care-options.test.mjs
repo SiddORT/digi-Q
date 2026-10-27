@@ -228,15 +228,20 @@ test("guest consumers and menus use shared public pages with separate unsearched
   assert.match(care, /publicOptions\.queryFn\(\{ pageParam, signal \}\)/);
   for (const source of [finder, booking]) {
     assert.equal((source.match(/publicCareOptions\(actor,/g) || []).length, 2);
-    assert.equal((source.match(/select:\s*data\s*=>\s*data\.pages\[0\]/g) || []).length, 2);
     assert.doesNotMatch(source, /queryKey:\s*\["guest-(?:finder-)?single-/);
     assert.doesNotMatch(source, /pageSize:\s*2/);
   }
-  assert.match(finder, /clinics\.isError\?null:soleBookable\(clinics\.data\)/);
-  assert.match(finder, /branches\.isError\?null:soleBookable\(branches\.data\)/);
+  assert.equal((booking.match(/select:\s*data\s*=>\s*data\.pages\[0\]/g) || []).length, 2);
+  // Finder: explicit, paginated clinic cards and per-clinic location lists on the shared, actor-scoped public pages.
+  assert.match(finder, /useInfiniteQuery\(publicCareOptions\(actor, "clinics", \{ status: "active" \}/);
+  assert.match(finder, /useInfiniteQuery\(\{ \.\.\.publicCareOptions\(actor, "branches", \{ clinicId: clinic\.id, status: "active" \}/);
+  assert.match(finder, /clinics\.fetchNextPage\(\)/);
+  assert.match(finder, /branches\.fetchNextPage\(\)/);
+  assert.doesNotMatch(finder, /soleBookable/, "explicit cards replace sole auto-selection");
+  assert.doesNotMatch(finder, /api\.useListPublic(?:Clinics|Branches)\(/, "no unshared public reads");
   assert.match(booking, /soleAssigned\(branchOptions\.data,branchOptions\.isError\)/);
   assert.match(booking, /soleAssigned\(doctorOptions\.data,doctorOptions\.isError\)/);
   assert.match(booking, /doctorId:context\.doctorId\|\|undefined/);
-  for (const name of ["clinics", "branches"]) assert.match(finder, new RegExp(`!${name}\\.isFetching`));
+
   for (const name of ["branchOptions", "doctorOptions"]) assert.match(booking, new RegExp(`!${name}\\.isFetching`));
 });

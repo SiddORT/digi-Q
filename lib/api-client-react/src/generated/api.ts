@@ -161,6 +161,7 @@ import type {
   ListPublicClinicsParams,
   ListPublicDoctorsParams,
   ListQrsParams,
+  ListQueueSessionsParams,
   ListSavedViewsParams,
   ListSchedulesParams,
   ListUsersParams,
@@ -216,6 +217,7 @@ import type {
   QrInput,
   QrList,
   QueueSelection,
+  QueueSessionList,
   ReceiptManagement,
   RecordSearchResult,
   RegistrationChallengeReference,
@@ -4433,6 +4435,87 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getUpdateDemoSetupMutationOptions(options));
     }
+
+export const getListQueueSessionsUrl = (params: ListQueueSessionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/queue-sessions?${stringifiedParams}` : `/api/queue-sessions`
+}
+
+/**
+ * Paginated staff-only session overview in the effective authorized workspace. Includes empty scheduled sessions and persisted appointment session snapshots for one local date. Counts contain no patient records. available describes an open session template, not booking eligibility or permission to perform actions; drill down to the operational queue for authoritative checks.
+ */
+export const listQueueSessions = async (params: ListQueueSessionsParams, options?: Parameters<typeof customFetch>[1]): Promise<QueueSessionList> => {
+
+  return customFetch<QueueSessionList>(getListQueueSessionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListQueueSessionsQueryKey = (params?: ListQueueSessionsParams,) => {
+    return [
+    `/api/queue-sessions`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListQueueSessionsQueryOptions = <TData = Awaited<ReturnType<typeof listQueueSessions>>, TError = ErrorType<void>>(params: ListQueueSessionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listQueueSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListQueueSessionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listQueueSessions>>> = ({ signal }) => listQueueSessions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listQueueSessions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListQueueSessionsQueryResult = NonNullable<Awaited<ReturnType<typeof listQueueSessions>>>
+export type ListQueueSessionsQueryError = ErrorType<void>
+
+
+
+export function useListQueueSessions<TData = Awaited<ReturnType<typeof listQueueSessions>>, TError = ErrorType<void>>(
+ params: ListQueueSessionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listQueueSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListQueueSessionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetSessionContextsUrl = (params: GetSessionContextsParams,) => {
   const normalizedParams = new URLSearchParams();
