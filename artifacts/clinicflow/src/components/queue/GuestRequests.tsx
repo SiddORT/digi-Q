@@ -1,3 +1,4 @@
+import { usePageSizeState } from "../../lib/page-size-preference";
 import { useEffect, useRef, useState } from "react";
 import { RotateCw } from "lucide-react";
 import { IconAction } from "../IconAction";
@@ -15,7 +16,7 @@ import { formatSessionHours } from "./SessionSelector";
 
 export function GuestRequests({clinicId,branchId,doctorId,date,sessionId,startTime}:{clinicId:string;branchId:string;doctorId:string;date:string;sessionId?:string;startTime?:string}) {
  const [page,setPage]=useState(1);
- const [pageSize,setPageSize]=useState(10);
+ const [pageSize,setPageSize]=usePageSizeState(10);
  const [search,setSearch]=useState("");const debounced=useDebouncedValue(search);
  const [sort,setSort]=useState<"createdAt"|"-createdAt"|"fullName"|"-fullName"|"date"|"-date">("-createdAt");
  useEffect(()=>setPage(1),[debounced,sort,pageSize]);

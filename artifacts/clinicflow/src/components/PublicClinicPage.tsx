@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { usePreferredPageSize } from "../lib/page-size-preference";
 import { OverflowText } from "./OverflowText";
 import { HelpTip } from "./HelpTip";
 import { Link, useLocation, useSearch } from "wouter";
@@ -35,7 +36,7 @@ function PublicClinicResolved({ clinicSlug, branchSlug }: { clinicSlug: string; 
   const [searchText, setSearchText] = useState(committedSearch);
   const debouncedSearch = useDebouncedValue(searchText, 300);
   const requestedSize = Number(params.get("pageSize"));
-  const pageSize: 10 | 25 | 50 | 100 = requestedSize === 10 || requestedSize === 50 || requestedSize === 100 ? requestedSize : 25;
+  const pageSize = usePreferredPageSize(25, requestedSize, [10,25,50,100]) as 10 | 25 | 50 | 100;
   const requestedPage = Number(params.get("page"));
   const page = Number.isInteger(requestedPage) && requestedPage > 0 && requestedPage <= 1000000 ? requestedPage : 1;
   const sort = params.get("sort") === "-name" ? "-name" as const : "name" as const;

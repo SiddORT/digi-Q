@@ -1,3 +1,4 @@
+import { usePageSizeState } from "../../lib/page-size-preference";
 import { PageDescription } from "../PageDescription";
 import { ArrivalGuidance } from "../tickets/ArrivalGuidance";
 import { useEffect, useRef, useState } from "react";
@@ -31,7 +32,7 @@ export function SessionQueue({identity,initial}:{identity:api.Identity;initial?:
  const {isDoctor,doctorId:restrictedDoctorId}=doctorWorkspaceScope(identity);
  const [retained]=useState(()=>{try{const value=JSON.parse(sessionStorage.getItem("clinicflow-staff-session")||"null");return identity.user?.role!=="patient"&&value?.staffId===identity.user?.id&&(!queuePin||value?.branchId===queuePin.branchId)?value:null;}catch{return null;}});
  const queueUrlStale=!!queuePin&&!!searchParams.get("branch")&&searchParams.get("branch")!==queuePin.branchId;const [clinicId,setClinic]=useState(queuePin?.clinicId||initial?.clinicId||searchParams.get("clinic")||retained?.clinicId||"");const [branchId,setBranch]=useState(queuePin?.branchId||initial?.branchId||searchParams.get("branch")||retained?.branchId||"");const [doctorId,setDoctor]=useState(restrictedDoctorId||(initial&&(!queuePin||initial.branchId===queuePin.branchId)?initial.doctorId:"")||(queueUrlStale?"":searchParams.get("doctor"))||retained?.doctorId||"");const [date,setDate]=useState(initial?.date||searchParams.get("date")||retained?.date||today());const [appointmentId,setAppointment]=useState(initial?.id||searchParams.get("appointment")||"");
- const [status,setStatus]=useState("");const [search,setSearch]=useState("");const debounced=useDebouncedValue(search);const [page,setPage]=useState(1);const [pageSize,setSize]=useState(20);const client=useQueryClient();const lock=useRef(false);
+ const [status,setStatus]=useState("");const [search,setSearch]=useState("");const debounced=useDebouncedValue(search);const [page,setPage]=useState(1);const [pageSize,setSize]=usePageSizeState(20);const client=useQueryClient();const lock=useRef(false);
   const autoDate=useRef(!initial?.id&&!initial?.date&&!searchParams.get("appointment")&&!searchParams.get("date")&&!retained?.date);
  const [showSummary,setShowSummary]=useState(false);
  const [callPreview,setCallPreview]=useState<{scope:string;token:string}|null>(null);

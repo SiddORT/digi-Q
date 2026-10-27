@@ -5,7 +5,8 @@ const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
 
 test("pagination offers 10/25/50/100 and retains current 20 default", () => {
   const s = read("./ListingControls.tsx");
-  assert.ok(s.includes("PAGE_SIZE_OPTIONS = [10, 20, 25, 50, 100]"));
+  assert.ok(s.includes("PAGE_SIZE_OPTIONS = APPROVED_PAGE_SIZES"));
+  assert.ok(read("../lib/page-size-preference.tsx").includes("APPROVED_PAGE_SIZES = [10, 20, 25, 50, 100]"));
   assert.ok(s.includes("DEFAULT_PAGE_SIZE = 20"));
   assert.ok(s.includes("pageSizeOptions(pageSize)"));
 });

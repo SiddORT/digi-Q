@@ -20,7 +20,7 @@ test("touch targets follow 32px desktop / 44px touch scale",()=>{const c=r("./co
 test("resource listing accepts every approved page size including 25", async () => {
   const { readFileSync } = await import("node:fs");
   const src = readFileSync(new URL("./resources.tsx", import.meta.url), "utf8");
-  assert.match(src, /PAGE_SIZE_OPTIONS as readonly number\[\]\)\.includes\(sizeValue\)/);
+  assert.match(src, /usePreferredPageSize\(DEFAULT_PAGE_SIZE,sizeValue\)/);
 });
 test("horizontal toolbar is universal and preserves existing filter controls",()=>{
   assert.match(r("./components/ListingControls.tsx"),/className="filter-bar list-header list-header--compact"/);

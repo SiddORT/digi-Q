@@ -1,4 +1,5 @@
 import { OWNER_ONLY_FIELDS, canChangeClinicDefaults, ownerOnlyLocked } from "./lib/inherited-defaults";
+import { usePreferredPageSize } from "./lib/page-size-preference";
 import { clinicDetailsHref, clinicWorkspaceHref } from "./lib/clinic-navigation";
 import { EDITOR_TABS, editorTabIndex } from "./lib/form-tabs";
 import { queueModeLabel, scheduleAdditionalKeys } from "./lib/schedule-facts";
@@ -28,7 +29,7 @@ import { ResourceLookup, ResourceMultiLookup } from "./components/ResourceLookup
 import { useFilterNames } from "./components/FilterNames";
 import { useDirectoryActor } from "./lib/use-directory";
 import { validDependentIds } from "./components/relation-validity";
-import { Pagination, SearchInput, FilterBar, useDebouncedValue, PAGE_SIZE_OPTIONS, DEFAULT_PAGE_SIZE, listingSuggestions, type FilterChip } from "./components/ListingControls";
+import { Pagination, SearchInput, FilterBar, useDebouncedValue, DEFAULT_PAGE_SIZE, listingSuggestions, type FilterChip } from "./components/ListingControls";
 import { AppDialog } from "./components/AppDialog";
 import { SearchableSelect } from "./components/SearchableSelect";
 import { SuggestionInput } from "./components/SuggestionInput";
@@ -524,7 +525,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
   const pageValue=Number(urlParams.get("page"));
   const page=Number.isSafeInteger(pageValue)&&pageValue>0?pageValue:1;
   const sizeValue=Number(urlParams.get("pageSize"));
-  const pageSize=(PAGE_SIZE_OPTIONS as readonly number[]).includes(sizeValue)?sizeValue:DEFAULT_PAGE_SIZE;
+  const pageSize=usePreferredPageSize(DEFAULT_PAGE_SIZE,sizeValue);
   const defaultSort=resource==="availability"?"weekly":"-createdAt";
   const sort=urlParams.get("sort")||defaultSort;
   const [editing,setEditing]=useState<any>(null);
@@ -565,7 +566,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
     const next=new URLSearchParams(window.location.search);
     for(const [key,value] of Object.entries(changes)){
       if(key==="clinicId"&&fixedClinicId)continue;
-      if(value===""||value===null||value===undefined||key==="page"&&value===1||key==="pageSize"&&value===20||key==="sort"&&value===defaultSort)next.delete(key);
+      if(value===""||value===null||value===undefined||key==="page"&&value===1||key==="sort"&&value===defaultSort)next.delete(key);
       else next.set(key,String(value));
     }
     navigate(`${window.location.pathname}${next.size?`?${next}`:""}`,{replace});
@@ -639,11 +640,11 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  const displayColumns=arranged.visible;
  const hiddenColumns=arranged.hidden;
  const [expanded,setExpanded]=useState<string|null>(null);
- const currentViewFilters:Record<string,string>={...filters,...(sort!==defaultSort?{sort}:{}),...(pageSize!==20?{pageSize:String(pageSize)}:{})};
+ const currentViewFilters:Record<string,string>={...filters,...(sort!==defaultSort?{sort}:{}),pageSize:String(pageSize)};
  // The requested Clinic toolbar explicitly omits the Views trigger. Keep the
  // shared saved-view implementation, stored preferences and backend APIs intact.
  const compactClinicToolbar=["clinics","patients","availability","exceptions"].includes(resource);
- const viewControls=<><ColumnSettings iconOnly={compactClinicToolbar} columns={displayColumnsBase} layout={listingLayout.layout} label={columnLabel} onChange={listingLayout.setLayout} onReset={listingLayout.resetColumns}/>{!compactClinicToolbar&&<SavedViews canShare={listingLayout.canShare} legacyViews={listingLayout.legacyViews} onImport={listingLayout.importLegacyView} views={listingLayout.layout.views} canSave={Object.values(currentViewFilters).some(Boolean)||listingLayout.layout.order.length>0||listingLayout.layout.hidden.length>0||!!listingLayout.layout.pinned} onSave={view=>listingLayout.saveView(view,currentViewFilters)} onDelete={listingLayout.deleteView} onApply={view=>{listingLayout.applyViewColumns(view,displayColumnsBase);changeUrl({...Object.fromEntries(VIEW_KEYS.map(key=>[key,""])),...view.filters,page:1});}}/>}</>;
+ const viewControls=<><ColumnSettings iconOnly={compactClinicToolbar} columns={displayColumnsBase} layout={listingLayout.layout} label={columnLabel} onChange={listingLayout.setLayout} onReset={listingLayout.resetColumns}/>{!compactClinicToolbar&&<SavedViews canShare={listingLayout.canShare} legacyViews={listingLayout.legacyViews} onImport={listingLayout.importLegacyView} views={listingLayout.layout.views} canSave={Object.values(currentViewFilters).some(Boolean)||listingLayout.layout.order.length>0||listingLayout.layout.hidden.length>0||!!listingLayout.layout.pinned} onSave={view=>listingLayout.saveView(view,currentViewFilters)} onDelete={listingLayout.deleteView} onApply={view=>{listingLayout.applyViewColumns(view,displayColumnsBase);changeUrl({...Object.fromEntries(VIEW_KEYS.map(key=>[key,""])),...view.filters,pageSize:view.filters.pageSize||20,page:1});}}/>}</>;
  const portal=identity?.user?.role==="doctor"?"doctor":identity?.user?.role==="receptionist"?"receptionist":"admin";
  const clinicRecordHref=(id:string)=>superadminClinics?clinicDetailsHref(id,urlSearch):clinicWorkspaceHref(id);
   useEffect(()=>{if(query.data&&!query.isPlaceholderData&&page>1&&page>Math.max(1,Math.ceil(query.data.total/pageSize)))setPage(Math.max(1,Math.ceil(query.data.total/pageSize)));},[query.data,query.isPlaceholderData,page,pageSize]);

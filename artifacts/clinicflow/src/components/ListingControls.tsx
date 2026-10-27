@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
+import { APPROVED_PAGE_SIZES, sanitizePageSize, usePageSizePreference } from "../lib/page-size-preference";
+import { notifyWarning } from "../lib/notify";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -20,7 +22,7 @@ export { useDebouncedValue };
 // --- Pagination ---
 
 /** Approved sizes 10/25/50/100 (spec §3). 20 is retained as the existing default page size. */
-export const PAGE_SIZE_OPTIONS = [10, 20, 25, 50, 100] as const;
+export const PAGE_SIZE_OPTIONS = APPROVED_PAGE_SIZES;
 export const DEFAULT_PAGE_SIZE = 20;
 export const SEARCH_DEBOUNCE_MS = 300;
 /** Options always include the current size so a persisted/URL value never disappears. */
@@ -55,6 +57,7 @@ export function Pagination({
   state = "ready",
 }: PaginationProps) {
   const sizeId = React.useId();
+  const preference = usePageSizePreference();
   const unavailable = state !== "ready";
   total = unavailable ? 0 : Math.max(0, total);
 
@@ -101,6 +104,9 @@ export function Pagination({
                onChange={(value) => {
                  if (!value) return;
                  onPageSizeChange(Number(value));
+                 if (preference.size !== null && sanitizePageSize(Number(value)) !== null && !preference.save(Number(value))) {
+                   notifyWarning("Rows per page changed for this list, but your browser could not remember it.");
+                 }
                 if (resetPageOnSizeChange) onPageChange(1);
               }}
                options={pageSizeOptions(pageSize).map((size) => ({ value: String(size), label: String(size) }))}

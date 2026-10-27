@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from "react";
+import { usePreferredPageSize } from "../../lib/page-size-preference";
 import { Link } from "wouter";
 import * as api from "@workspace/api-client-react";
 import { ArrowDown, ArrowUp, ArrowUpDown, Download, Eye, ExternalLink, Building2 } from "lucide-react";
@@ -35,7 +36,8 @@ export function ReportsDashboard({ role, initialReportType, initialViewId, layou
   const timezone = typeof selectedBranch.data?.timezone === "string" ? selectedBranch.data.timezone : settings.data?.timezone || "Asia/Kolkata";
   const todayIso = today(timezone);
   const [initial] = useState(() => parseReportParams(window.location.search, todayIso));
-  const [applied, setApplied] = useState<ReportFilters>(() => ({ ...defaultFilters(todayIso), from: initial.from, to: initial.to, preset: detectPreset(initial.from, initial.to, todayIso), groupBy: initial.groupBy as ReportGroup, reportType: (TYPE_IDS.includes(initialReportType || "") ? initialReportType : "all") as ReportType, clinicId: pin?.clinicId || "", branchId: pin?.branchId || "", sort: initialReportType === "clinicPerformance" ? "-uniquePatients" : initialReportType === "doctors" ? "-completed" : "" }));
+  const preferredPageSize = usePreferredPageSize(20, new URLSearchParams(window.location.search).get("pageSize"));
+  const [applied, setApplied] = useState<ReportFilters>(() => ({ ...defaultFilters(todayIso), pageSize: preferredPageSize, from: initial.from, to: initial.to, preset: detectPreset(initial.from, initial.to, todayIso), groupBy: initial.groupBy as ReportGroup, reportType: (TYPE_IDS.includes(initialReportType || "") ? initialReportType : "all") as ReportType, clinicId: pin?.clinicId || "", branchId: pin?.branchId || "", sort: initialReportType === "clinicPerformance" ? "-uniquePatients" : initialReportType === "doctors" ? "-completed" : "" }));
   const [draft, setDraft] = useState(applied);
   const [search, setSearch] = useState(initial.search);
   const debounced = useDebouncedValue(search);

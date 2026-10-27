@@ -5,6 +5,7 @@ import { Activity, ArrowUpRight, CalendarDays, ShieldCheck, Clock3, Building2, S
 import { BRAND_NAME } from "./branding";
 import "./lib/api";
 import { NativeAuthProvider, useNativeAuth } from "./auth/native-auth";
+import { PageSizeAccountBoundary } from "./components/PageSizeAccountBoundary";
 import { BrandLogo } from "./components/BrandLogo";
 import * as api from "@workspace/api-client-react";
 import { Portal, Onboarding, PublicBooking } from "./clinic";
@@ -92,7 +93,7 @@ const routes: Record<string,string[]> = {
   patient:["dashboard","book","appointments","queue","profile","settings"],
 };
 function Providers(){
-  return <QueryClientProvider client={queryClient}><NativeAuthProvider><RouteMetadataBoundary/><Switch>
+  return <QueryClientProvider client={queryClient}><NativeAuthProvider><PageSizeAccountBoundary><RouteMetadataBoundary/><Switch>
     <Route path="/" component={Home}/>
     <Route path="/sign-in/*?" component={StaffLogin}/>
     <Route path="/sign-up/*?" component={SignUpRoute}/>
@@ -118,6 +119,6 @@ function Providers(){
     <Route path="/:clinicSlug/:branchSlug">{p=><PublicClinicPage clinicSlug={p.clinicSlug} branchSlug={p.branchSlug}/>}</Route>
     <Route path="/:clinicSlug">{p=><PublicClinicPage clinicSlug={p.clinicSlug}/>}</Route>
     <Route><div className="empty"><h1>Page Not Found</h1><p>This page is unavailable.</p><Link href="/">Return Home</Link></div></Route>
-   </Switch><ToastHost/></NativeAuthProvider></QueryClientProvider>;
+   </Switch><ToastHost/></PageSizeAccountBoundary></NativeAuthProvider></QueryClientProvider>;
 }
 export default function App(){ return <Router base={basePath} hook={useSettingsBrowserLocation}><Providers/></Router>; }
