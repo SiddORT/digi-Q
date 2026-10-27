@@ -47,6 +47,10 @@ This refines the existing branding; it is not a new design system.
   existing drawer, never push a listing down.
 - Appointment table expansions end with 24px bottom clearance and the existing
   border token, including loading/error and final rows; collapsed rows stay compact.
+- Existing genuine tabs use the approved icon-and-label strip reference in
+  `attached_assets/image_1793026842063.png`; `tab-inventory.json` records owners,
+  callers and exclusions. This supersedes older status-only tab guidance, not
+  queue status filters' group/pressed semantics. Panels and navigation stay unchanged.
 - Check 390×844, 768px tablet, 1024×640, 1366×768, wide desktop and 200% zoom.
   Assert child/text bounds, not just page overflow. Check sticky footer overlap,
   popup edges, long labels, keyboard scrolling and short-height dialogs.

@@ -160,9 +160,7 @@ tr.is-linked>td:first-child{box-shadow:inset 4px 0 0 hsl(var(--primary)),inset 0
 .workspace-command .ws-input{display:flex;align-items:center;gap:8px;border:1px solid hsl(var(--border));border-radius:12px;padding:0 12px;background:hsl(var(--card))}
 .workspace-command .ws-input:focus-within{border-color:hsl(var(--primary))}
 .workspace-command .ws-input input{border:0;flex:1;min-height:48px;font-size:var(--type-body-lg);background:transparent;outline:none;box-shadow:none}
-.workspace-command .ws-tabs{display:flex;flex-wrap:wrap;gap:4px}
-.workspace-command .ws-tab{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:4px 12px;border-radius:8px;border:1px solid transparent;background:transparent;font-weight:600;color:var(--soft)}
-.workspace-command .ws-tab[aria-selected=true]{background:hsl(var(--primary) / .1);color:hsl(var(--primary));border-color:hsl(var(--primary) / .3)}
+.workspace-command .ws-more{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;font-weight:600;color:var(--soft)}
 .workspace-command .ws-tab-count{font-size:var(--type-caption);padding:0 4px;border-radius:6px;background:hsl(var(--muted))}
 .workspace-command .row-menu-trigger.text-trigger{background:transparent;border:0;padding:0}
 .workspace-command .ws-note{font-size:var(--type-caption)}
@@ -176,7 +174,7 @@ tr.is-linked>td:first-child{box-shadow:inset 4px 0 0 hsl(var(--primary)),inset 0
 .workspace-command .ws-skeleton span{display:block;height:40px;border-radius:8px;background:hsl(var(--muted));animation:ws-pulse 1.2s ease-in-out infinite}
 @keyframes ws-pulse{50%{opacity:.5}}
 .workspace-command-results small{display:block;color:var(--soft)}
-@media(max-width:640px){.workspace-command .ws-directory-pair{grid-template-columns:1fr}.workspace-command .ws-tabs{flex-wrap:nowrap;overflow-x:auto}}
+@media(max-width:640px){.workspace-command .ws-directory-pair{grid-template-columns:1fr}}
 
 /* Exposed quick filters (shared by every listing via FilterBar `filters`). */
 .lh-quick-filters{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--space-2);min-width:0}
@@ -210,12 +208,7 @@ tr.is-linked>td:first-child{box-shadow:inset 4px 0 0 hsl(var(--primary)),inset 0
 .appt-table .col-status{position:static}
 
 /* Tabbed record forms: one Save; invalid tabs marked. */
-.editor-tabs { display: flex; gap: 4px; border-bottom: 1px solid hsl(var(--border)); margin-bottom: 8px; overflow-x: auto; }
-.editor-tab { background: transparent; border: 0; border-bottom: 2px solid transparent; border-radius: 6px 6px 0 0; padding: 8px 12px; font-size: var(--type-caption); font-weight: 600; color: hsl(var(--muted-foreground)); cursor: pointer; white-space: nowrap; }
-.editor-tab:hover { color: hsl(var(--foreground)); }
-.editor-tab.is-active { color: hsl(var(--primary)); border-bottom-color: hsl(var(--primary)); }
-.editor-tab.is-invalid { color: hsl(var(--destructive)); }
-.editor-tab-flag { font-weight: 700; }
+.editor-tabs { margin-bottom: 8px; }
 .qr-inline { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; }
 .qr-inline-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .inherited-summary { display: flex; flex-direction: column; gap: 12px; }

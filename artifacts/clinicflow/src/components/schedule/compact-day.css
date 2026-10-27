@@ -6,7 +6,6 @@
 .cde-day-actions .searchable-select-field{width:160px}
 .cde-day-status{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;margin:8px 0;overflow-wrap:anywhere}
 .cde-week-summary{margin:8px 0}
-.cde .editor-tabs{flex-wrap:wrap;overflow:visible}
 .cde-row{display:grid;grid-template-columns:32px minmax(0,160px) minmax(0,160px) minmax(160px,180px) 44px;gap:4px 8px;align-items:center;margin:0}
 .cde-head{font-size:.8em;opacity:.7}
 .cde-warn{grid-column:2/-1;margin:0}

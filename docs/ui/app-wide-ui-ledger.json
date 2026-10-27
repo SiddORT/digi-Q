@@ -1,6 +1,20 @@
 {
   "generatedAt": "2026-10-25T23:18:35.357Z",
   "notice": "Local fictional-fixture evidence, not hosted UAT, authorization, real delivery, full cross-browser or exhaustive nested-state acceptance.",
+  "tabPresentation": {
+    "scope": "Genuine tab strips/triggers/icons only; no panel contents, queue filters, backend or permission changes.",
+    "inventory": "docs/ui/tab-inventory.json",
+    "coverage": "docs/ui/tab-presentation-coverage.md",
+    "evidenceDirectory": "generated-artifacts/tabs",
+    "groupsSourceAccounted": 17,
+    "finalFocusedTabCases": {"passed":9,"notice":"Combined 8/9 CSS follow-up plus 1/1 focused keyboard correction, not a passing original run."},
+    "existingDoctorAndUserCases": {"passed":31,"failed":0},
+    "workspaceAndFormCases": {"passed":40,"failed":4,"reason":"Previously documented clinic empty text and Staff Type filter fixture expectations; not repaired by this tab-only change."},
+    "appointmentCases": {"passed":54,"failed":0},
+    "viewportEvidence": ["390x844","768x768","1024x640","1366x768","1920x1080","512x320 reflow","native Chromium 200% (1024x640 outer, 512x320 inner)"],
+    "identityBoundary": "Presentation samples and real-component intercepted fixtures only. Live signed-out Preview inspected; independently authenticated tab-role checks unavailable.",
+    "historicalLedgerBoundary": "This tab addendum does not refresh or approve older route/state samples below."
+  },
   "runs": [
     {
       "input": "generated-artifacts/app-wide-ui/first-acceptance.json",

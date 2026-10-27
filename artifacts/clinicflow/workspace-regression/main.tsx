@@ -25,6 +25,7 @@ import { CompactUiFixture } from "./CompactUiFixture";
 import { StaffVerificationFixture } from "./StaffVerificationFixture";
 import { BookingFixture } from "./BookingFixture";
 import { FormControlFixture } from "./FormControlFixture";
+import { TabPresentationFixture } from "./TabPresentationFixture";
 
 // No Clerk provider, real account, live API, test bypass or production data is used.
 // Browser tests intercept *all* /api/ requests before opening this page.
@@ -40,6 +41,7 @@ const search=useSearch();
 const params = new URLSearchParams(search);
 if (params.get("mode") === "compact-ui") return <CompactUiFixture/>;
 if (params.get("mode") === "form-controls") return <FormControlFixture/>;
+if (params.get("mode") === "tabs") return <TabPresentationFixture/>;
 const [dropdownWorkspace] = useState(() => params.get("mode") === "dropdown-workspace");
 if (dropdownWorkspace) return <DropdownWorkspaceFixture/>;
 if (params.get("mode") === "registration") return <RegistrationFixture/>;

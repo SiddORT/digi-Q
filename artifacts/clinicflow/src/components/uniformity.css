@@ -168,9 +168,6 @@
 .schedule-context-help,.schedule-timing p{margin:0 0 12px;font-size:var(--type-label);overflow-wrap:anywhere}
 .schedule-timing{margin-bottom:16px;min-width:0}
 .schedule-tab-notice{margin:0;font-size:var(--type-label);overflow-wrap:anywhere}
-.app-dialog:has(.schedule-editor-panel) .editor-tabs{display:flex;flex-wrap:wrap;gap:4px;min-width:0}
-.app-dialog:has(.schedule-editor-panel) .editor-tab{white-space:normal;flex:1 1 auto;min-width:0}
-@media(max-width:639px){.app-dialog:has(.schedule-editor-panel) .editor-tab{flex:1 1 calc(50% - 4px);min-height:44px}}
 .workspace .form-grid>.wide,.workspace .form-grid>.span-2{grid-column:1/-1}
 .workspace .form-grid :is(input:not([type=checkbox]):not([type=radio]),select,textarea){width:100%;min-height:var(--field-height)}
 .workspace .panel.padded>label,.workspace .panel.padded>form:not(.form-grid)>label,.workspace .int-field{max-width:560px}
@@ -557,7 +554,7 @@ ol.booking-steps { list-style: none; margin-left: 0; padding-left: 0; flex-wrap:
   .form-actions :is(button,.button){min-height:var(--control-lg)}
 }
 /* Clear distinction: primary = filled blue; selected tab = navy underline on surface; error = red outline + text. */
-.workspace-tabs [role=tab][aria-selected="true"],.appt-mode>button[aria-pressed="true"]{color:var(--navy);box-shadow:inset 0 -2px 0 var(--dq-blue);background:var(--dq-surface)}
+.appt-mode>button[aria-pressed="true"]{color:var(--navy);box-shadow:inset 0 -2px 0 var(--dq-blue);background:var(--dq-surface)}
 [aria-invalid="true"]{border-color:var(--feedback-error-fg,#8f1f18);box-shadow:0 0 0 1px var(--feedback-error-fg,#8f1f18)}
 @media (max-width:767px){
   /* Page-level editors (settings, templates, onboarding, booking): the form's single footer sticks, clear of safe area; focused fields scroll above it. */
@@ -571,26 +568,18 @@ ol.booking-steps { list-style: none; margin-left: 0; padding-left: 0; flex-wrap:
   .dtp-day{height:var(--control-lg)}
   .workspace .sidebar-collapse-toggle,.admin-bulk-bar button,.admin-listing-pagination select,.clinic-settings summary,.branch-hours summary,.help-tip-trigger{min-height:var(--control-lg)}
 }
-/* Profile/editor tabs: selection = navy underline, error = red text + flag (both visible when an active tab has errors). */
-.editor-tab{min-height:var(--control-md)}
-/* Selected-tab colour/border: form-standard.css owns .editor-tab.is-active. */
-.editor-tab.is-invalid,.editor-tab.is-active.is-invalid{color:hsl(var(--destructive))}
-@media (max-width:767px){.editor-tab{min-height:var(--control-lg)}}
+/* Tab selection and independent error/attention flags: tab-presentation.css. */
 
 /* ---------- Tabbed appointment details ---------- */
 .appt-detail .appt-tabs{min-width:0}
-.appt-detail .appt-tabs-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;width:100%;height:auto;padding:4px;border-radius:var(--radius-control);background:#eef3fb;border-bottom:0}
-.appt-detail .appt-tab{min-height:36px;height:auto;padding:6px 8px;white-space:normal;text-align:center;font-family:var(--font-body);font-size:var(--type-label);font-weight:600;color:var(--soft);border-radius:var(--radius-control);line-height:1.2}
-.appt-detail .appt-tab[data-state=active]{background:var(--dq-surface);color:var(--dq-blue);box-shadow:0 1px 2px rgba(30,60,110,.15)}
-.appt-detail .appt-tab:focus-visible,.appt-detail .appt-tab-panel:focus-visible{outline:2px solid var(--dq-blue);outline-offset:2px;box-shadow:none}
+.appt-detail .appt-tab-panel:focus-visible{outline:2px solid var(--dq-blue);outline-offset:2px;box-shadow:none}
 .appt-detail .appt-tab-panel{margin-top:var(--space-3);min-width:0;display:grid;gap:var(--space-4);overflow-wrap:anywhere}
 .appt-detail .appt-tab-panel[hidden]{display:none}
 .appt-detail .appt-detail-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4)}
 .appt-detail .appt-detail-extra{grid-column:1/-1}
 .appt-detail .appt-detail-ticket,.appt-detail .appt-ticket{min-width:0;max-width:100%;overflow:visible}
 .appt-detail .appt-detail-hstatus{color:var(--soft)}
-@media (max-width:640px){.appt-detail .appt-tab{min-height:44px;padding:6px 8px}.appt-detail .appt-detail-cols{grid-template-columns:1fr}}
-@media (max-width:480px){.appt-detail .appt-tab{white-space:nowrap}}
+@media (max-width:640px){.appt-detail .appt-detail-cols{grid-template-columns:1fr}}
 /* Use the actual scroll viewport, not guessed sidebar dimensions, for wide tables. */
 .workspace .appt-table{container-type:inline-size}
 .workspace tr.row-expansion .appt-detail dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3) var(--space-4)}

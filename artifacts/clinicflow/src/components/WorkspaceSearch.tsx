@@ -1,3 +1,7 @@
+import { TabIcon, type TabIconName } from "./TabIcon";
+import "./tab-presentation.css";
+import { tabListKeyDown } from "../lib/tabs-a11y";
+import { useTabStripVisibility } from "../lib/tab-strip-visibility";
 import { PageDescription } from "./PageDescription";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -102,6 +106,7 @@ export function WorkspaceSearch({ navigation, role, page, userId }: {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<SearchTab>("all");
+  const tabStrip = useTabStripVisibility(tab);
   const [groups, setGroups] = useState<Partial<Record<SearchSource, SourceState>>>({});
   const [storageUnavailable, setStorageUnavailable] = useState(false);
   const [, navigate] = useLocation();
@@ -164,8 +169,8 @@ export function WorkspaceSearch({ navigation, role, page, userId }: {
   const shortcutList = (items: string[]) => items.filter(p => navigation.includes(p));
   const pageLink = (target: string) => <Link key={target} href={`/${role}/${target}`} onClick={close}>{navLabel(target, role)}</Link>;
   const switchTab = (next: SearchTab) => { setTab(next); inputRef.current?.focus(); };
-  const tabButton = (key: SearchTab, label: string) => <button key={key} type="button" role="tab" aria-selected={tab === key} className="ws-tab" onClick={() => switchTab(key)} data-testid={`search-tab-${key}`}>
-    {label}{searching && key !== "all" && key !== "pages" && (() => { const total = categoryTotal(categorySources(key, role).map(src => groups[src]?.total)); return total !== null ? <span className="ws-tab-count">{total}</span> : null; })()}
+  const tabButton = (key: SearchTab, label: string) => <button key={key} type="button" role="tab" tabIndex={tab===key?0:-1} aria-selected={tab === key} className="dq-tab ws-tab" onClick={() => switchTab(key)} data-testid={`search-tab-${key}`}>
+    <TabIcon name={key satisfies TabIconName}/>{label}{searching && key !== "all" && key !== "pages" && (() => { const total = categoryTotal(categorySources(key, role).map(src => groups[src]?.total)); return total !== null ? <span className="ws-tab-count">{total}</span> : null; })()}
   </button>;
 
   const directory = <>
@@ -219,7 +224,7 @@ export function WorkspaceSearch({ navigation, role, page, userId }: {
         <div className="ws-sticky">
           <label htmlFor="workspace-command-query" className="sr-only">Search Pages and Permitted Records</label>
           <div className="ws-input"><Search size={18} aria-hidden/><input ref={inputRef} id="workspace-command-query" type="search" autoComplete="off" autoFocus value={query} onChange={e => setQuery(e.target.value)} placeholder="Search patients, appointments, staff or pages…" /></div>
-          <div className="ws-tabs" role="tablist" aria-label="Search categories">
+          <div ref={tabStrip} className="dq-tabs ws-tabs" role="tablist" aria-label="Search categories" onKeyDown={e=>{if((e.target as HTMLElement).closest('[role="tab"]'))tabListKeyDown<SearchTab>(e,["all","pages",...primary,...(more.includes(tab as SearchCategory)?[tab]:[])],tab,setTab);}}>
             {tabButton("all", "All")}{tabButton("pages", "Pages")}{primary.map(c => tabButton(c, CATEGORY_LABEL[c]))}
             {more.length > 0 && (more.includes(tab as SearchCategory)
               ? tabButton(tab, CATEGORY_LABEL[tab as SearchCategory])

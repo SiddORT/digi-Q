@@ -383,7 +383,7 @@ function UserEditor({ roleField, tab, initial: opened, carry, onClose, isSuperAd
     <FormField label="Registration Number" optional><input data-testid="input-staff-registration" {...form.register("registrationNumber")} /></FormField><FormField label="Experience Years" optional><input type="number" min="0" data-testid="input-staff-experience" {...form.register("experienceYears", { setValueAs:value=>value===""||value==null?undefined:Number(value) })} /></FormField>
     </FormSection></div>;
   return <div className={tab==="doctors"?"doctor-editor":undefined} data-details-dirty={tab==="doctors"?String(form.formState.isDirty):undefined} data-schedule-dirty={tab==="doctors"?String(scheduleDirty):undefined}><Form {...form}>{confirmAction.dialog}<form className={`form-grid staff-editor${initial.id?"":" staff-create"}`} inert={save.isPending||scheduleBusy?true:undefined} noValidate onSubmit={submitWithNativeChecks(form, onSubmit, onInvalid)}>
-    {staffTabs && <FormTabs tabs={staffTabs.map(t => t.label)} active={activeTab} onChange={setActiveTab} invalid={tabInvalid}/>}
+    {staffTabs && <FormTabs tabs={staffTabs.map(t => t.label)} icons={["personal","assignment"]} active={activeTab} onChange={setActiveTab} invalid={tabInvalid}/>}
     {initial.id&&staffDetails}
     {initial.id&&professionalDetails}
 

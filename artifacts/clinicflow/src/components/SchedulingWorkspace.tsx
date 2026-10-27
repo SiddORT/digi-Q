@@ -3,6 +3,10 @@ import * as api from "@workspace/api-client-react";
 import { ResourcePage, ErrorNotice } from "../resources";
 import { DateTimePreferencesProvider } from "./DateTimePreferences";
 import { useWorkspaceBranch } from "./WorkspaceBranch";
+import { TabIcon } from "./TabIcon";
+import "./tab-presentation.css";
+import { tabListKeyDown } from "../lib/tabs-a11y";
+import { useTabStripVisibility } from "../lib/tab-strip-visibility";
 
 /** Both the clinic section and legacy schedule URLs render this one workflow. */
 export function SchedulingWorkspace({identity,page,clinicId:fixedClinicId}:{identity:api.Identity;page:"availability"|"exceptions";clinicId?:string}){
@@ -15,6 +19,7 @@ export function SchedulingWorkspace({identity,page,clinicId:fixedClinicId}:{iden
  const schedulePin=requestedClinicId?null:pin;
  const clinicId=requestedClinicId||schedulePin?.clinicId||"";
  const selectedPage=fixedClinicId?(params.get("schedule")==="exceptions"?"exceptions":"availability"):page;
+ const tabStrip = useTabStripVisibility(selectedPage);
  const role=identity.user?.role;
  const admin=role==="clinicAdmin"||role==="superAdmin";
  const doctorId=role==="doctor"||role==="clinicAdmin"?identity.doctorId:undefined;
@@ -28,7 +33,7 @@ export function SchedulingWorkspace({identity,page,clinicId:fixedClinicId}:{iden
  };
  return <DateTimePreferencesProvider value={settings.data?.clinic||clinic.data}><section aria-label="Scheduling workspace">
   <div className="schedule-bar" data-testid="schedule-bar">
-   <nav className="workspace-tabs" role="tablist" aria-label="Schedule sections">{([["availability","Weekly"],["exceptions","Exceptions"]] as const).map(([value,label])=><button key={value} type="button" role="tab" aria-selected={selectedPage===value} onClick={()=>{if(selectedPage!==value)go(value);}} data-testid={`button-schedule-${value}`}>{label}</button>)}</nav>
+   <div ref={tabStrip} className="dq-tabs workspace-tabs" role="tablist" aria-label="Schedule sections" onKeyDown={e=>tabListKeyDown(e,["availability","exceptions"],selectedPage,go)}>{([["availability","Weekly"],["exceptions","Exceptions"]] as const).map(([value,label])=><button className="dq-tab" key={value} type="button" role="tab" tabIndex={selectedPage===value?0:-1} aria-selected={selectedPage===value} onClick={()=>{if(selectedPage!==value)go(value);}} data-testid={`button-schedule-${value}`}><TabIcon name={value==="availability"?"weekly":"exceptions"}/>{label}</button>)}</div>
       <div className="schedule-bar-actions">
    </div>
   </div>

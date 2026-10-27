@@ -1,5 +1,15 @@
 # Compact UI coverage and evidence
 
+## Current tab-only presentation pass
+
+See [tab presentation coverage](tab-presentation-coverage.md) and
+[`tab-inventory.json`](tab-inventory.json) for the approved reference, all 17
+genuine-tab groups, source role/entry-point matrix, shared presentation owner,
+responsive/hover/focus/disabled/error evidence and regression results. This
+supersedes historical tab appearance/status-only wording, not panel contents
+or queue filters. Presentation fixtures, real component fixtures, signed-out
+Preview and unavailable live authenticated evidence are explicitly separated.
+
 ## Appointment accordion
 
 See [appointment accordion acceptance](appointment-accordion.md) for the shared

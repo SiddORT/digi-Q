@@ -3,6 +3,8 @@ import { CalendarClock } from "lucide-react";
 import * as api from "@/lib/api";
 import { formatDate, formatTime } from "@/lib/date-time";
 import { useTabIds } from "@/lib/tabs-a11y";
+import { TabIcon } from "./TabIcon";
+import "./tab-presentation.css";
 import { PatientActivity, statusLabel } from "./PatientActivity";
 import { PatientDocuments } from "./PatientDocuments";
 import { AppDialog } from "./AppDialog";
@@ -29,7 +31,7 @@ export function PatientDetailsDrawer({ patient, onClose }: { patient: { id: stri
     <button type="button" className="button secondary small" disabled={page >= pages || q.isFetching} onClick={() => setPage(p => p + 1)} data-testid="button-timeline-older">Older Visits</button>
   </nav>;
   return <AppDialog open variant="drawer" onClose={onClose} title={`Patient Details · ${patient.fullName || "Patient"}`} description={[patient.patientCode, patient.email].filter(Boolean).join(" · ") || undefined}>
-    <div className="pd-tabs" aria-label="Patient details sections" {...tabs.list}>{TABS.map(t => <button key={t.id} type="button" {...tabs.tab(t.id)} data-testid={`tab-patient-${t.id}`}>{t.label}</button>)}</div>
+    <div className="dq-tabs pd-tabs" aria-label="Patient details sections" {...tabs.list}>{TABS.map(t => <button className="dq-tab" key={t.id} type="button" {...tabs.tab(t.id)} data-testid={`tab-patient-${t.id}`}><TabIcon name={t.id}/>{t.label}</button>)}</div>
     <div className="pd-panel" {...tabs.panel(tab)} data-testid={`panel-patient-${tab}`}>
       {tab === "timeline" && <>
         {scope && <p className="muted" data-testid="text-timeline-scope">{scope}. Appointment visits only; this is not a full clinical record.</p>}

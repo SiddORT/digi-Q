@@ -1,4 +1,5 @@
 import { useId, type KeyboardEvent } from "react";
+import { useTabStripVisibility } from "./tab-strip-visibility.ts";
 
 /** WAI-ARIA tabs keyboard model: ArrowLeft/Right (and Up/Down), Home, End move and activate. */
 export function tabListKeyDown<T extends string>(e: KeyboardEvent<HTMLElement>, ids: readonly T[], current: T, select: (id: T) => void) {
@@ -16,8 +17,9 @@ export function tabListKeyDown<T extends string>(e: KeyboardEvent<HTMLElement>, 
 /** Stable tab/panel ID pairs plus roving tabindex props for a tab set. */
 export function useTabIds<T extends string>(ids: readonly T[], current: T, select: (id: T) => void) {
   const base = useId().replace(/:/g, "");
+  const ref = useTabStripVisibility(current);
   return {
-    list: { role: "tablist" as const, onKeyDown: (e: KeyboardEvent<HTMLElement>) => tabListKeyDown(e, ids, current, select) },
+    list: { ref, role: "tablist" as const, onKeyDown: (e: KeyboardEvent<HTMLElement>) => tabListKeyDown(e, ids, current, select) },
     tab: (id: T) => ({ role: "tab" as const, id: `${base}-tab-${id}`, "aria-selected": current === id, "aria-controls": `${base}-panel-${id}`, tabIndex: current === id ? 0 : -1, onClick: () => select(id) }),
     panel: (id: T) => ({ role: "tabpanel" as const, id: `${base}-panel-${id}`, "aria-labelledby": `${base}-tab-${id}`, tabIndex: 0 }),
   };

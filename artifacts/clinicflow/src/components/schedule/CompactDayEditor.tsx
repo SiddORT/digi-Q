@@ -72,7 +72,7 @@ export function CompactDayEditor({ week, setWeek, opening, preferences, busy = f
   const outsideSlots = day.isOpen ? day.sessions.flatMap((s,i)=>outsideHours(s,hours,opening!==null)?[i+1]:[]) : [];
   return <div ref={root} className="cde" data-testid="compact-day-editor">
     {confirm.dialog}
-    <FormTabs idPrefix="cde" wide={false} label="Day of week" tabs={ORDER.map(d => SHORT[d])} active={ORDER.indexOf(selected)} onChange={i => onSelect(ORDER[i])} invalid={ORDER.map(d => errors[d].length > 0)}/>
+    <FormTabs idPrefix="cde" wide={false} label="Day of week" tabs={ORDER.map(d => SHORT[d])} icons={ORDER.map(() => "weekly")} active={ORDER.indexOf(selected)} onChange={i => onSelect(ORDER[i])} invalid={ORDER.map(d => errors[d].length > 0)}/>
     {dayStatus}
     <div className="cde-controls" role="tabpanel" id="cde-panel" aria-labelledby={`cde-tab-${ORDER.indexOf(selected)}`}>
       <div className="cde-day-controls">

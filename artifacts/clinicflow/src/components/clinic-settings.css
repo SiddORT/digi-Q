@@ -1,4 +1,4 @@
-/* Clinic settings: section nav (not tabs), compact grouped panels. Uses compact-workspace tokens. */
+/* Clinic settings: compact grouped panels. Genuine strips use tab-presentation.css. */
 .clinic-settings { display: grid; grid-template-columns:minmax(0,1fr); gap:12px; }
 .clinic-settings [hidden] { display: none !important; }
 .clinic-settings-tabs { display:flex; gap:4px; overflow-x:auto; padding:4px; background:#eef3fa; border:1px solid var(--dq-line,#d7e2f0); border-radius:12px; width:max-content; max-width:100%; scrollbar-width:thin; }
@@ -82,8 +82,6 @@
  .clinic-workspace-heading .settings-scope-lookup .searchable-select-field{flex-wrap:wrap}
  .clinic-workspace-heading .settings-scope-lookup .searchable-select-control{flex:1 1 180px;width:auto}
 }
-.clinic-settings .workspace-tabs{max-width:100%;overflow-x:auto;flex-wrap:nowrap}
-.clinic-settings .workspace-tabs button{white-space:nowrap;flex:none}
 .cs-readiness{overflow-wrap:anywhere}
 @media(max-width:1100px){.cs-hours-body{grid-template-columns:minmax(120px,160px) minmax(0,1fr)}.cs-hours-body>.cs-readiness{grid-column:2}}
 @media(max-width:700px){.cs-overview{grid-template-columns:60px minmax(0,1fr)}.cs-mark{width:60px;height:60px}.cs-linked-card{grid-column:1/-1}.cs-cards{grid-template-columns:1fr}.cs-hours-body{grid-template-columns:1fr}.cs-hours-body>.cs-readiness{grid-column:auto}}

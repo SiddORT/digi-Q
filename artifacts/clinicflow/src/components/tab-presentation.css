@@ -1,0 +1,31 @@
+/* Genuine tab strips only. Owners retain panel geometry and strip margins.
+   Adjacent equal tracks grow with available space but never squeeze labels. */
+.dq-tabs {
+  display:flex; align-items:stretch; gap:2px; width:100%; min-width:0;
+  max-width:100%; overflow-x:auto; flex-wrap:nowrap; padding:3px;
+  scrollbar-width:thin; scroll-padding-inline:3px;
+}
+.dq-tabs > .dq-tab {
+  appearance:none; display:inline-flex; align-items:center; justify-content:center;
+  flex:1 0 0; min-width:max-content; gap:8px; min-height:40px; margin:0; padding:6px 12px;
+  border:1px solid var(--dq-line,#d7e2f0); border-bottom:2px solid var(--dq-line,#d7e2f0);
+  border-radius:8px; background:var(--dq-surface,#fff); color:var(--soft,#526176);
+  font-family:var(--font-body,inherit); font-size:var(--type-label,13px);
+  font-weight:500; line-height:1.25; white-space:nowrap; cursor:pointer;
+  box-shadow:none; text-decoration:none; transition:background-color .15s,color .15s;
+}
+.dq-tabs > .dq-tab:not(:disabled,[aria-selected=true],[data-state=active]):hover { background:#f1f6fd; color:var(--dq-blue,#1560bd); }
+.dq-tabs > .dq-tab:is([aria-selected=true],[data-state=active]) {
+  background:#e9f1ff; color:var(--dq-blue,#1560bd); border-color:transparent;
+  border-bottom-color:var(--dq-blue,#1560bd); font-weight:600; box-shadow:none;
+}
+.dq-tabs > .dq-tab:focus-visible { outline:2px solid var(--dq-blue,#1560bd); outline-offset:1px; }
+.dq-tabs > .dq-tab:disabled { opacity:.5; cursor:not-allowed; }
+.dq-tab-icon { width:18px; height:18px; flex:none; }
+.dq-tab .editor-tab-flag { display:inline-flex; align-items:center; justify-content:center;
+  flex:none; min-width:18px; height:18px; border:1px solid currentColor; border-radius:50%;
+  background:#fff1ef; color:hsl(var(--destructive)); font-size:12px; font-weight:700; }
+.dq-tab .editor-tab-flag[data-attention=true] { background:#fff5d9; color:#805600; }
+.dq-tab .ws-tab-count { flex:none; border:1px solid currentColor; }
+@media(max-width:767px),(pointer:coarse) { .dq-tabs > .dq-tab { min-height:44px; } }
+@media(prefers-reduced-motion:reduce) { .dq-tabs > .dq-tab { transition:none; } }

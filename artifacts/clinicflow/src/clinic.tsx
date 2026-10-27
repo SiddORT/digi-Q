@@ -247,7 +247,7 @@ export function legacyDestination(page:string,userRole:string,search:string):str
  }
  return null;
 }
-type WorkspaceTab={id:string;label:string};
+type WorkspaceTab=import("./components/WorkspaceTabs").WorkspaceTab;
 /** Selected workspace tab lives in the URL (?area=) so links and reloads keep context. */
 function useAreaTab(tabs:WorkspaceTab[],fallback:string){
  const search=useSearch();const [location,navigate]=useLocation();
@@ -258,13 +258,13 @@ function useAreaTab(tabs:WorkspaceTab[],fallback:string){
 }
 /** Doctor Clinic: assigned clinics, receptionist management and booking QR codes, all using existing doctor-scoped endpoints. */
 function DoctorClinicWorkspace({identity}:{identity:api.Identity}){
- const tabs=[{id:"clinics",label:"Clinics"},{id:"staff",label:"Staff"},{id:"qrs",label:"Booking QR"}];
+ const tabs:WorkspaceTab[]=[{id:"clinics",label:"Clinics",icon:"clinics"},{id:"staff",label:"Staff",icon:"staff"},{id:"qrs",label:"Booking QR",icon:"qrs"}];
  const {area,select}=useAreaTab(tabs,"clinics");
  return <><WorkspaceTabs tabs={tabs} area={area} onSelect={select} label="Clinic sections"/>{area==="clinics"?<DoctorClinics identity={identity}/>:area==="staff"?<Users identity={identity}/>:<ResourcePage key="doctor-qrs" resource="qrs" identity={identity} embedded/>}</>;
 }
 /** Keep editors mounted across tabs and history navigation so drafts are never silently lost. */
 export function UsersWorkspace({identity}:{identity:api.Identity}){
-  const tabs=[{id:"roles",label:"Roles"},{id:"permissions",label:"Permissions"},{id:"system",label:"System users"}];
+  const tabs:WorkspaceTab[]=[{id:"roles",label:"Roles",icon:"roles"},{id:"permissions",label:"Permissions",icon:"permissions"},{id:"system",label:"System users",icon:"system"}];
   const {area}=useAreaTab(tabs,"roles");
   const search=useSearch();const [,navigate]=useLocation();
   useEffect(()=>{
@@ -288,7 +288,7 @@ export function UsersWorkspace({identity}:{identity:api.Identity}){
 }
 /** Settings groups only the areas the signed-in role may already open; nothing here widens access. */
 function WorkspaceSettings({identity,role}:{identity:api.Identity;role:string}){
- const tabs:WorkspaceTab[]=[{id:"platform",label:"Platform"},{id:"integrations",label:"Integrations"},{id:"masters",label:"Reference data"},{id:"audit",label:"Audit log"},{id:"demo",label:"Demo clinic"}];
+ const tabs:WorkspaceTab[]=[{id:"platform",label:"Platform",icon:"platform"},{id:"integrations",label:"Integrations",icon:"integrations"},{id:"masters",label:"Reference data",icon:"masters"},{id:"audit",label:"Audit log",icon:"audit"},{id:"demo",label:"Demo clinic",icon:"demo"}];
  const {area,select}=useAreaTab(tabs,"platform");
  if(!hasWorkspaceSettings(identity.user?.role||""))return <Redirect to={retiredSettingsDestination(identity.user?.role||role)||`/${role}/profile`}/>;
  return <><WorkspaceTabs tabs={tabs} area={area} onSelect={select} label="Settings areas"/>

@@ -127,6 +127,7 @@ const totals = surfaces.flatMap(surface=>surface.entries).reduce((counts,entry)=
   return counts;
 },{});
 const inventory={schemaVersion:3,notice:"Source enumeration only. Includes definitions and callers, not deduplicated runtime instances. See compact-ui-coverage.md for observed browser evidence and limitations. Source presence never establishes role authorization or state coverage.",totals,stateProfiles:profiles,viewportProfiles:{responsive:["390x844","768px tablet","1024x640","1366x768","1920x1080","512x320 (200% reflow, not actual browser zoom)"]},routes:[...explicit,...roleRoutes],surfaces};
+inventory.genuineTabInventory="tab-inventory.json";
 inventory.sourceFingerprint=captureFingerprint();
 const data=JSON.stringify(inventory,null,2)+"\n";
 if(process.argv.includes("--check")){

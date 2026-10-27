@@ -1,3 +1,6 @@
+import { TabIcon } from "./TabIcon";
+import "./tab-presentation.css";
+import { useTabStripVisibility } from "../lib/tab-strip-visibility";
 import { FormActions } from "./FormActions";
 import { FormDisclosure, FormSection } from "./FormSection";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -50,6 +53,7 @@ export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;sco
  const parsed=parseClinicWorkspace(location,search) as {clinicId?:string;section?:string}|null;
  const clinicId=parsed?.clinicId||params.get("clinicId")||"";
  const view=(sections.some(([key])=>key===parsed?.section)?parsed?.section:"details") as SectionKey;
+ const tabStrip = useTabStripVisibility(view);
  const client=useQueryClient();
  const site=usePublicWebsite();
  const workspaceDrafts=useWorkspaceBranchContext();
@@ -149,7 +153,7 @@ export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;sco
      <Link className="cs-readiness" href={`/admin/availability?clinicId=${encodeURIComponent(clinicId)}`} data-testid="link-booking-readiness">Check Doctor Booking Readiness <ExternalLink size={14} aria-hidden/></Link>
     </aside>
    </header>
-   <div className="clinic-workspace-tabs-layout"><div className="workspace-tabs" role="tablist" aria-label="Clinic sections">{sections.map(([key,label],index)=><button key={key} id={`clinic-tab-${key}`} type="button" role="tab" aria-selected={view===key} aria-controls={`clinic-panel-${key}`} tabIndex={view===key?0:-1} disabled={locked} onKeyDown={event=>onTabKey(event,index)} onClick={()=>selectView(key)} data-testid={`tab-clinic-${key}`}>{label}</button>)}</div>
+   <div className="clinic-workspace-tabs-layout"><div ref={tabStrip} className="dq-tabs workspace-tabs" role="tablist" aria-label="Clinic sections">{sections.map(([key,label],index)=><button className="dq-tab" key={key} id={`clinic-tab-${key}`} type="button" role="tab" aria-selected={view===key} aria-controls={`clinic-panel-${key}`} tabIndex={view===key?0:-1} disabled={locked} onKeyDown={event=>onTabKey(event,index)} onClick={()=>selectView(key)} data-testid={`tab-clinic-${key}`}><TabIcon name={key==="activity-history"?"history":key}/>{label}</button>)}</div>
    <div className="clinic-workspace-content" role="tabpanel" id={`clinic-panel-${view}`} aria-labelledby={`clinic-tab-${view}`}>
    {view==="details"&&<>
     <div className="cs-cards">

@@ -6,6 +6,8 @@ import * as api from "@/lib/api";
 import { formatConfiguredTimestamp } from "@/lib/date-time";
 import { CapabilityView, fromQuery, type Capability } from "./CapabilityState";
 import { useTabIds } from "@/lib/tabs-a11y";
+import { TabIcon } from "./TabIcon";
+import "./tab-presentation.css";
 
 export type NotificationTab = "all" | "appointments" | "queue" | "system";
 const TAB_IDS: NotificationTab[] = ["all", "appointments", "queue", "system"];
@@ -40,7 +42,7 @@ export function NotificationsPanel({ timezone, role }: { timezone?: string; role
     {open && <div className="notif-panel" role="dialog" aria-label="Notifications" data-testid="panel-notifications">
       <div className="notif-head"><strong>Notifications</strong>
         <button type="button" className="notif-close" aria-label="Close notifications" onClick={() => { setOpen(false); trigger.current?.focus(); }}><X size={16} aria-hidden /></button></div>
-      <div className="notif-tabs" aria-label="Notification type" {...tabs.list}>{TAB_IDS.map(t => <button key={t} type="button" {...tabs.tab(t)} data-testid={`tab-notifications-${t}`}>{LABELS[t]}</button>)}</div>
+      <div className="dq-tabs notif-tabs" aria-label="Notification type" {...tabs.list}>{TAB_IDS.map(t => <button className="dq-tab" key={t} type="button" {...tabs.tab(t)} data-testid={`tab-notifications-${t}`}><TabIcon name={t}/>{LABELS[t]}</button>)}</div>
       <div className="notif-body" {...tabs.panel(tab)}>
         <CapabilityView value={filtered} title="Notifications" testId="notifications">{items => <ul className="notif-list">{items.map(n => <li key={n.id} className={n.read ? "" : "unread"}>
           <div><OverflowText as="strong" value={n.title}/>{n.body && <p>{n.body}</p>}<small className="muted">{formatConfiguredTimestamp(n.createdAt, timezone)}</small></div>

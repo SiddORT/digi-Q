@@ -1,3 +1,4 @@
+import { TabIcon } from "../TabIcon";
 import { useEffect, type ReactNode } from "react";
 import { History } from "lucide-react";
 import type { Appointment } from "@workspace/api-client-react";
@@ -55,9 +56,9 @@ function AppointmentDetailsInner({ appointment: a, supplementaryDetails, rowCont
     </header>}
     <Tabs defaultValue="booking" className="appt-tabs">
       <TabsList className="appt-tabs-list" aria-label="Appointment detail sections">
-        <TabsTrigger value="booking" className="appt-tab" data-testid="tab-detail-booking">Booking</TabsTrigger>
-        <TabsTrigger value="details" className="appt-tab" data-testid="tab-detail-details">Details</TabsTrigger>
-        <TabsTrigger value="history" className="appt-tab" data-testid="tab-detail-history">History</TabsTrigger>
+        <TabsTrigger value="booking" className="appt-tab" data-testid="tab-detail-booking"><TabIcon name="booking"/>Booking</TabsTrigger>
+        <TabsTrigger value="details" className="appt-tab" data-testid="tab-detail-details"><TabIcon name="details"/>Details</TabsTrigger>
+        <TabsTrigger value="history" className="appt-tab" data-testid="tab-detail-history"><TabIcon name="history"/>History</TabsTrigger>
       </TabsList>
       <TabsContent value="booking" className="appt-tab-panel">
         <AppointmentBookingTab appointment={a} />

@@ -37,7 +37,7 @@ export function CommunicationSettings() {
     }
     navigate(`${location}?tab=${next}`);
   };
-  const tabs = [{ id: "sms", label: "SMS Settings" }, { id: "email", label: "Email Settings" }, { id: "logs", label: "Notification Logs" }];
+  const tabs: import("./WorkspaceTabs").WorkspaceTab[] = [{ id: "sms", label: "SMS Settings", icon: "sms" }, { id: "email", label: "Email Settings", icon: "email" }, { id: "logs", label: "Notification Logs", icon: "logs" }];
   return <>{confirm.dialog}
     <WorkspaceTabs tabs={tabs} area={tab} onSelect={id => void select(id)} label="Communication settings" />
     <div hidden={tab !== "sms"} data-testid="panel-communication-sms">

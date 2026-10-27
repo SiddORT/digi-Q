@@ -70,7 +70,7 @@
 .workspace .button-group .danger:first-child{margin-right:auto}
 .workspace .button{min-height:var(--cw-ctl);padding:var(--space-1) var(--space-3);font-size:var(--type-label);gap:var(--space-2);border-radius:var(--radius-control);box-shadow:none}
 .workspace .button.small{padding:var(--space-1) var(--space-3);font-size:var(--type-label)}
-.workspace button:not(.button){min-height:var(--cw-ctl-sm);padding:4px var(--space-3);font-size:var(--type-label);border-radius:var(--radius-control)}
+.workspace button:not(.button,[role=tab]){min-height:var(--cw-ctl-sm);padding:4px var(--space-3);font-size:var(--type-label);border-radius:var(--radius-control)}
 
 /* Card / panel headers: title left, actions right, vertically centred */
 .workspace .panel-heading{align-items:center;min-height:40px}

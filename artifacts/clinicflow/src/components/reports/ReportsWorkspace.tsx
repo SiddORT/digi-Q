@@ -20,7 +20,7 @@ export function ReportsWorkspace({ userId, role, clinicIds, legacy }: { userId: 
     Object.entries(extra || {}).forEach(([k, v]) => p.set(k, v));
     navigate(`${location}${p.size ? `?${p}` : ""}`);
   };
-  const tabs: { id: Tab; label: string }[] = [{ id: "live", label: "Live Reports" }, { id: "templates", label: "Report Templates" }, { id: "operational", label: "Operational Detail" }, ...(canUsage ? [{ id: "usage" as Tab, label: "Communication Usage" }] : [])];
+  const tabs: import("../WorkspaceTabs").WorkspaceTab[] = [{ id: "live", label: "Live Reports", icon: "live" }, { id: "templates", label: "Report Templates", icon: "templates" }, { id: "operational", label: "Operational Detail", icon: "operational" }, ...(canUsage ? [{ id: "usage", label: "Communication Usage", icon: "usage" as const }] : [])];
   const reportType = qs.get("reportType") || "";
   const viewId = qs.get("view") || "";
   const layout = useListingLayout(REPORT_TABLE_RESOURCE, userId, role, REPORT_VIEW_FILTER_KEYS);

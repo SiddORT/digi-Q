@@ -206,3 +206,13 @@ the footer itself is correctly visible.
 Chromium native tab-zoom evidence, use physical-surface capture if CSS-viewport
 screenshots are blank; inspect the resulting image rather than trusting a
 successful screenshot call.
+
+Preserve accepted screenshots and geometry outside a browser suite's output
+directory before a focused follow-up.
+
+**Why:** Playwright clears that directory at startup, including passing evidence
+from a preceding run when the next run selects only one case.
+
+**How to apply:** Copy the evidence to a stable ignored evidence directory, or
+give independent runs distinct output directories. Do not cite a screenshot path
+unless the file still exists and was captured against the final relevant styles.

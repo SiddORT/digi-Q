@@ -51,7 +51,7 @@ test("clinic workspace embeds real scoped management instead of link-only sectio
   for (const name of ["branches","qrs","audit"]) assert.match(text, new RegExp(`resource="${name}"[^\\n]*fixedClinicId=\\{clinicId\\}`));
   assert.match(text, /<Users[^>]*clinicId=\{clinicId\}[^>]*embedded/);
   assert.match(text, /onEdit=\{row=>\{if\(locked\)return;const item=data\.branches\.find/);
-  assert.match(text, /className="workspace-tabs" role="tablist" aria-label="Clinic sections"/);
+  assert.match(text, /className="dq-tabs workspace-tabs" role="tablist" aria-label="Clinic sections"/);
   assert.doesNotMatch(text, /clinic-settings-tabs/);
   assert.doesNotMatch(text, /Open staff management|Open booking QR codes/);
 });
