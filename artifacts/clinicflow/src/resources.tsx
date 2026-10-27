@@ -113,8 +113,8 @@ export const resources:Record<string,Resource>={
  */
 /** Section E: one wording for contact vs notification vs sign-in, used wherever a patient is registered. */
 export const PATIENT_CONTACT_RULE="Name is required. Profile mobile and email are optional; new bookings require a separate mobile contact. Notifications follow clinic settings and existing recipient rules; adding a contact never creates a sign-in account.";
-export function PatientEditor({initial={},onSave,busy=false,submitLabel="Save Patient",withContext=false,booking=false}:{initial?:any;onSave:(data:any)=>void;busy?:boolean;submitLabel?:string;withContext?:boolean;booking?:boolean}){
-  return <Editor resourceName="patients" fields={resources.patients.fields.filter(field=>(!booking||field.key!=="mobile")&&(withContext||!!initial.clinicId||!["clinicId","branchId"].includes(field.key)))} initial={!withContext&&initial.clinicId?{...initial,verifiedBookingContext:true}:initial} onSave={onSave} busy={busy} submitLabel={submitLabel}/>;
+export function PatientEditor({initial={},onSave,busy=false,submitLabel="Save Patient",withContext=false,booking=false,profileOnly=false,onDirtyChange}:{initial?:any;onSave:(data:any)=>void;busy?:boolean;submitLabel?:string;withContext?:boolean;booking?:boolean;profileOnly?:boolean;onDirtyChange?:(dirty:boolean)=>void}){
+   return <Editor resourceName="patients" fields={resources.patients.fields.filter(field=>(!booking||field.key!=="mobile")&&(!profileOnly||!["clinicId","branchId","status"].includes(field.key))&&(withContext||!!initial.clinicId||!["clinicId","branchId"].includes(field.key)))} initial={!withContext&&initial.clinicId?{...initial,verifiedBookingContext:true}:initial} onSave={onSave} busy={busy} submitLabel={submitLabel} onDirtyChange={onDirtyChange}/>;
 }
 /** Free-text field with optional suggestions from the clinic's curated masters (e.g. Area). Address parts use AddressFields. */
 function MasterTextInput({field,control}:any){

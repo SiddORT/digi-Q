@@ -3942,6 +3942,11 @@ components:
             status: { $ref: "#/components/schemas/AppointmentStatus" }
             patientName: { type: string }
             patientCode: { type: string }
+            privatePatient:
+              description: "Minimal independently authorized profile projection, only on the private appointment detail GET; null when unavailable."
+              anyOf:
+                - { $ref: "#/components/schemas/AppointmentPrivatePatient" }
+                - { type: "null" }
             doctorName: { type: string }
             clinicName: { type: string }
             branchName: { type: string }
@@ -4016,6 +4021,17 @@ components:
         expectedRevision: { type: integer, minimum: 0 }
         expectedQueueVersion: { type: string }
         position: { type: integer, minimum: 1, description: Required for requeue. One-based position among pending reservations; current consultation is never displaced. }
+    AppointmentPrivatePatient:
+      type: object
+      required: [canEdit]
+      properties:
+        fullName: { type: ["string", "null"] }
+        code: { type: ["string", "null"] }
+        gender: { type: ["string", "null"] }
+        dateOfBirth: { type: ["string", "null"] }
+        mobile: { type: ["string", "null"] }
+        email: { type: ["string", "null"] }
+        canEdit: { type: boolean, description: "Independent existing patient demographic write authority; server rechecks on save." }
     StatusEvent:
       type: object
       required: [status, occurredAt]
@@ -4024,6 +4040,9 @@ components:
         occurredAt: { type: string, format: date-time }
         reason: { type: string }
         action: { type: string }
+        actorDisplayName: { type: ["string", "null"], description: "Authorized current display name, never an identity snapshot or raw ID." }
+        actorRecordedRole: { type: ["string", "null"], description: "Role recorded on this event, never inferred from the current account role." }
+        actorState: { type: string, enum: [named, system, receipt, unknown, deleted, unavailable] }
         position: { type: integer }
         from: { $ref: "#/components/schemas/AppointmentSessionHistory" }
         to: { $ref: "#/components/schemas/AppointmentSessionHistory" }
@@ -4033,6 +4052,9 @@ components:
         doctorId: { type: string }
         branchId: { type: string }
         date: { type: string, format: date }
+        startTime: { type: string }
+        endTime: { type: string }
+        timezone: { type: string }
         token: { type: string }
         tokenNumber: { type: integer }
     QueueSelection:

@@ -14,3 +14,9 @@ A genuinely empty History is different from missing private data, loading or fai
 **Why:** The supplied history reference contained a real initial waiting event; the requested empty state applies only when there are zero actual records.
 
 **How to apply:** Use authorized recorded events and configured timestamps. Keep backend lifecycle/history semantics separate from presentation changes.
+
+Patient demographics and actor display names belong to the independently permission-checked *private detail* read, not the reusable appointment view used by lists, tickets and guest receipt management. Patient profile editing has its own registration/self authority; seeing an appointment or a demographic profile never grants editing.
+
+**Why:** The screenshot requests richer private cards and attribution, but a shared booking serializer also serves capability-based and list contexts. A current actor account role/name is not automatically a historical role/name, and a reschedule's current session does not establish prior session coordinates.
+
+**How to apply:** Add narrowly selected details only after the exact-visit authorization check, keep public and list serializers unchanged, retain recorded actor role/session snapshots when genuinely present, and show missing/anonymized data explicitly.

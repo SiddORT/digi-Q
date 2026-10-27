@@ -69,7 +69,7 @@ export function AppointmentBookingTab({ appointment: a }: { appointment: api.App
 
 /** Limited editor: visit contact mobile and notes only. Drafts live outside the tab so tab and row switches keep them;
  *  the revision snapshot is taken when editing starts and is never replaced by polling. */
-function BookingEditor({ appointment: a, blocked }: { appointment: api.Appointment; blocked: boolean }) {
+export function BookingEditor({ appointment: a, blocked, label = "Edit", testId = "button-edit-booking" }: { appointment: api.Appointment; blocked: boolean; label?: string; testId?: string }) {
   const client = useQueryClient();
   const [draft, setDraftState] = useState<BookingDraft | undefined>(() => getBookingDraft(a.id));
   const [open, setOpen] = useState(false);
@@ -111,7 +111,7 @@ function BookingEditor({ appointment: a, blocked }: { appointment: api.Appointme
     } finally { lock.current = false; setBusy(false); }
   }
   return <>
-    <button type="button" className="button secondary appt-edit-button" onClick={start} data-testid="button-edit-booking" disabled={blocked} title={blocked ? "Unavailable while offline or stale. Refresh first." : undefined} aria-label={`Edit booking details for ${a.patientName}`}><Pencil size={14} aria-hidden />{dirty ? "Resume Edit" : "Edit"}</button>
+    <button type="button" className="button secondary appt-edit-button" onClick={start} data-testid={testId} disabled={blocked} title={blocked ? "Unavailable while offline or stale. Refresh first." : undefined} aria-label={`Edit booking details for ${a.patientName}`}><Pencil size={14} aria-hidden />{dirty ? "Resume Edit" : label}</button>
     {dirty && !open && <small className="appt-draft-note" role="status" data-testid="text-booking-draft">Unsaved changes kept.</small>}
     <AppDialog open={open && !!draft} onClose={close} title="Edit Booking Details" description="Only this visit's contact mobile and notes change. Profile, scheduling and notification recipients are not affected." dirty={dirty} busy={busy}>
       {draft && <form onSubmit={e => { e.preventDefault(); void save(); }} data-testid="form-edit-booking">

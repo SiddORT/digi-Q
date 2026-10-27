@@ -49,8 +49,8 @@ test("row actions: no duplicate Details action (row expands inline), clinical Ch
   assert.match(s, /<span className="row-lead"><button type="button" className="row-expand-toggle" aria-expanded=\{expandedId===a\.id\}/);
 });
 test("booking details own the complete ticket and QR section", () => {
-  const d = r("./AppointmentDetails.tsx") + r("./AppointmentBookingTab.tsx");
-  for (const id of ["section-detail-additional", "section-detail-consultation", "section-detail-booking", "section-detail-ticket"]) assert.ok(d.includes(id), id);
+  const d = r("./AppointmentDetails.tsx") + r("./AppointmentDetailsPanel.tsx") + r("./AppointmentBookingTab.tsx");
+  for (const id of ["section-detail-additional", "section-detail-visit", "section-detail-booking", "section-detail-ticket"]) assert.ok(d.includes(id), id);
   assert.match(d, /<VisitTicket compact/);
   assert.match(d, /Ticket &amp; QR/);
   assert.match(r("../../clinic.tsx"), /<AppointmentTicket/, "immediate booking confirmation still shows the ticket");
@@ -61,7 +61,7 @@ test("appointment presentation reuses standard tabs and groups ticket status in 
   const css = r("./booking-tab.css");
   assert.doesNotMatch(details, /className="appt-tab"|className="appt-tabs-list"/);
   assert.doesNotMatch(css, /\.appt-tabs-list/);
-  assert.match(details, /className="table-fixed appt-history-table"/);
+  assert.match(r("./AppointmentHistoryPanel.tsx"), /className="table-fixed appt-history-table"/);
   assert.match(css, /\.appt-detail \.appt-history-table>thead>tr>th\{[^}]*white-space:normal/);
   const column = booking.slice(booking.indexOf('className="appt-booking-side"'), booking.indexOf("{ctl.dialogs}"));
   assert.ok(column.indexOf('data-testid="section-detail-ticket"') < column.indexOf('data-testid="ticket-information"'));

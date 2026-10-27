@@ -25,6 +25,9 @@ export interface AppointmentSessionHistory {
   doctorId?: string;
   branchId?: string;
   date?: Date;
+  startTime?: string;
+  endTime?: string;
+  timezone?: string;
   token?: string;
   tokenNumber?: number;
 }

@@ -23,6 +23,7 @@
 import type { AppointmentActionType } from './appointmentActionType';
 import type { AppointmentBookingContactSource } from './appointmentBookingContactSource';
 import type { AppointmentBookingFields } from './appointmentBookingFields';
+import type { AppointmentPrivatePatient } from './appointmentPrivatePatient';
 import type { AppointmentStatus } from './appointmentStatus';
 import type { ArrivalEstimate } from './arrivalEstimate';
 import type { ClinicDateFormat } from './clinicDateFormat';
@@ -56,6 +57,8 @@ export type Appointment = AppointmentBookingFields & ({
   status: AppointmentStatus;
   patientName: string;
   patientCode?: string;
+  /** Minimal independently authorized profile projection, only on the private appointment detail GET; null when unavailable. */
+  privatePatient?: AppointmentPrivatePatient | null;
   doctorName: string;
   clinicName: string;
   branchName: string;

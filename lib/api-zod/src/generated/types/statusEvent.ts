@@ -22,12 +22,24 @@
  */
 import type { AppointmentSessionHistory } from './appointmentSessionHistory';
 import type { AppointmentStatus } from './appointmentStatus';
+import type { StatusEventActorState } from './statusEventActorState';
 
 export interface StatusEvent {
   status: AppointmentStatus;
   occurredAt: Date;
   reason?: string;
   action?: string;
+  /**
+     * Authorized current display name, never an identity snapshot or raw ID.
+     * @nullable
+     */
+  actorDisplayName?: string | null;
+  /**
+     * Role recorded on this event, never inferred from the current account role.
+     * @nullable
+     */
+  actorRecordedRole?: string | null;
+  actorState?: StatusEventActorState;
   position?: number;
   from?: AppointmentSessionHistory;
   to?: AppointmentSessionHistory;

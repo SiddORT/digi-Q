@@ -4,6 +4,7 @@ import * as z from "@workspace/api-zod";
 import { requireUser, scoped, canRead, scope } from "../lib/auth";
 import { assert, parse, query } from "../lib/http";
 import { bookingMobile } from "../lib/booking-contact";
+import { privateAppointmentDetail } from "../lib/appointment-private-detail";
 /** Existing verification exemptions do not exempt any new booking from contact entry. */
 const STAFF_VERIFICATION_EXEMPT_ROLES = ["superAdmin", "clinicAdmin", "receptionist", "doctor"];
 import { all, one, put, uid, audit, getSettings, filtered, paginate, change } from "../lib/store";
@@ -60,7 +61,8 @@ appointmentsRouter.get("/appointments/calendar", async (req, res) => {
 appointmentsRouter.get("/appointments/:id", async (req, res) => {
   const user = await requireUser(req), row = await one(appointments, req.params.id as string);
   assert(await canRead(user, "appointments", row), 403, "Appointment outside your scope");
-  res.json(await appointmentViewWithBranch(row, user));
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ ...await appointmentViewWithBranch(row, user), ...await privateAppointmentDetail(row, user) });
 });
 appointmentsRouter.post("/appointments", async (req, res) => {
   const user = await requireUser(req), body = parse(z.CreateAppointmentBody, req.body);

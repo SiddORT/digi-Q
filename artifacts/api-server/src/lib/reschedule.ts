@@ -57,8 +57,8 @@ export async function reschedule(user: any, id: string, body: any, tx: any, staf
     expectedDurationMinutes: duration, queueRank: Math.max(0, ...rows.map(rank)) + 1, revision: (row.revision || 0) + 1,
     waitingAt: timestamp, calledAt: null,
     history: [...(row.history || []), { status: "waiting", action: "reschedule", occurredAt: timestamp, actorId: user.id, actorKind: user.privateReceipt ? "privateReceipt" : user.role, reason: body.reason, ...(row.status === "called" ? { callReleased: true } : {}),
-      from: { doctorId: row.doctorId, branchId: row.branchId, date: row.date, sessionId: row.sessionId, startTime: row.startTime, token: row.token, tokenNumber: row.tokenNumber },
-      to: { doctorId: body.doctorId, branchId: body.branchId, date: body.date, sessionId: body.sessionId, startTime: body.startTime, token: `${available.tokenPrefix}-${String(tokenNumber).padStart(2, "0")}`, tokenNumber } }],
+      from: { doctorId: row.doctorId, branchId: row.branchId, date: row.date, sessionId: row.sessionId, startTime: row.startTime, endTime: row.endTime, timezone: row.timezone, token: row.token, tokenNumber: row.tokenNumber },
+      to: { doctorId: body.doctorId, branchId: body.branchId, date: body.date, sessionId: body.sessionId, startTime: available.startTime, endTime: available.endTime, timezone: available.timezone, token: `${available.tokenPrefix}-${String(tokenNumber).padStart(2, "0")}`, tokenNumber } }],
   };
   const updated = await change(appointments, id, { status: "waiting", doctorId: body.doctorId, branchId: body.branchId, date: body.date, tokenNumber, data }, tx);
   if (staffHandoff)

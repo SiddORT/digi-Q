@@ -1,19 +1,18 @@
 import { TabIcon } from "../TabIcon";
 import { useEffect, type ReactNode } from "react";
-import { History } from "lucide-react";
 import type { Appointment } from "@workspace/api-client-react";
 import { useGetAppointment, getGetAppointmentQueryKey } from "@workspace/api-client-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
-import { formatConfiguredTimestamp, formatDate, formatTime } from "../../lib/date-time";
-import { ErrorNotice, title } from "../../resources";
-import { EmptyState } from "../EmptyState";
-import { Table, TableBody, TableRow, TableCell } from "../ui/table";
-import { AppointmentBookingTab, CopyReference } from "./AppointmentBookingTab";
+import { formatDate, formatTime } from "../../lib/date-time";
+import { ErrorNotice } from "../../resources";
+import { AppointmentBookingTab } from "./AppointmentBookingTab";
+import { AppointmentDetailsPanel } from "./AppointmentDetailsPanel";
+import { AppointmentHistoryPanel } from "./AppointmentHistoryPanel";
+import { statusText } from "./detail-history";
 import { isPrivateAppointmentUnavailable } from "./presentation";
 import { clearBookingDraft } from "./booking-drafts";
 import { useBookingDraftGuard } from "./booking-draft-guard";
 
-const statusText = (status: string) => status === "called" ? "Called next" : title(status);
 
 type DetailsProps = { appointment: Appointment; supplementaryDetails?: ReactNode; rowContext?: boolean };
 
@@ -40,7 +39,6 @@ export function AppointmentDetails(props: DetailsProps) {
 function AppointmentDetailsInner({ appointment: a, supplementaryDetails, rowContext, history, historyLoading, historyError, retryHistory }: DetailsProps & {
   history: Appointment["history"]; historyLoading: boolean; historyError: unknown; retryHistory: () => void;
 }) {
-  const timestamp = (value: string) => formatConfiguredTimestamp(value, a.timezone || undefined, {}, a);
   const session = `${a.startTime ? formatTime(a.startTime, a) : "—"}–${a.endTime ? formatTime(a.endTime, a) : "—"}`;
   return <section aria-label="Appointment details" className="appt-detail" data-testid="appointment-details">
     {!rowContext && <header className="appt-detail-summary" data-testid="appointment-summary">
@@ -64,45 +62,11 @@ function AppointmentDetailsInner({ appointment: a, supplementaryDetails, rowCont
         <AppointmentBookingTab appointment={a} />
       </TabsContent>
       <TabsContent value="details" className="appt-tab-panel">
-        <div className="appt-detail-cols">
-          <div className="appt-detail-block" data-testid="section-detail-additional">
-            <h4>Additional information</h4>
-            <dl className="appt-detail-grid">
-              {!rowContext && <div><dt>Patient ID</dt><dd className="mono" data-testid="text-detail-patient-code">{a.patientCode || "Not recorded"}</dd></div>}
-              {a.branchAddress && <div><dt>Location address</dt><dd>{a.branchAddress}</dd></div>}
-              <div><dt>Booking reference</dt><dd data-testid="text-detail-booking-reference"><CopyReference reference={a.reference} /></dd></div>
-              <div><dt>Timezone</dt><dd>{a.timezone || "Not recorded"}</dd></div>
-            </dl>
-            <p className="muted">Session window, not a promised consultation time.</p>
-            {supplementaryDetails && <div data-testid="section-detail-supplementary">{supplementaryDetails}</div>}
-          </div>
-        <div className="appt-detail-block" data-testid="section-detail-consultation">
-          <h4>Consultation</h4>
-          <dl className="appt-detail-grid">
-            <div><dt>Consultation check-in</dt><dd data-testid="text-detail-checked-in">{a.checkedInAt ? timestamp(a.checkedInAt) : "Not recorded"}</dd></div>
-            <div><dt>Consultation completed</dt><dd data-testid="text-detail-completed">{a.completedAt ? timestamp(a.completedAt) : "Not recorded"}</dd></div>
-          </dl>
-          <p className="muted">Consultation check-in records entry into consultation, not arrival at the clinic.</p>
-        </div>
-        </div>
+        {!!historyError && <><ErrorNotice error={historyError} /><button type="button" className="button secondary" onClick={retryHistory}>Retry Details</button></>}
+        <AppointmentDetailsPanel appointment={a} supplementaryDetails={supplementaryDetails} rowContext={rowContext} />
       </TabsContent>
       <TabsContent value="history" className="appt-tab-panel">
-        <div className="appt-detail-block" data-testid="section-detail-history">
-          {historyError ? <><ErrorNotice error={historyError} /><button type="button" className="button secondary" onClick={retryHistory}>Retry History</button></>
-            : historyLoading ? <p role="status">Loading history…</p>
-            : !history ? <p role="status">History unavailable. <button type="button" onClick={retryHistory}>Retry History</button></p>
-            : history.length === 0 ? <EmptyState icon={<History className="h-5 w-5" />} title="Nothing to show." />
-            : <Table className="table-fixed appt-history-table" aria-label="Appointment history">
-              {/* Plain header cells inherit the main appointment table heading cascade (no utility overrides). */}
-              <thead><tr><th scope="col">Date &amp; time</th><th scope="col">Event</th><th scope="col">Status</th><th scope="col">Reason</th></tr></thead>
-              <TableBody>{history.map((event, index) => <TableRow key={`${event.occurredAt}-${index}`}>
-                <TableCell className="whitespace-normal break-words">{timestamp(event.occurredAt)}</TableCell>
-                <TableCell className="whitespace-normal break-words">{event.action ? title(event.action) : "Status recorded"}</TableCell>
-                <TableCell className="whitespace-normal break-words">{event.status ? statusText(event.status) : "—"}</TableCell>
-                <TableCell className="whitespace-pre-wrap [overflow-wrap:anywhere]">{event.reason || "—"}</TableCell>
-              </TableRow>)}</TableBody>
-            </Table>}
-        </div>
+        <AppointmentHistoryPanel appointment={a} history={history} loading={historyLoading} error={historyError} retry={retryHistory} />
       </TabsContent>
     </Tabs>
   </section>;

@@ -1,0 +1,30 @@
+.appt-details{display:grid;gap:var(--space-4);min-width:0}
+.appt-details-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--space-4);align-items:start;min-width:0}
+.appt-details-card{min-width:0;margin:0}
+.appt-details-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.appt-details-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.appt-details-grid .span-2,.appt-details-grid .span-full{grid-column:1/-1}
+.appt-details-grid dd{overflow-wrap:anywhere;min-width:0}
+.appt-details-grid dd small{display:block;color:var(--soft);font-weight:400}
+.appt-wrap{overflow-wrap:anywhere}
+.appt-details-note{margin:var(--space-2) 0 0}
+.appt-history-head{display:flex;align-items:baseline;justify-content:space-between;gap:4px var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-2)}
+.appt-history-head h4{margin:0}
+.appt-history-head small{color:var(--soft);overflow-wrap:anywhere}
+.appt-history-remarks,.appt-history-actor{white-space:normal;overflow-wrap:anywhere}
+.appt-history-remarks>*,.appt-history-actor>*{display:block}
+.appt-history-move{color:var(--soft);margin-top:2px}
+.appt-history-reason{white-space:pre-wrap;margin-top:2px}
+.appt-history-actor small{color:var(--soft)}
+.appt-history-skeleton{display:grid;gap:8px}
+.appt-history-skeleton span{display:block;height:14px;border-radius:6px;background:hsl(var(--border));opacity:.6;animation:appt-pulse 1.4s ease-in-out infinite}
+@keyframes appt-pulse{50%{opacity:.25}}
+@media(max-width:1023px){.appt-details-pair{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){
+  .appt-details-grid,.appt-details-grid-3{grid-template-columns:minmax(0,1fr)}
+  .appt-history-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .appt-history-table,.appt-history-table tbody,.appt-history-table tr,.appt-history-table td{display:block;width:100%}
+  .appt-history-table tr{padding:var(--space-2) 0;border-bottom:1px solid hsl(var(--border))}
+  .appt-history-table td{padding:2px 0}
+  .appt-history-table td::before{content:attr(data-label);display:block;font-size:var(--type-caption);color:var(--soft)}
+}

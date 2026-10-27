@@ -11,7 +11,7 @@ const bundle = join(directory, `.appointment-details-${process.pid}.test-bundle.
 after(() => rm(bundle, { force: true }));
 await build({
   stdin: {
-    contents: `import { createElement } from "react"; import { renderToStaticMarkup } from "react-dom/server"; import { AppointmentDetails } from "./AppointmentDetails"; export {ticketHtml,sessionRange} from "../tickets/VisitTicket"; export const render = appointment => renderToStaticMarkup(createElement(AppointmentDetails, {appointment}));`,
+    contents: `import { createElement } from "react"; import { renderToStaticMarkup } from "react-dom/server"; import { QueryClient, QueryClientProvider } from "@tanstack/react-query"; import { AppointmentDetailsPanel } from "./AppointmentDetailsPanel"; import { AppointmentHistoryPanel } from "./AppointmentHistoryPanel"; export {ticketHtml,sessionRange} from "../tickets/VisitTicket"; export const render = appointment => renderToStaticMarkup(createElement(QueryClientProvider, { client: new QueryClient() }, createElement("div", null, createElement(AppointmentDetailsPanel, {appointment}), createElement(AppointmentHistoryPanel, {appointment,history:appointment.history,loading:false,error:null,retry:()=>{}}))));`,
     resolveDir: directory,
   },
   outfile: bundle, platform: "node", format: "esm", bundle: true, packages: "external", jsx: "automatic",
@@ -22,7 +22,7 @@ await build({
       // Bundle the workspace API client from source (its extensionless TS imports cannot load as an external package).
       b.onResolve({ filter: /^@workspace\/api-client-react$/ }, () => ({ path: resolve(import.meta.dirname, "../../../lib/api-client-react/src/index.ts") }));
       b.onResolve({ filter: /\/resources$/ }, () => ({ path: "title", namespace: "fixture" }));
-      b.onLoad({ filter: /.*/, namespace: "fixture" }, () => ({ contents: "export const title = value => value; export const ErrorNotice = () => null;" }));
+      b.onLoad({ filter: /.*/, namespace: "fixture" }, () => ({ contents: "export const title = value => value; export const ErrorNotice = () => null; export const PatientEditor = () => null;" }));
     },
   }],
 });
@@ -47,15 +47,15 @@ test("legacy missing notes and timestamps are reported honestly", () => {
   const html = render({patientName:"Patient",reference:"A1"});
   assert.match(html, /No notes recorded/);
   assert.match(html, /Not recorded/);
-  assert.match(html, /No history recorded/);
+  assert.match(html, /History unavailable/);
 });
 test("ticket display and export use each clinic's preferences without changing QR geometry", () => {
   const ticket={patientName:"Patient",clinicName:"Clinic",branchName:"Location",doctorName:"Doctor",date:"2030-01-07",startTime:"14:05",endTime:"15:05",dateFormat:"MM/DD/YYYY",timeFormat:"24h"};
   assert.equal(sessionRange(ticket),"14:05 – 15:05");
   const html=ticketHtml(ticket,"data:image/png;base64,test");
   assert.match(html,/01\/07\/2030/);
-  assert.match(html,/width:180px/);
-  assert.match(html,/max-width:560px/);
+  assert.match(html,/width:var\(--vt-qr-size\)/);
+  assert.match(html,/max-width:var\(--vt-card-width\)/);
   assert.match(html,/14:05 – 15:05/);
   assert.match(ticketHtml({...ticket,dateFormat:"DD MMM YYYY",timeFormat:"12h"},null),/07 Jan 2030/);
   assert.equal(sessionRange({...ticket,timeFormat:"12h"}),"2:05 PM – 3:05 PM");

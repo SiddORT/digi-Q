@@ -116,6 +116,15 @@ export const ReadLiveTicketResponse = zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
+  "privatePatient": zod.union([zod.object({
+  "fullName": zod.string().nullish(),
+  "code": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
+}),zod.null()]).optional().describe('Minimal independently authorized profile projection, only on the private appointment detail GET; null when unavailable.'),
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
@@ -138,11 +147,17 @@ export const ReadLiveTicketResponse = zod.object({
   "occurredAt": zod.coerce.date(),
   "reason": zod.string().optional(),
   "action": zod.string().optional(),
+  "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
+  "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
+  "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional(),
@@ -150,6 +165,9 @@ export const ReadLiveTicketResponse = zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
@@ -7300,6 +7318,15 @@ export const ListAppointmentsResponse = zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
+  "privatePatient": zod.union([zod.object({
+  "fullName": zod.string().nullish(),
+  "code": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
+}),zod.null()]).optional().describe('Minimal independently authorized profile projection, only on the private appointment detail GET; null when unavailable.'),
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
@@ -7322,11 +7349,17 @@ export const ListAppointmentsResponse = zod.object({
   "occurredAt": zod.coerce.date(),
   "reason": zod.string().optional(),
   "action": zod.string().optional(),
+  "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
+  "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
+  "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional(),
@@ -7334,6 +7367,9 @@ export const ListAppointmentsResponse = zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
@@ -7419,6 +7455,15 @@ export const CreateAppointmentResponse = zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
+  "privatePatient": zod.union([zod.object({
+  "fullName": zod.string().nullish(),
+  "code": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
+}),zod.null()]).optional().describe('Minimal independently authorized profile projection, only on the private appointment detail GET; null when unavailable.'),
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
@@ -7441,11 +7486,17 @@ export const CreateAppointmentResponse = zod.object({
   "occurredAt": zod.coerce.date(),
   "reason": zod.string().optional(),
   "action": zod.string().optional(),
+  "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
+  "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
+  "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional(),
@@ -7453,6 +7504,9 @@ export const CreateAppointmentResponse = zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
@@ -7528,6 +7582,15 @@ export const UpdateAppointmentBookingResponse = zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
+  "privatePatient": zod.union([zod.object({
+  "fullName": zod.string().nullish(),
+  "code": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
+}),zod.null()]).optional().describe('Minimal independently authorized profile projection, only on the private appointment detail GET; null when unavailable.'),
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
@@ -7550,11 +7613,17 @@ export const UpdateAppointmentBookingResponse = zod.object({
   "occurredAt": zod.coerce.date(),
   "reason": zod.string().optional(),
   "action": zod.string().optional(),
+  "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
+  "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
+  "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional(),
@@ -7562,6 +7631,9 @@ export const UpdateAppointmentBookingResponse = zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
@@ -7698,6 +7770,15 @@ export const GetAppointmentResponse = zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
+  "privatePatient": zod.union([zod.object({
+  "fullName": zod.string().nullish(),
+  "code": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
+}),zod.null()]).optional().describe('Minimal independently authorized profile projection, only on the private appointment detail GET; null when unavailable.'),
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
@@ -7720,11 +7801,17 @@ export const GetAppointmentResponse = zod.object({
   "occurredAt": zod.coerce.date(),
   "reason": zod.string().optional(),
   "action": zod.string().optional(),
+  "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
+  "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
+  "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional(),
@@ -7732,6 +7819,9 @@ export const GetAppointmentResponse = zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
@@ -7811,6 +7901,15 @@ export const ResolveAppointmentQrResponse = zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
+  "privatePatient": zod.union([zod.object({
+  "fullName": zod.string().nullish(),
+  "code": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
+}),zod.null()]).optional().describe('Minimal independently authorized profile projection, only on the private appointment detail GET; null when unavailable.'),
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
@@ -7833,11 +7932,17 @@ export const ResolveAppointmentQrResponse = zod.object({
   "occurredAt": zod.coerce.date(),
   "reason": zod.string().optional(),
   "action": zod.string().optional(),
+  "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
+  "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
+  "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional(),
@@ -7845,6 +7950,9 @@ export const ResolveAppointmentQrResponse = zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
@@ -7914,6 +8022,15 @@ export const CheckInAppointmentQrResponse = zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
+  "privatePatient": zod.union([zod.object({
+  "fullName": zod.string().nullish(),
+  "code": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
+}),zod.null()]).optional().describe('Minimal independently authorized profile projection, only on the private appointment detail GET; null when unavailable.'),
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
@@ -7936,11 +8053,17 @@ export const CheckInAppointmentQrResponse = zod.object({
   "occurredAt": zod.coerce.date(),
   "reason": zod.string().optional(),
   "action": zod.string().optional(),
+  "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
+  "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
+  "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional(),
@@ -7948,6 +8071,9 @@ export const CheckInAppointmentQrResponse = zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
@@ -8046,6 +8172,15 @@ export const GetAppointmentMovementResponse = zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
+  "privatePatient": zod.union([zod.object({
+  "fullName": zod.string().nullish(),
+  "code": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
+}),zod.null()]).optional().describe('Minimal independently authorized profile projection, only on the private appointment detail GET; null when unavailable.'),
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
@@ -8068,11 +8203,17 @@ export const GetAppointmentMovementResponse = zod.object({
   "occurredAt": zod.coerce.date(),
   "reason": zod.string().optional(),
   "action": zod.string().optional(),
+  "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
+  "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
+  "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional(),
@@ -8080,6 +8221,9 @@ export const GetAppointmentMovementResponse = zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
@@ -8172,6 +8316,15 @@ export const ManageGuestReceiptResponse = zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
+  "privatePatient": zod.union([zod.object({
+  "fullName": zod.string().nullish(),
+  "code": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
+}),zod.null()]).optional().describe('Minimal independently authorized profile projection, only on the private appointment detail GET; null when unavailable.'),
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
@@ -8194,11 +8347,17 @@ export const ManageGuestReceiptResponse = zod.object({
   "occurredAt": zod.coerce.date(),
   "reason": zod.string().optional(),
   "action": zod.string().optional(),
+  "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
+  "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
+  "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional(),
@@ -8206,6 +8365,9 @@ export const ManageGuestReceiptResponse = zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
@@ -8284,6 +8446,15 @@ export const RescheduleAppointmentResponse = zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
+  "privatePatient": zod.union([zod.object({
+  "fullName": zod.string().nullish(),
+  "code": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
+}),zod.null()]).optional().describe('Minimal independently authorized profile projection, only on the private appointment detail GET; null when unavailable.'),
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
@@ -8306,11 +8477,17 @@ export const RescheduleAppointmentResponse = zod.object({
   "occurredAt": zod.coerce.date(),
   "reason": zod.string().optional(),
   "action": zod.string().optional(),
+  "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
+  "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
+  "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional(),
@@ -8318,6 +8495,9 @@ export const RescheduleAppointmentResponse = zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
@@ -8405,6 +8585,15 @@ export const TransitionAppointmentResponse = zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
+  "privatePatient": zod.union([zod.object({
+  "fullName": zod.string().nullish(),
+  "code": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
+}),zod.null()]).optional().describe('Minimal independently authorized profile projection, only on the private appointment detail GET; null when unavailable.'),
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
@@ -8427,11 +8616,17 @@ export const TransitionAppointmentResponse = zod.object({
   "occurredAt": zod.coerce.date(),
   "reason": zod.string().optional(),
   "action": zod.string().optional(),
+  "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
+  "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
+  "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional(),
@@ -8439,6 +8634,9 @@ export const TransitionAppointmentResponse = zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
@@ -8572,6 +8770,15 @@ export const GetQueueResponse = zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
+  "privatePatient": zod.union([zod.object({
+  "fullName": zod.string().nullish(),
+  "code": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
+}),zod.null()]).optional().describe('Minimal independently authorized profile projection, only on the private appointment detail GET; null when unavailable.'),
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
@@ -8594,11 +8801,17 @@ export const GetQueueResponse = zod.object({
   "occurredAt": zod.coerce.date(),
   "reason": zod.string().optional(),
   "action": zod.string().optional(),
+  "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
+  "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
+  "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional(),
@@ -8606,6 +8819,9 @@ export const GetQueueResponse = zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
@@ -8683,6 +8899,15 @@ export const CallNextResponse = zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
+  "privatePatient": zod.union([zod.object({
+  "fullName": zod.string().nullish(),
+  "code": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
+}),zod.null()]).optional().describe('Minimal independently authorized profile projection, only on the private appointment detail GET; null when unavailable.'),
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
@@ -8705,11 +8930,17 @@ export const CallNextResponse = zod.object({
   "occurredAt": zod.coerce.date(),
   "reason": zod.string().optional(),
   "action": zod.string().optional(),
+  "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
+  "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
+  "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional(),
@@ -8717,6 +8948,9 @@ export const CallNextResponse = zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
@@ -8930,6 +9164,15 @@ export const GetDashboardResponse = zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
+  "privatePatient": zod.union([zod.object({
+  "fullName": zod.string().nullish(),
+  "code": zod.string().nullish(),
+  "gender": zod.string().nullish(),
+  "dateOfBirth": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
+}),zod.null()]).optional().describe('Minimal independently authorized profile projection, only on the private appointment detail GET; null when unavailable.'),
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
@@ -8952,11 +9195,17 @@ export const GetDashboardResponse = zod.object({
   "occurredAt": zod.coerce.date(),
   "reason": zod.string().optional(),
   "action": zod.string().optional(),
+  "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
+  "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
+  "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional(),
@@ -8964,6 +9213,9 @@ export const GetDashboardResponse = zod.object({
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()

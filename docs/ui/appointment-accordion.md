@@ -140,3 +140,85 @@ No production/UAT inspection or changes, real account authentication, live
 appointments, contact verification, or messages are part of this evidence.
 Native Safari/Firefox, physical devices and screen-reader announcement quality
 are not independently verified by Chromium fixtures.
+
+## 27 October 2026: Details and History reference refinement
+
+The two later supplied screenshots were layout references, not claims about
+recorded data or permissions. The earlier acceptance above describes the
+*before* state. The *after* state keeps Booking and the three shared tabs
+untouched: Details has Patient information and Visit information alongside each
+other on desktop, with Additional information below. On a narrow screen the
+cards stack. Consultation check-in/completion live in Visit information and
+are explicitly different from clinic arrival. The profile mobile and the
+booking's visit contact mobile have different labels and values; the booking
+source is displayed only when actually recorded. There is no internal-notes
+editor or generic schedule editor. The copyable reference, visit notes,
+timezone, location address and optional hidden-column facts remain in Details.
+
+The private `GET /appointments/:id` response can include only independently
+authorized patient demographics/contact and safe display attribution for its
+recorded events. Edit patient appears only with the existing patient writer's
+registration/self authority and fetches the current profile before opening its
+reused editor. The patient self-editor omits status and registration scope.
+Visit contact/notes retain the existing visit-only editor, draft/discard,
+terminal-state, stale-revision and server checks. Actor IDs, order IDs and
+unclassified history JSON are not sent in the detail's enriched history.
+Missing, erased, system and unreadable actors stay distinct. Role text is
+**recorded event role**, never an account's present-day role; event names
+are present-day permitted display names, not historical name snapshots.
+The ordinary list, ticket and guest-receipt serializers do not call this
+detail-only projection.
+
+History now shows newest-first recorded events (stable for timestamp ties),
+with status badge text, event/action, remarks, safe attribution and recorded
+reschedule coordinates where available. Newly recorded moves preserve the
+old and new session dates, windows and timezones; old incomplete records
+explicitly say what was not recorded. One timezone notice beside History
+describes event timestamps; a different or absent historical session timezone
+is identified beside that session window. Empty, unavailable, loading and
+error/retry states remain separate. No artificial Created or Scheduled event
+is added to a visit that has only one recorded initial event.
+
+**Evidence boundary:** The before comparison is the documented prior
+Consultation/Additional-only layout above and the supplied *reference*
+screenshots; neither is a captured authenticated before image. The after
+inspection used the fictional browser fixture with actual application CSS,
+not an authenticated clinic account. Its 1366×844 Details image shows the
+two cards and full-width Additional section; its 390×844 image shows their
+stacked order and distinct fictional phone numbers. The 390px History image
+contains 24 long events with labels on each stacked row. These generated
+images remain in ignored `generated-artifacts/appointment-tabs/` and are
+not deployment or live-patient evidence. The initial delegated browser
+inspection failed because it opened this interception-dependent fixture
+without its mock API routes; it observed a 404/blank screen, **not** an app
+response from an authenticated session. Running the fixture with its own
+routes confirmed the changed layouts.
+
+**Verification:** Focused private appointment/booking and render tests,
+uniformity source tests, shared-library codegen/typecheck and both application
+typechecks passed. A disposable-database guest receipt regression confirmed
+that public management/receipt responses contain no private profile or actor
+projection. A focused fictional browser profile edit confirmed that
+the fresh profile read and subsequent PATCH omit registration/status fields
+and leave the visit contact unchanged. Six booking-edit browser regressions
+cover draft/discard, tab/row switches, polling, revision conflict, terminal
+edits and access loss. The full fictional appointment-detail browser regression
+passed 44 of 47 cases initially; three failures were obsolete heading/loading/
+column assertions after the new layout and all three passed on the corrected
+focused rerun (47 distinct cases passing), plus a new profile-edit fixture
+case. Native Chromium tab zoom 2× at
+1024×640 physical pixels reduced the CSS viewport to 512×276; Booking,
+Details and History each occupied the 454px detail region with no measured
+element leaving its bounds. Tests also exercised 768px tablet, 1024px short
+desktop, 1366px desktop, 390px phone, long notes and actual initial/empty/
+unavailable histories. These are isolated fixture and disposable-PostgreSQL
+checks, not UAT, Safari, Firefox, real patient authorization, or delivery tests.
+
+The separately configured full ticket-browser workflow reported 161/162 while
+generated client files were being refreshed: its guest-creation case timed out
+after Vite logged missing generated imports during the concurrent codegen
+window. That exact guest-creation case passed on a focused rerun once codegen
+settled (1/1). This does not make the full workflow's 161/162 result a clean
+full-suite pass. The managed API and web development services restarted and
+came up cleanly; the anonymous app preview loaded, but it cannot show the
+signed-in appointment expansion.

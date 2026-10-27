@@ -213,8 +213,11 @@ test("private receipt reschedules and refreshes ticket; cancelled/revoked capabi
   await rejects(manage({receiptSecret:secret,destination:dest("2030-02-31")}),/Invalid date/);
   const saved=await manage({receiptSecret:secret,destination:dest()});
   assert.equal(saved.appointment.reference,r.appointment.reference); assert.match(saved.appointment.token,/^B-/);
+  assert.equal(saved.appointment.privatePatient, undefined, "guest management must not receive the detail-only profile");
+  assert.equal(saved.appointment.history.at(-1).actorDisplayName, undefined, "guest management must not receive private actor names");
   const receiptAfter=await h.route(h.api.guestRequestsRouter,"post","/public/guest-receipt",null,{receiptSecret:secret});
   assert.equal(receiptAfter.token,saved.appointment.token);
+  assert.equal(receiptAfter.privatePatient, undefined);
   await manage({receiptSecret:secret,action:{action:"cancel",expectedRevision:1,reason:"Cannot attend"}});
   await rejects(manage({receiptSecret:secret,destination:{...dest(h.today),expectedRevision:2}}), /Cancelled/);
   await h.api.change(h.t.guestRequests,receipt.id,{status:"rejected"});

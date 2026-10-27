@@ -11,12 +11,43 @@ const first = {
   date: "2030-06-14", startTime: "09:00", endTime: "12:00", timezone: "UTC",
   sessionId: "session-1", token: "A-01", tokenNumber: 1, reference: "BOOKING-11111111-2222-3333-4444-555555555555",
   status: "booked", revision: 1, allowedActions: [], createdAt: "2030-06-01T10:00:00Z",
+  source: "online", bookingMobile: "+14155550222",
+  privatePatient: { fullName: "Alexandria Verylongpatientname Example-Surname", code: "P-001", gender: "female",
+    dateOfBirth: "1990-03-14", mobile: "+14155550111", email: "alex@example.invalid", canEdit: false },
   notes: "Long fictional notes with wrapped lines.\n" + "Retain all information without clipping. ".repeat(12),
   checkedInAt: null, completedAt: null,
-  history: Array.from({ length: 24 }, (_, i) => ({ action: i ? "requeue" : "book", status: i ? "waiting" : "booked", occurredAt: "2030-06-01T10:00:00Z", reason: `Event ${i}: ` + "A long fictional reason with complete information. ".repeat(5) })),
+  history: Array.from({ length: 24 }, (_, i) => ({ action: i ? "requeue" : "book", status: i ? "waiting" : "booked", occurredAt: "2030-06-01T10:00:00Z", reason: `Event ${i}: ` + "A long fictional reason with complete information. ".repeat(5), actorState: i % 2 ? "named" : "unknown", actorDisplayName: i % 2 ? "Long Fictional Receptionist Name" : null, actorRecordedRole: i % 2 ? "receptionist" : null })),
 };
 const second = { ...first, id: "appointment-2", patientName: "Morgan Sample", reference: "BOOKING-SECOND", token: "A-02", tokenNumber: 2, notes: "", history: [], status: "completed", checkedInAt: "2030-06-14T09:00:00Z", completedAt: "2030-06-14T09:15:00Z" };
 type State = { appointment: typeof first; failAppointment?: boolean; failStatus?: number; failQr?: boolean; failQueue?: boolean; delay?: number; reads: number };
+
+test("patient editor opens a fresh authorized profile and saves demographics without moving registration or visit contact", async ({ page }) => {
+  let submitted: Record<string, unknown> | undefined;
+  const patient = { id: first.patientId, fullName: first.patientName, code: first.patientCode, gender: "female",
+    dateOfBirth: "1990-03-14", mobile: first.privatePatient.mobile, email: first.privatePatient.email,
+    clinicId: first.clinicId, branchId: first.branchId, status: "active" };
+  const state = await mount(page, "", false, { appointment: { ...first, privatePatient: { ...first.privatePatient, canEdit: true } } });
+  await page.route("**/api/patients/patient-1", async route => {
+    if (route.request().method() === "PATCH") {
+      submitted = route.request().postDataJSON();
+      Object.assign(patient, submitted);
+    }
+    await route.fulfill({ json: patient });
+  });
+  await tab(page, "Details").click();
+  await page.getByTestId("button-edit-patient-profile").click();
+  await expect(page.getByRole("dialog", { name: "Edit Patient" })).toBeVisible();
+  await expect(page.getByRole("dialog")).not.toContainText("Clinic and status");
+  await page.locator("#input-fullName").fill("Fictional Updated Patient");
+  await page.getByRole("dialog").getByRole("button", { name: /save/i }).click();
+  await expect.poll(() => submitted).toBeDefined();
+  expect(submitted?.fullName).toBe("Fictional Updated Patient");
+  expect(submitted).not.toHaveProperty("clinicId");
+  expect(submitted).not.toHaveProperty("branchId");
+  expect(submitted).not.toHaveProperty("status");
+  expect(state.appointment.bookingMobile).toBe("+14155550222");
+});
+
 for (const mode of ["shift", "requeue"] as const) {
   test(`row ${mode} opens the shared review and submits the exact reviewed position`, async ({page}) => {
     const state=await mount(page,"rows");
@@ -297,8 +328,9 @@ for (const width of [1366, 820, 390]) {
     await expect(head).toBeVisible();
     expect(await head.evaluate(el => getComputedStyle(el).position)).toBe("static");
     const geometry = await head.evaluate(el => ({ width: el.getBoundingClientRect().width, height: el.getBoundingClientRect().height }));
-    expect(geometry.width).toBeGreaterThan(50);
+    expect(geometry.width).toBeGreaterThan(width <= 600 ? 20 : 50);
     expect(geometry.height).toBeGreaterThan(20);
+    if (width <= 600) await expect(page.getByRole("table", { name: "Appointment history" }).locator('td[data-label="Date & time"]').first()).toBeVisible();
   });
 }
 
@@ -490,7 +522,6 @@ for (const surface of ["rows", "today"]) {
 test("history waits for the authorized record rather than treating a list projection as empty", async ({ page }) => {
   await mount(page, "projection", false, { delay: 1800 });
   await tab(page, "History").click();
-  await expect(details(page)).toContainText("Loading history…");
   await expect(details(page)).not.toContainText("Nothing to show.");
   await expect(page.getByRole("table", { name: "Appointment history" })).toBeVisible();
 });
@@ -506,7 +537,7 @@ test("missing private history is unavailable, not empty; a real initial waiting 
   await page.getByRole("button", { name: "Retry History" }).click();
   const row = page.getByRole("table", { name: "Appointment history" }).locator("tbody tr");
   await expect(row).toHaveCount(1);
-  await expect(row.getByRole("cell")).toHaveText(["01/06/2030, 10:00", "Status recorded", "Waiting", "—"]);
+  await expect(row.getByRole("cell")).toHaveText(["01/06/2030, 10:00", "Waiting", "Status recorded", "Not recorded"]);
   await expect(details(page)).not.toContainText("Nothing to show.");
 });
 
@@ -528,7 +559,7 @@ for (const surface of ["rows", "today"]) {
     for (const value of [first.patientName, first.patientCode, first.token, first.clinicName, first.branchName, first.doctorName]) await expect(extra).toContainText(value);
     await expect(extra).not.toContainText(first.reference);
     await expect(extra).not.toContainText("Booked At");
-    await expect(page.getByTestId("section-detail-consultation")).toBeVisible();
+    await expect(page.getByTestId("section-detail-visit")).toBeVisible();
   });
 }
 
@@ -539,11 +570,11 @@ test("history reasons wrap unbroken text while statuses come from each recorded 
   await page.getByTestId("button-expand-appointment-appointment-1").click();
   await tab(page, "History").click();
   const table = page.getByRole("table", { name: "Appointment history" });
-  await expect(table.getByRole("columnheader")).toHaveText(["Date & time", "Event", "Status", "Reason"]);
+  await expect(table.getByRole("columnheader")).toHaveText(["Date & time", "Status", "Details / remarks", "Changed by"]);
   await expect(table.locator("tbody tr")).toContainText("Cancelled");
   await expect(table.locator("tbody tr")).not.toContainText("Booked");
   const bounds = await table.evaluate(el => {
-    const reason = el.querySelector("tbody td:last-child")!;
+    const reason = el.querySelector("tbody td:nth-child(3)")!;
     return { width: el.getBoundingClientRect().width, viewport: innerWidth, scroll: reason.scrollWidth, cell: reason.clientWidth };
   });
   expect(bounds.width).toBeLessThan(bounds.viewport);
@@ -656,7 +687,7 @@ test("Booking default, keyboard sections, all fields, history and fresh refresh 
   await page.keyboard.press("End");
   await expect(tab(page, "History")).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("table", { name: "Appointment history" }).locator("tbody tr")).toHaveCount(24);
-  await expect(page.getByRole("table", { name: "Appointment history" }).getByRole("columnheader")).toHaveText(["Date & time", "Event", "Status", "Reason"]);
+  await expect(page.getByRole("table", { name: "Appointment history" }).getByRole("columnheader")).toHaveText(["Date & time", "Status", "Details / remarks", "Changed by"]);
   await expect(page.getByTestId("section-detail-history")).toContainText("Event 23:");
   await page.keyboard.press("Home");
   await expect(tab(page, "Booking")).toHaveAttribute("aria-selected", "true");

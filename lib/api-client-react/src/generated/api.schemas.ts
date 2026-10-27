@@ -166,6 +166,23 @@ export const AppointmentStatus = {
   cancelled: 'cancelled',
 } as const;
 
+export interface AppointmentPrivatePatient {
+  /** @nullable */
+  fullName?: string | null;
+  /** @nullable */
+  code?: string | null;
+  /** @nullable */
+  gender?: string | null;
+  /** @nullable */
+  dateOfBirth?: string | null;
+  /** @nullable */
+  mobile?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** Independent existing patient demographic write authority; server rechecks on save. */
+  canEdit: boolean;
+}
+
 export type AppointmentActionType = typeof AppointmentActionType[keyof typeof AppointmentActionType];
 
 
@@ -181,10 +198,25 @@ export const AppointmentActionType = {
   shift: 'shift',
 } as const;
 
+export type StatusEventActorState = typeof StatusEventActorState[keyof typeof StatusEventActorState];
+
+
+export const StatusEventActorState = {
+  named: 'named',
+  system: 'system',
+  receipt: 'receipt',
+  unknown: 'unknown',
+  deleted: 'deleted',
+  unavailable: 'unavailable',
+} as const;
+
 export interface AppointmentSessionHistory {
   doctorId?: string;
   branchId?: string;
   date?: string;
+  startTime?: string;
+  endTime?: string;
+  timezone?: string;
   token?: string;
   tokenNumber?: number;
 }
@@ -194,6 +226,17 @@ export interface StatusEvent {
   occurredAt: string;
   reason?: string;
   action?: string;
+  /**
+     * Authorized current display name, never an identity snapshot or raw ID.
+     * @nullable
+     */
+  actorDisplayName?: string | null;
+  /**
+     * Role recorded on this event, never inferred from the current account role.
+     * @nullable
+     */
+  actorRecordedRole?: string | null;
+  actorState?: StatusEventActorState;
   position?: number;
   from?: AppointmentSessionHistory;
   to?: AppointmentSessionHistory;
@@ -225,6 +268,8 @@ export type Appointment = AppointmentBookingFields & ({
   status: AppointmentStatus;
   patientName: string;
   patientCode?: string;
+  /** Minimal independently authorized profile projection, only on the private appointment detail GET; null when unavailable. */
+  privatePatient?: AppointmentPrivatePatient | null;
   doctorName: string;
   clinicName: string;
   branchName: string;

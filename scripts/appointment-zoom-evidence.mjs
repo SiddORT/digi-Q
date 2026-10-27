@@ -69,7 +69,7 @@ try {
   assert(after.innerWidth <= before.innerWidth / 2 + 1);
   const evidence = [];
   for (const name of ["Booking", "Details", "History"]) {
-    const tab = page.getByRole("tab", { name, exact: true });
+    const tab = page.getByTestId("appointment-details").getByRole("tab", { name, exact: true });
     await tab.click(); await tab.focus();
     await page.evaluate(() => document.fonts.ready);
     const detail = page.getByTestId("appointment-details");
