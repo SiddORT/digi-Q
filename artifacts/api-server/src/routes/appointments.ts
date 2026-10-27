@@ -5,6 +5,7 @@ import { requireUser, scoped, canRead, scope } from "../lib/auth";
 import { assert, parse, query } from "../lib/http";
 import { bookingMobile } from "../lib/booking-contact";
 import { privateAppointmentDetail } from "../lib/appointment-private-detail";
+import { appointmentHistoryPage, privateAppointmentRow } from "../lib/appointment-history-page";
 /** Existing verification exemptions do not exempt any new booking from contact entry. */
 const STAFF_VERIFICATION_EXEMPT_ROLES = ["superAdmin", "clinicAdmin", "receptionist", "doctor"];
 import { all, one, put, uid, audit, getSettings, filtered, paginate, change } from "../lib/store";
@@ -59,10 +60,19 @@ appointmentsRouter.get("/appointments/calendar", async (req, res) => {
   res.json(await queryAppointmentCalendar(user, q));
 });
 appointmentsRouter.get("/appointments/:id", async (req, res) => {
-  const user = await requireUser(req), row = await one(appointments, req.params.id as string);
+  const user = await requireUser(req), row = await privateAppointmentRow(req.params.id as string);
   assert(await canRead(user, "appointments", row), 403, "Appointment outside your scope");
   res.setHeader("Cache-Control", "no-store");
-  res.json({ ...await appointmentViewWithBranch(row, user), ...await privateAppointmentDetail(row, user) });
+  const page = await appointmentHistoryPage(row.id);
+  const { history: _unbounded, ...view } = await appointmentViewWithBranch({ ...row, history: undefined }, user);
+  res.json({ ...view, ...await privateAppointmentDetail(row, user, db, page.events), historyNextCursor: page.nextCursor });
+});
+appointmentsRouter.get("/appointments/:id/history", async (req, res) => {
+  const user = await requireUser(req), row = await privateAppointmentRow(req.params.id as string);
+  assert(await canRead(user, "appointments", row), 403, "Appointment outside your scope");
+  const page = await appointmentHistoryPage(row.id, req.query.cursor);
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ history: (await privateAppointmentDetail(row, user, db, page.events)).history ?? null, nextCursor: page.nextCursor });
 });
 appointmentsRouter.post("/appointments", async (req, res) => {
   const user = await requireUser(req), body = parse(z.CreateAppointmentBody, req.body);

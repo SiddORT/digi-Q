@@ -39,9 +39,9 @@ test("private detail alone projects profile and actor, without conflating visit 
   assert.equal(detail.bookingMobile, "+14155550222");
   assert.equal(detail.privatePatient.gender, "female");
   assert.equal(detail.privatePatient.canEdit, true);
-  assert.equal(detail.history.at(-1).actorDisplayName, "Receptionist");
-  assert.equal(detail.history.at(-1).actorRecordedRole, "receptionist");
-  assert.equal(detail.history.at(-1).actorId, undefined);
+  assert.equal(detail.history[0].actorDisplayName, "Receptionist");
+  assert.equal(detail.history[0].actorRecordedRole, "receptionist");
+  assert.equal(detail.history[0].actorId, undefined);
   assert.equal(saved.privatePatient, undefined, "write response is not the private detail serializer");
   const listed = await h.route(h.api.appointmentsRouter, "get", "/appointments", h.staff, {});
   assert.equal(listed.items.find(item => item.id === a.id).privatePatient, undefined);
@@ -67,11 +67,59 @@ test("visit visibility does not grant demographic edits, and anonymized or incom
   ] } });
   const detail = await h.route(h.api.appointmentsRouter, "get", "/appointments/:id", h.staff, {}, { id: a.id });
   assert.equal(detail.history.length, 2);
-  assert.equal(detail.history[0].actorState, "unknown");
-  assert.equal(detail.history[1].actorState, "deleted");
-  assert.deepEqual(detail.history[1].from, { date: "2030-01-06", startTime: "09:00" });
-  assert.deepEqual(detail.history[1].to, { date: "2030-01-07" });
+  assert.equal(detail.history[1].actorState, "unknown");
+  assert.equal(detail.history[0].actorState, "deleted");
+  assert.deepEqual(detail.history[0].from, { date: "2030-01-06", startTime: "09:00" });
+  assert.deepEqual(detail.history[0].to, { date: "2030-01-07" });
   assert.equal(JSON.stringify(detail).includes("removed-actor"), false);
+});
+
+test("private history pages retain the initial event, tie order and actor privacy across cursor pages", async () => {
+  const a = await h.book();
+  const row = await h.api.one(h.t.appointments, a.id);
+  const time = "2030-01-07T10:00:00.000Z";
+  const history = [
+    { status: "waiting", occurredAt: "2029-01-01T00:00:00.000Z", reason: "initial" },
+    ...Array.from({ length: 65 }, (_, i) => ({
+      status: "waiting", occurredAt: time, reason: `event-${i}`,
+      actorKind: "doctor", actorId: "removed", deletedActor: true,
+    })),
+  ];
+  await h.api.change(h.t.appointments, a.id, { data: { ...row, history } });
+  const fetchPage = (cursor, actor = h.staff) => h.route(h.api.appointmentsRouter, "get",
+    "/appointments/:id/history", actor, {}, { id: a.id }, cursor ? { cursor } : {});
+  const detail = await h.route(h.api.appointmentsRouter, "get", "/appointments/:id", h.staff, {}, { id: a.id });
+  assert.equal(detail.history.length, 30);
+  assert.equal(detail.history[0].reason, "event-64");
+  assert.ok(detail.historyNextCursor);
+  const second = await fetchPage(detail.historyNextCursor);
+  assert.equal(second.history.length, 30);
+  assert.equal(second.history[0].reason, "event-34");
+  const last = await fetchPage(second.nextCursor);
+  assert.deepEqual(last.history.map(e => e.reason), ["event-4", "event-3", "event-2", "event-1", "event-0", "initial"]);
+  assert.equal(last.nextCursor, null);
+  assert.equal(second.history[0].actorState, "deleted");
+  assert.equal(JSON.stringify([detail, second, last]).includes('"actorId"'), false);
+  await assert.rejects(fetchPage(detail.historyNextCursor, { ...h.staff, clinicIds: [] }), /scope/);
+  await assert.rejects(fetchPage("not-a-cursor"), /Invalid history cursor/);
+});
+
+test("history ordering compares actual instants and distinguishes missing from empty", async () => {
+  const a = await h.book();
+  const row = await h.api.one(h.t.appointments, a.id);
+  await h.api.change(h.t.appointments, a.id, { data: { ...row, history: [
+    { status: "waiting", occurredAt: "2030-01-07T11:00:00+02:00", reason: "older" },
+    { status: "waiting", occurredAt: "2030-01-07T10:00:00Z", reason: "newer" },
+  ] } });
+  const detail = await h.route(h.api.appointmentsRouter, "get", "/appointments/:id", h.staff, {}, { id: a.id });
+  assert.deepEqual(detail.history.map(e => e.reason), ["newer", "older"]);
+  await h.api.change(h.t.appointments, a.id, { data: { ...row, history: [] } });
+  const empty = await h.route(h.api.appointmentsRouter, "get", "/appointments/:id", h.staff, {}, { id: a.id });
+  assert.deepEqual(empty.history, []);
+  const { history: _history, ...withoutHistory } = row;
+  await h.api.change(h.t.appointments, a.id, { data: withoutHistory });
+  const missing = await h.route(h.api.appointmentsRouter, "get", "/appointments/:id/history", h.staff, {}, { id: a.id });
+  assert.equal(missing.history, null);
 });
 
 test("strict input denies scheduling, identity and recipient overrides and rejects invalid mobile or long notes", async () => {

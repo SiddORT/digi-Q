@@ -95,4 +95,9 @@ export type Appointment = AppointmentBookingFields & ({
   /** @nullable */
   movementReason?: string | null;
   history?: StatusEvent[];
+  /**
+     * Opaque cursor for older private events; null when the initial page is complete.
+     * @nullable
+     */
+  historyNextCursor?: string | null;
 });

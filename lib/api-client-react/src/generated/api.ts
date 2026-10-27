@@ -39,6 +39,7 @@ import type {
   Appointment,
   AppointmentAction,
   AppointmentCalendar,
+  AppointmentHistoryPage,
   AppointmentInput,
   AppointmentList,
   AppointmentMovement,
@@ -105,6 +106,7 @@ import type {
   EventTemplateTestResult,
   GeographySuggestions,
   GetAppointmentCalendarParams,
+  GetAppointmentHistoryParams,
   GetAuthCsrf200,
   GetBookingScheduleAccessParams,
   GetClinicAdminSetupCompletionParams,
@@ -12653,6 +12655,9 @@ export const getGetAppointmentUrl = (id: string,) => {
   return `/api/appointments/${id}`
 }
 
+/**
+ * Private detail returns the first bounded history page, newest first. Fetch older events with historyNextCursor.
+ */
 export const getAppointment = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<Appointment> => {
 
   return customFetch<Appointment>(getGetAppointmentUrl(id),
@@ -12704,6 +12709,92 @@ export function useGetAppointment<TData = Awaited<ReturnType<typeof getAppointme
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAppointmentQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAppointmentHistoryUrl = (id: string,
+    params?: GetAppointmentHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/appointments/${id}/history?${stringifiedParams}` : `/api/appointments/${id}/history`
+}
+
+/**
+ * Private exact-visit history, newest first; cursor preserves equal-time recorded order. Requires the same permissions as the appointment detail.
+ */
+export const getAppointmentHistory = async (id: string,
+    params?: GetAppointmentHistoryParams, options?: Parameters<typeof customFetch>[1]): Promise<AppointmentHistoryPage> => {
+
+  return customFetch<AppointmentHistoryPage>(getGetAppointmentHistoryUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAppointmentHistoryQueryKey = (id: string,
+    params?: GetAppointmentHistoryParams,) => {
+    return [
+    `/api/appointments/${id}/history`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAppointmentHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getAppointmentHistory>>, TError = ErrorType<unknown>>(id: string,
+    params?: GetAppointmentHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAppointmentHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAppointmentHistoryQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAppointmentHistory>>> = ({ signal }) => getAppointmentHistory(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAppointmentHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAppointmentHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getAppointmentHistory>>>
+export type GetAppointmentHistoryQueryError = ErrorType<unknown>
+
+
+
+export function useGetAppointmentHistory<TData = Awaited<ReturnType<typeof getAppointmentHistory>>, TError = ErrorType<unknown>>(
+ id: string,
+    params?: GetAppointmentHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAppointmentHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAppointmentHistoryQueryOptions(id,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

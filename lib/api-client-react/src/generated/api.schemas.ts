@@ -306,6 +306,11 @@ export type Appointment = AppointmentBookingFields & ({
   /** @nullable */
   movementReason?: string | null;
   history?: StatusEvent[];
+  /**
+     * Opaque cursor for older private events; null when the initial page is complete.
+     * @nullable
+     */
+  historyNextCursor?: string | null;
 });
 
 export interface LiveTicket {
@@ -3389,6 +3394,13 @@ export type AppointmentInput = AppointmentBookingFields & {
   bookingMobile: string;
 };
 
+export interface AppointmentHistoryPage {
+  /** Null for legacy visits without a recorded history; an empty array means no events in this page. */
+  history: StatusEvent[] | null;
+  /** @nullable */
+  nextCursor: string | null;
+}
+
 export interface AppointmentQr {
   appointmentId: string;
   payload: string;
@@ -4642,6 +4654,10 @@ branchId?: string;
 doctorId?: string;
 status?: string;
 search?: string;
+};
+
+export type GetAppointmentHistoryParams = {
+cursor?: string;
 };
 
 export type GetQueueParams = {

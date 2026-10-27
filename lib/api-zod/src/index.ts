@@ -5,3 +5,4 @@ export { DeleteScheduleParams } from "./generated/api";
 export { GetDoctorPresenceParams } from "./generated/api";
 export { ResolveClinicSlugParams, ResolveBranchSlugParams } from "./generated/api";
 export { ListPatientActivityParams, UploadPatientDocumentParams } from "./generated/api";
+export { GetAppointmentHistoryParams } from "./generated/api";

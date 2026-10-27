@@ -171,7 +171,8 @@ export const ReadLiveTicketResponse = zod.object({
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
-})).optional()
+})).optional(),
+  "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
 })).optional()
 })
 
@@ -7373,7 +7374,8 @@ export const ListAppointmentsResponse = zod.object({
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
-})).optional()
+})).optional(),
+  "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
 })))
 }))
 
@@ -7510,7 +7512,8 @@ export const CreateAppointmentResponse = zod.object({
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
-})).optional()
+})).optional(),
+  "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
 }))
 
 
@@ -7637,7 +7640,8 @@ export const UpdateAppointmentBookingResponse = zod.object({
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
-})).optional()
+})).optional(),
+  "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
 }))
 
 
@@ -7719,6 +7723,9 @@ export const GetAppointmentCalendarResponse = zod.object({
 })
 
 
+/**
+ * Private detail returns the first bounded history page, newest first. Fetch older events with historyNextCursor.
+ */
 export const GetAppointmentParams = zod.object({
   "id": zod.coerce.string()
 })
@@ -7825,8 +7832,55 @@ export const GetAppointmentResponse = zod.object({
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
-})).optional()
+})).optional(),
+  "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
 }))
+
+
+/**
+ * Private exact-visit history, newest first; cursor preserves equal-time recorded order. Requires the same permissions as the appointment detail.
+ */
+export const GetAppointmentHistoryParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetAppointmentHistoryQueryParams = zod.object({
+  "cursor": zod.coerce.string().optional()
+})
+
+export const GetAppointmentHistoryResponse = zod.object({
+  "history": zod.union([zod.array(zod.object({
+  "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
+  "occurredAt": zod.coerce.date(),
+  "reason": zod.string().optional(),
+  "action": zod.string().optional(),
+  "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
+  "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
+  "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
+  "position": zod.number().int().optional(),
+  "from": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional(),
+  "to": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "timezone": zod.string().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional()
+})),zod.null()]).describe('Null for legacy visits without a recorded history; an empty array means no events in this page.'),
+  "nextCursor": zod.string().nullable()
+})
 
 
 /**
@@ -7956,7 +8010,8 @@ export const ResolveAppointmentQrResponse = zod.object({
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
-})).optional()
+})).optional(),
+  "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
 })),
   "eligible": zod.boolean(),
   "alreadyCheckedIn": zod.boolean(),
@@ -8077,7 +8132,8 @@ export const CheckInAppointmentQrResponse = zod.object({
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
-})).optional()
+})).optional(),
+  "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
 })),
   "alreadyCheckedIn": zod.boolean(),
   "message": zod.string()
@@ -8227,7 +8283,8 @@ export const GetAppointmentMovementResponse = zod.object({
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
-})).optional()
+})).optional(),
+  "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
 })),
   "queueVersion": zod.string(),
   "currentPosition": zod.number().int(),
@@ -8371,7 +8428,8 @@ export const ManageGuestReceiptResponse = zod.object({
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
-})).optional()
+})).optional(),
+  "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
 })),
   "queueVersion": zod.string(),
   "currentPosition": zod.number().int(),
@@ -8501,7 +8559,8 @@ export const RescheduleAppointmentResponse = zod.object({
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
-})).optional()
+})).optional(),
+  "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
 }))
 
 
@@ -8640,7 +8699,8 @@ export const TransitionAppointmentResponse = zod.object({
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
-})).optional()
+})).optional(),
+  "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
 }))
 
 
@@ -8825,7 +8885,8 @@ export const GetQueueResponse = zod.object({
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
-})).optional()
+})).optional(),
+  "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
 }))).optional().describe('Omitted for patients'),
   "statusCounts": zod.object({
   "active": zod.number().int().optional(),
@@ -8954,7 +9015,8 @@ export const CallNextResponse = zod.object({
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
-})).optional()
+})).optional(),
+  "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
 })),zod.null()])
 })
 
@@ -9219,7 +9281,8 @@ export const GetDashboardResponse = zod.object({
   "token": zod.string().optional(),
   "tokenNumber": zod.number().int().optional()
 }).optional()
-})).optional()
+})).optional(),
+  "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
 }))).optional(),
   "recentActivity": zod.array(zod.object({
   "id": zod.string(),

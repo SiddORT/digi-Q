@@ -7,7 +7,7 @@ const recordedRoles = new Set(["superAdmin", "clinicAdmin", "doctor", "reception
 const text = (value: unknown): string | null => typeof value === "string" && value.trim() ? value : null;
 
 /** Read-only detail enrichment. Deliberately NOT used by list, ticket, QR or receipt serializers. */
-export async function privateAppointmentDetail(row: any, user: any, conn: any = db) {
+export async function privateAppointmentDetail(row: any, user: any, conn: any = db, events: any[] = row.history || []) {
   const [storedPatient] = await conn.select().from(patients).where(eq(patients.id, row.patientId));
   const patient = flatten(storedPatient);
   const permitted = patient && await canRead(user, "patients", patient, conn);
@@ -21,7 +21,7 @@ export async function privateAppointmentDetail(row: any, user: any, conn: any = 
   } : null;
 
   // Fetch only actors actually referenced by this history, and only fields needed for permission/name projection.
-  const ids: string[] = [...new Set<string>((row.history || []).filter((e: any) => !e.deletedActor && e.actorKind !== "system")
+  const ids: string[] = [...new Set<string>(events.filter((e: any) => !e.deletedActor && e.actorKind !== "system")
     .map((e: any) => e.actorId).filter((id: any) => typeof id === "string" && !!id))];
   const actors = ids.length ? await conn.select({ id: users.id, fullName: users.fullName, role: users.role,
     managingAdminId: users.managingAdminId }).from(users).where(inArray(users.id, ids)) : [];
@@ -35,7 +35,7 @@ export async function privateAppointmentDetail(row: any, user: any, conn: any = 
     if ((permitted && patient.userId === actor.id || await canRead(user, "users", scopedActor, conn)) &&
       text(actor.fullName)) names.set(actor.id, actor.fullName);
   }
-  const history = row.history?.map((event: any) => {
+  const history = row.history && events.map((event: any) => {
     // Whitelist event coordinates; never return identity/order IDs, cached names or unclassified JSON.
     const snapshot = (value: any) => value ? Object.fromEntries(
       ["date", "startTime", "endTime", "timezone"].filter(key => typeof value[key] === "string").map(key => [key, value[key]])) : undefined;

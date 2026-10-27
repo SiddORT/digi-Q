@@ -1428,8 +1428,18 @@ paths:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     get:
       operationId: getAppointment
+      description: Private detail returns the first bounded history page, newest first. Fetch older events with historyNextCursor.
       responses:
         "200": { description: Confirmation and lifecycle, content: { application/json: { schema: { $ref: "#/components/schemas/Appointment" } } } }
+  /appointments/{id}/history:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      operationId: getAppointmentHistory
+      description: Private exact-visit history, newest first; cursor preserves equal-time recorded order. Requires the same permissions as the appointment detail.
+      parameters:
+        - { name: cursor, in: query, schema: { type: string } }
+      responses:
+        "200": { description: Bounded history page, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentHistoryPage" } } } }
   /appointments/{id}/qr:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     get:
@@ -3965,6 +3975,17 @@ components:
             bookingDetailsRevision: { type: integer, minimum: 0, description: "Visit-contact/notes concurrency revision, independent of lifecycle notification revisions." }
             movementReason: { type: ["string", "null"] }
             history: { type: array, items: { $ref: "#/components/schemas/StatusEvent" } }
+            historyNextCursor: { type: ["string", "null"], description: "Opaque cursor for older private events; null when the initial page is complete." }
+    AppointmentHistoryPage:
+      type: object
+      required: [history, nextCursor]
+      properties:
+        history:
+          description: "Null for legacy visits without a recorded history; an empty array means no events in this page."
+          anyOf:
+            - { type: array, items: { $ref: "#/components/schemas/StatusEvent" } }
+            - { type: "null" }
+        nextCursor: { type: ["string", "null"] }
     AppointmentQr:
       type: object
       required: [appointmentId, payload, checkInUrl]

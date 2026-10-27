@@ -66,7 +66,8 @@ function AppointmentDetailsInner({ appointment: a, supplementaryDetails, rowCont
         <AppointmentDetailsPanel appointment={a} supplementaryDetails={supplementaryDetails} rowContext={rowContext} />
       </TabsContent>
       <TabsContent value="history" className="appt-tab-panel">
-        <AppointmentHistoryPanel appointment={a} history={history} loading={historyLoading} error={historyError} retry={retryHistory} />
+        <AppointmentHistoryPanel key={`${a.id}:${a.historyNextCursor ?? ""}`} appointment={a} history={history} nextCursor={a.historyNextCursor}
+          loading={historyLoading} error={historyError} retry={retryHistory} />
       </TabsContent>
     </Tabs>
   </section>;
