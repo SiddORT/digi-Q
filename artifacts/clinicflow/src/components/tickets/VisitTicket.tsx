@@ -9,8 +9,12 @@ import { downloadTicketPdf } from "./ticket-pdf";
 import { ticketCssVarString, ticketCssVars, ticketModel } from "./ticket-model";
 import type { CSSProperties, ReactNode } from "react";
 import { formatDate, formatTime, type DateTimePreferences } from "../../lib/date-time";
+import type { ArrivalEstimate } from "@workspace/api-client-react";
+import { DirectionsAction, directionsUrl } from "./ArrivalGuidance";
 
 export type TicketData = Partial<DateTimePreferences> & {
+  estimate?: ArrivalEstimate;
+  liveTicketUrl?: string;
   patientName: string;
   clinicName: string;
   branchName: string;
@@ -53,7 +57,7 @@ export function embeddedTicketLogo(): Promise<string> {
 }
 
 /** Model input for both renderers (screen card and export/print HTML). */
-const modelFor = (t: TicketData) => ticketModel({ patientName: t.patientName, clinicName: t.clinicName, branchName: t.branchName, address: t.address, doctorName: t.doctorName, waitingNumber: t.waitingNumber, reference: t.reference, statusLabel: t.statusLabel, dateText: formatDate(t.date, t), sessionText: sessionRange(t) });
+const modelFor = (t: TicketData) => ticketModel({ ...t, dateText: formatDate(t.date, t), sessionText: sessionRange(t) });
 
 /** Self-contained HTML (inline styles + QR data URI) usable for both download and print.
  *  Same content model and the same --vt-* tokens as the on-screen card, so the two cannot drift. */
@@ -80,9 +84,9 @@ dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0}dt{opacity:
 <div class="t"><div class="h"><img src="${esc(logo)}" alt="DigiQ Doctors logo"><span>${m.title}</span><span class="s">${esc(m.status)}</span></div>
 <div class="b"><div><p class="l">${m.numberLabel}</p><p class="n">${esc(m.number)}</p>${t.reference ? `<p class="r">${esc(m.reference)}</p>` : ""}<p class="p">${esc(m.patient)}</p>
 <div class="visit"><span class="l">${m.visitLabel}</span><strong>${esc(m.visitPrimary)}</strong><small>${esc(m.visitSecondary)}</small></div>
-<dl>${m.facts.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>
+<dl>${m.facts.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${k === "Live ticket" ? `<a href="${esc(v)}" rel="noreferrer">${esc(v)}</a>` : esc(v)}</dd>`).join("")}<dt>Directions</dt><dd>${directionsUrl(t.address) ? `<a href="${esc(directionsUrl(t.address)!)}" rel="noreferrer">Get Directions</a>` : "Unavailable: no saved branch address. Contact the clinic."}</dd></dl></div>
 ${qr ? `<div class="q"><img src="${qr}" alt="${m.qrAlt}"><small>${m.qrCaption}</small></div>` : ""}</div>
-<div class="f">${m.footer}</div></div></body></html>`;
+<div class="f">${m.footer} Printed/downloaded snapshot; check the live ticket for updates.</div></div></body></html>`;
 }
 
 /** Patient-facing label for the real appointment status. */
@@ -141,6 +145,7 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
   return <article className={compact ? "vt vt-compact" : "vt"} data-testid={testId} aria-label="Visit ticket" style={ticketCssVars() as CSSProperties}>
     <header className="vt-head"><div className="vt-head-brand"><img src={BRAND_LOGO_URL} alt="DigiQ Doctors logo"/><h2>{compact ? "Ticket & QR" : m.title}</h2></div>
       <div className="vt-head-tools">
+        <DirectionsAction address={ticket.address}/>
         {!compact && <span className="vt-badge" data-testid="ticket-status" aria-label={`Booking Status: ${m.status}`}>{m.status}</span>}
         {actions ?? <div className="vt-actions" role="group" aria-label="Ticket Actions">
           <IconAction className="vt-icon-action" testId="button-download-ticket" label={busy==="download"?"Preparing PDF…":"Download Ticket PDF"} hint="Download Ticket PDF — ticket-sized, for phones and sharing" icon={<Download size={16} aria-hidden/>} onClick={() => void run("download")} disabled={disabled} disabledReason={why}/>

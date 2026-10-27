@@ -17,12 +17,13 @@ import { clearBookingDraft, getBookingDraft, isBookingDraftDirty, setBookingDraf
 import { useAppointmentTicketActions } from "./ticket-actions";
 import { refreshAppointmentObservers } from "./refresh";
 import "./booking-tab.css";
+import { ArrivalGuidance, LiveTicketAction } from "../tickets/ArrivalGuidance";
 
 /** Booking tab: Booking Details and Ticket & QR side by side, then one status strip. Polling reuses the shared
  *  appointment query key, so this layout adds only the queue/QR reads the old stacked ticket already made. */
 export function AppointmentBookingTab({ appointment: a }: { appointment: api.Appointment }) {
   const site = usePublicWebsite();
-  const live = api.useGetAppointment(a.id, { query: { queryKey: api.getGetAppointmentQueryKey(a.id), retry: false } });
+  const live = api.useGetAppointment(a.id, { query: { queryKey: api.getGetAppointmentQueryKey(a.id), retry: false, refetchInterval:30000 } });
   const freshness = useFreshWorkspace(live.dataUpdatedAt, !!live.error);
   const ticketVisible = canShowAppointmentTicket(a);
   const params = { doctorId: a.doctorId || "", branchId: a.branchId || "", date: a.date || "", sessionId: a.sessionId || undefined, startTime: a.startTime, appointmentId: a.id };
@@ -31,10 +32,7 @@ export function AppointmentBookingTab({ appointment: a }: { appointment: api.App
   const ctl = useAppointmentTicketActions();
   const online = freshness.online;
   const blocked = freshness.stale || !online || live.isFetching || !!live.error;
-  const patientUrl = site.url(`/patient/queue?appointment=${encodeURIComponent(a.id)}`);
-  const estimate = queue.error || !online ? <p role="alert">Booking status updates unavailable or offline. No estimate is shown. <button type="button" onClick={() => void queue.refetch()}>Retry</button></p>
-    : queue.isLoading ? <p role="status">Loading booking status…</p>
-    : queue.data?.ownEntry ? <p data-testid="text-ticket-estimate">{queue.data.ownEntry.patientsAhead} patients ahead · Approx. wait {queue.data.ownEntry.estimatedWaitMinutes == null ? "unavailable — duration not configured" : `${queue.data.ownEntry.estimatedWaitMinutes} minutes`}<small>An estimate only, not a countdown or appointment time. Breaks and delays may extend the wait.</small></p> : null;
+  const queueFresh = useFreshWorkspace(queue.dataUpdatedAt, !!queue.error);
   const presence = queue.data?.presence;
   return <div className="appt-booking" data-testid="section-detail-booking-layout">
     <div className="appt-booking-cards">
@@ -42,6 +40,7 @@ export function AppointmentBookingTab({ appointment: a }: { appointment: api.App
         <div className="appt-card-head"><h4 id={`bk-h-${a.id}`}>Booking Details</h4><BookingEditor appointment={a} blocked={freshness.stale || !online || !!live.error} /></div>
         <dl className="appt-detail-grid appt-booking-grid">
           <div className="span-2"><dt>Booked at</dt><dd data-testid="text-detail-booked">{formatConfiguredTimestamp(a.createdAt, a.timezone || undefined, {}, a)}<small>When the booking was created, not the visit time.</small></dd></div>
+          <div className="span-2"><dt>Arrival guidance</dt><dd><ArrivalGuidance estimate={queue.data?.ownEntry?.estimate || live.data?.estimate} stale={queueFresh.stale} timezone={a.timezone} timeFormat={a.timeFormat}/></dd></div>
           <div className="span-2"><dt>Visit contact mobile</dt><dd data-testid="text-detail-booking-mobile">{a.bookingMobile?.trim() || "Not recorded for this visit."}<small>Saved for this visit only; separate from profile/login contact. Does not determine notification recipients.</small></dd></div>
           <div className="span-2"><dt>{bookingFields.notes.label}</dt><dd><p className={`appt-detail-notes${a.notes?.trim() ? "" : " appt-detail-empty"}`} data-testid="text-detail-notes">{a.notes?.trim() || "No notes recorded."}</p></dd></div>
         </dl>
@@ -57,9 +56,8 @@ export function AppointmentBookingTab({ appointment: a }: { appointment: api.App
       </section>
     </div>
     {ticketVisible && <div className="appt-booking-strip" data-testid="ticket-information">
-      <div data-testid="text-ticket-booking-status"><span className="strip-label">Patient booking status</span>{patientUrl ? <a className="text-link" data-testid="link-ticket-patient-live" href={patientUrl} title={patientUrl}>Patient Booking Status Page</a> : <PublicWebsiteStatus />}<small>Patient signs in with the account that owns this booking.</small></div>
+      <div data-testid="text-ticket-booking-status"><span className="strip-label">Live ticket</span><LiveTicketAction appointmentId={a.id}/><small>Read-only status. Personal details require the booking owner's account.</small></div>
       <div data-testid="text-ticket-doctor-status"><span className="strip-label">Doctor status</span>{!queue.error && online && presence ? <p>{presence.status === "onBreak" ? "On break" : presence.status === "away" ? "Away" : "Available"}{presence.status !== "available" && <small>Calling is paused; the booking is kept.</small>}</p> : <p className="muted">Unavailable</p>}</div>
-      <div><span className="strip-label">Queue estimate</span>{estimate}</div>
       {freshness.stale && <p role="alert" className="strip-wide">Ticket is offline or stale. Reconnect and refresh before printing. <button type="button" disabled={!online} onClick={() => void live.refetch()}>Refresh Ticket</button></p>}
       <p className="strip-wide muted" data-testid="text-ticket-qr-warning">QR is for authorized staff validation, not public access to patient details. Printed tickets do not update; status refreshes every 30 seconds while connected.</p>
     </div>}

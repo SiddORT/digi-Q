@@ -20,12 +20,14 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { ArrivalEstimate } from './arrivalEstimate';
 import type { ClinicDateFormat } from './clinicDateFormat';
 import type { ClinicTimeFormat } from './clinicTimeFormat';
 import type { ConfirmationEmailOutcome } from './confirmationEmailOutcome';
 import type { GuestReceiptStatus } from './guestReceiptStatus';
 
 export interface GuestReceipt {
+  estimate?: ArrivalEstimate;
   confirmationEmail?: ConfirmationEmailOutcome;
   dateFormat?: ClinicDateFormat;
   timeFormat?: ClinicTimeFormat;

@@ -29,7 +29,8 @@ async function mount(page: Page, surface: string) {
     else if (path === "/api/appointments/appointment-2") body = b2;
     else if (path === "/api/appointments/appointment-1/email-ticket") body = { eligible: true, reason: "", recipient: "patient@example.invalid" };
     else if (path.endsWith("/qr")) body = { appointmentId: "appointment-1", checkInUrl: qrUrl, payload: "x" };
-    else if (path === "/api/queue") body = { entries: [], presence: { status: "available" }, ownEntry: { patientsAhead: 1, estimatedWaitMinutes: 20 } };
+    else if (path === "/api/live-ticket-links") body = {url:"https://tickets.example.invalid/live-ticket#"+"b".repeat(64),expiresAt:"2030-06-17T00:00:00Z"};
+    else if (path === "/api/queue") body = { entries: [], presence: { status: "available" }, ownEntry: { patientsAhead: 1, estimatedWaitMinutes: 20, estimate:{state:"ready",basis:"sessionStart",asOf:new Date().toISOString(),patientsAhead:1,waitMinutes:20,suggestedArrival:"09:10",beyondSessionEnd:false,guidance:"Estimate only, not an appointment time."} } };
     else { status = 501; body = { message: `Unmocked ${path}` }; }
     await route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
   });

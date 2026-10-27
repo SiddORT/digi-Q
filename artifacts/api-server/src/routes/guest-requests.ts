@@ -20,6 +20,7 @@ import { transition } from "../lib/appointments";
 import { reschedule } from "../lib/reschedule";
 import { enforcePermissionPolicy } from "../lib/permission-policy";
 import { bookingMobile } from "../lib/booking-contact";
+import { withEstimates } from "../lib/appointment-estimates";
 
 export const guestRequestsRouter = Router();
 export const guestListControls = schema.object({
@@ -36,10 +37,12 @@ export function guestReceipt(r: any, appointment?: any) {
     appointmentId: r.appointmentId ?? null,
     reference: appointment?.reference ?? null, branchAddress: appointment?.branchAddress ?? r.branchAddress ?? null,
     appointmentStatus: appointment?.status ?? null, revision: appointment?.revision ?? null, confirmationEmail: appointment?.confirmationEmail ?? r.confirmationEmail,
+    estimate: appointment?.estimate,
     checkInUrl: payload ? `/check-in?payload=${encodeURIComponent(payload)}` : null };
 }
 async function currentReceipt(row: any, conn: any = db) {
   let appointment = row.appointmentId ? await one(appointments, row.appointmentId, conn) : null;
+  if (appointment) [appointment] = await withEstimates([appointment], conn);
   if (appointment && appointment.branchAddress == null) {
     const branch = await one(branches, appointment.branchId, conn);
     appointment = { ...appointment, branchAddress: branch.address ?? null };

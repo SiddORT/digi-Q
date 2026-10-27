@@ -71,6 +71,10 @@ export async function createQueueHarness({ empty = false, pre0008 = false } = {}
         export * from "./lib/appointments";
         export * from "./lib/reschedule";
         export * from "./lib/queue-order";
+        export * from "./lib/arrival-estimate";
+        export * from "./lib/live-ticket";
+        export { ticketAttachment } from "./lib/ticket-email";
+        export * from "./routes/live-ticket";
         export * from "./lib/store";
         export * from "./lib/clinic-expansion";
         export * from "./lib/availability";

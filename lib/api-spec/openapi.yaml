@@ -23,6 +23,42 @@ servers:
 security:
   - NativeSession: []
 paths:
+  /live-ticket-links:
+    post:
+      operationId: issueLiveTicketLink
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LiveTicketLinkInput" }
+      responses:
+        "200":
+          description: Private read-only link; only its hash is stored
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LiveTicketLink" }
+  /public/live-ticket:
+    post:
+      operationId: readLiveTicket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LiveTicketAccess" }
+      responses:
+        "200":
+          description: Minimal status; personal appointment only for verified signed-in owner
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LiveTicket" }
+        "404": { description: "Invalid, expired or revoked link" }
+  /appointments/{id}/live-ticket-links:
+    delete:
+      operationId: revokeLiveTicketLinks
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: All existing links revoked }
   /staff-verification:
     get:
       operationId: getStaffVerification
@@ -1783,6 +1819,54 @@ components:
     From: { name: from, in: query, schema: { type: string, format: date } }
     To: { name: to, in: query, schema: { type: string, format: date } }
   schemas:
+    ArrivalEstimate:
+      type: object
+      required: [state, basis, asOf, patientsAhead, waitMinutes, suggestedArrival, beyondSessionEnd, guidance]
+      properties:
+        state: { type: string, enum: [ready, paused, unavailable, ended, terminal] }
+        basis: { type: string, enum: [sessionStart, remainingQueue] }
+        asOf: { type: string }
+        patientsAhead: { type: [integer, "null"] }
+        waitMinutes: { type: [integer, "null"] }
+        suggestedArrival: { type: [string, "null"], description: Session-local HH:mm; not an appointment time }
+        beyondSessionEnd: { type: boolean }
+        guidance: { type: string }
+    LiveTicketLinkInput:
+      type: object
+      properties:
+        appointmentId: { type: string }
+        receiptSecret: { type: string, pattern: '^[a-f0-9]{64}$' }
+    LiveTicketLink:
+      type: object
+      required: [url, expiresAt]
+      properties:
+        url: { type: string }
+        expiresAt: { type: string }
+    LiveTicketAccess:
+      type: object
+      required: [capability]
+      properties:
+        capability: { type: string, pattern: '^[a-f0-9]{64}$' }
+    LiveTicket:
+      type: object
+      required: [clinicName, doctorName, branchName, date, status, token, presence, updatedAt, estimate]
+      properties:
+        dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
+        timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
+        clinicName: { type: string }
+        doctorName: { type: string }
+        branchName: { type: string }
+        branchAddress: { type: [string, "null"] }
+        date: { type: string }
+        startTime: { type: [string, "null"] }
+        endTime: { type: [string, "null"] }
+        timezone: { type: [string, "null"] }
+        status: { type: string }
+        token: { type: string }
+        presence: { type: string }
+        updatedAt: { type: string }
+        estimate: { $ref: "#/components/schemas/ArrivalEstimate" }
+        appointment: { $ref: "#/components/schemas/Appointment" }
     NotificationChoice:
       type: object
       additionalProperties: false
@@ -3100,6 +3184,7 @@ components:
       type: object
       required: [id, status, fullName, clinicName, branchName, doctorName, date, startTime, endTime, timezone, token, reason, appointmentId, reference, branchAddress, appointmentStatus, revision, checkInUrl]
       properties:
+        estimate: { $ref: "#/components/schemas/ArrivalEstimate" }
         confirmationEmail: { $ref: "#/components/schemas/ConfirmationEmailOutcome" }
         dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
         timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
@@ -3789,6 +3874,7 @@ components:
         - type: object
           required: [id, reference, token, status, createdAt, patientName, doctorName, clinicName, branchName, allowedActions]
           properties:
+            estimate: { $ref: "#/components/schemas/ArrivalEstimate" }
             bookingMobile: { type: ["string", "null"], description: "Submitted visit contact; may be absent on historical bookings." }
             bookingContactSource: { type: ["string", "null"], enum: [staff, patient, guest, null], description: "Server-derived submitter provenance, not contact ownership or verification." }
             confirmationEmail: { $ref: "#/components/schemas/ConfirmationEmailOutcome" }
@@ -3910,6 +3996,7 @@ components:
       type: object
       required: [appointmentId, token, status, patientsAhead, estimatedWaitMinutes]
       properties:
+        estimate: { $ref: "#/components/schemas/ArrivalEstimate" }
         dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
         timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
         appointmentId: { type: string }

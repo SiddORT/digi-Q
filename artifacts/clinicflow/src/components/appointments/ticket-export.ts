@@ -18,6 +18,7 @@ export async function freshTicketHtml(id: string, logo?: string) {
   if (!code.checkInUrl) throw new Error("Personal QR unavailable. Refresh and try again.");
   const image = await QRCode.toDataURL(await absoluteUrl(code.checkInUrl), { width: 300, margin: 2 });
   const a = confirmed;
-  const html = ticketHtml({ dateFormat: a.dateFormat, timeFormat: a.timeFormat, patientName: a.patientName, clinicName: a.clinicName, branchName: a.branchName, address: a.branchAddress, doctorName: a.doctorName, date: a.date, startTime: a.startTime, endTime: a.endTime, timezone: a.timezone, waitingNumber: a.token, reference: a.reference, statusLabel: bookingStatusLabel(a.status), qrUrl: code.checkInUrl }, image, logo ?? await embeddedTicketLogo());
+  const link = await api.issueLiveTicketLink({appointmentId:id});
+  const html = ticketHtml({ estimate: a.estimate, liveTicketUrl:link.url, dateFormat: a.dateFormat, timeFormat: a.timeFormat, patientName: a.patientName, clinicName: a.clinicName, branchName: a.branchName, address: a.branchAddress, doctorName: a.doctorName, date: a.date, startTime: a.startTime, endTime: a.endTime, timezone: a.timezone, waitingNumber: a.token, reference: a.reference, statusLabel: bookingStatusLabel(a.status), qrUrl: code.checkInUrl }, image, logo ?? await embeddedTicketLogo());
   return { html, appointment: a };
 }

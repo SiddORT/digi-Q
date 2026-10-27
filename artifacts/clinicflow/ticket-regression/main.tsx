@@ -10,7 +10,8 @@ import { BulkAppointments } from "../src/components/appointments/BulkAppointment
 const query = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false }, mutations: { retry: false } } });
 const params = new URLSearchParams(location.search);
 const mode = params.get("mode");
-if (mode !== "sms-tests" && mode !== "website" && mode !== "guest" && mode !== "appointment" && mode !== "bulk" && mode !== "locations" && mode !== "details" && mode !== "templates" && mode !== "tooltips") throw new Error(`Unknown ticket fixture: ${mode}`);
+if (mode !== "live" && mode !== "sms-tests" && mode !== "website" && mode !== "guest" && mode !== "appointment" && mode !== "bulk" && mode !== "locations" && mode !== "details" && mode !== "templates" && mode !== "tooltips") throw new Error(`Unknown ticket fixture: ${mode}`);
+const LiveTicketFixture = lazy(() => import("./LiveTicketFixture"));
 const TooltipFixture = lazy(() => import("./TooltipFixture").then(m => ({ default: m.TooltipFixture })));
 const PublicWebsiteFixture = lazy(() => import("./PublicWebsiteFixture").then(m => ({ default: m.PublicWebsiteFixture })));
 const NotificationTemplatesFixture = lazy(() => import("./NotificationTemplatesFixture").then(m => ({ default: m.NotificationTemplatesFixture })));
@@ -39,7 +40,7 @@ window.decodeTicketQr = async (uri) => {
 const SmsEditorFixture = lazy(() => import("./SmsEditorFixture"));
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={query}>
-    {mode === "sms-tests" ? <Suspense fallback="Loading fixture…"><SmsEditorFixture /></Suspense> : mode === "website" ? <Suspense fallback="Loading fixture…"><PublicWebsiteFixture/></Suspense> : mode === "tooltips" ? <Suspense fallback="Loading fixture…"><TooltipFixture /></Suspense> : mode === "templates" ? <Suspense fallback="Loading fixture…"><NotificationTemplatesFixture /></Suspense> : mode === "details" ? <Suspense fallback="Loading fixture…"><AppointmentDetailsFixture /></Suspense> : mode === "locations" ? <Suspense fallback="Loading fixture…"><LocationFixture /></Suspense> : mode === "guest"
+    {mode === "live" ? <Suspense fallback="Loading fixture…"><LiveTicketFixture/></Suspense> : mode === "sms-tests" ? <Suspense fallback="Loading fixture…"><SmsEditorFixture /></Suspense> : mode === "website" ? <Suspense fallback="Loading fixture…"><PublicWebsiteFixture/></Suspense> : mode === "tooltips" ? <Suspense fallback="Loading fixture…"><TooltipFixture /></Suspense> : mode === "templates" ? <Suspense fallback="Loading fixture…"><NotificationTemplatesFixture /></Suspense> : mode === "details" ? <Suspense fallback="Loading fixture…"><AppointmentDetailsFixture /></Suspense> : mode === "locations" ? <Suspense fallback="Loading fixture…"><LocationFixture /></Suspense> : mode === "guest"
       ? <GuestBooking reference="fixture-qr" context={{ clinicId: "clinic-1", branchId: "branch-1", doctorId: "doctor-1", branchTimezone: "UTC", dateFormat: "DD/MM/YYYY", timeFormat: "24h" } as React.ComponentProps<typeof GuestBooking>["context"]} />
       : mode === "bulk" ? <BulkAppointments ids={["appointment-3", "appointment-1", "appointment-2"]} disabled={false} onClear={() => {}} />
       : <AppointmentTicket id="appointment-1" />}

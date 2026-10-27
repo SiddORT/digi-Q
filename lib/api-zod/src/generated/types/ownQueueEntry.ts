@@ -21,10 +21,12 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { AppointmentStatus } from './appointmentStatus';
+import type { ArrivalEstimate } from './arrivalEstimate';
 import type { ClinicDateFormat } from './clinicDateFormat';
 import type { ClinicTimeFormat } from './clinicTimeFormat';
 
 export interface OwnQueueEntry {
+  estimate?: ArrivalEstimate;
   dateFormat?: ClinicDateFormat;
   timeFormat?: ClinicTimeFormat;
   appointmentId: string;

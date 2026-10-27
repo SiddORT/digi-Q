@@ -345,3 +345,9 @@ No real accounts, live messages, UAT or production deployment were involved.
 The separately reusable future-pass prompt is
 [`popup-form-refinement-prompt.md`](popup-form-refinement-prompt.md). It does not
 authorize an app-wide redesign.
+
+## Arrival guidance and live tickets
+
+Changed-surface coverage, responsive measurements, persistent regression tests
+and identity/provider limitations are recorded in
+[`live-ticket-verification.md`](live-ticket-verification.md).

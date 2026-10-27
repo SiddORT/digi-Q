@@ -25,8 +25,10 @@ import { systemUsersRouter } from "./system-users";
 import { workspaceFeaturesRouter } from "./workspace-features";
 import { notificationSettingsRouter } from "./notification-settings";
 import { patientRecordsRouter } from "./patient-records";
+import { liveTicketRouter } from "./live-ticket";
 
 const router: IRouter = Router();
+router.use(liveTicketRouter);
 router.use(notificationSettingsRouter);
 router.use(geographyRouter);
 router.use(systemUsersRouter);

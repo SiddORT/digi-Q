@@ -17,6 +17,9 @@ import { sendAuthEmail } from "./auth-email";
 import { consumeRateLimit } from "./native-auth";
 import { logger } from "./logger";
 import { publicOrigin, publicUrl } from "./public-website";
+import { issueLiveLink } from "./live-ticket";
+import { formatTemplateSession } from "./notification-template-values";
+import { branchDirectionsUrl } from "@workspace/api-zod/ticket-directions";
 
 export async function ticketEmailPreview(user: any, id: string) {
   roles(user, ["superAdmin", "clinicAdmin", "doctor", "receptionist"]);
@@ -37,12 +40,13 @@ export async function ticketEmailPreview(user: any, id: string) {
   return { recipient, eligible: !reason, reason };
 }
 
-async function ticketAttachment(user: any, id: string) {
+export async function ticketAttachment(user: any, id: string) {
   const row = await one(appointments, id);
   const view = await appointmentViewWithBranch(row, user);
   const clinic = await one(clinics, row.clinicId);
   const qr = await getAppointmentQr(user, id);
   const ticketUrl = publicUrl(qr.checkInUrl);
+  const live = await issueLiveLink(row);
   const pdf = new jsPDF();
   const root = process.cwd().endsWith("api-server") ? process.cwd() : resolve(process.cwd(), "artifacts/api-server");
   const font = await readFile(resolve(root, "assets/ticket-font.ttf"));
@@ -52,13 +56,27 @@ async function ticketAttachment(user: any, id: string) {
   pdf.addImage(logo.toString("base64"), "PNG", 15, 10, 40, 20);
   pdf.setFontSize(18); pdf.text("Visit Ticket", 65, 23);
   pdf.setFontSize(11);
-  const text = `${view.patientName}\nWaiting number: ${view.token}\nCurrent status: ${view.status}\n${view.branchAddress ? `Address: ${view.branchAddress}\n` : ""}\n${confirmationText(view, clinic).replace("Your appointment is confirmed.", "Visit details.")}\nKeep your QR private. Staff must confirm consultation check-in.`;
+  const e = view.estimate;
+  const arrival = e.suggestedArrival ? formatTemplateSession({...view,startTime:e.suggestedArrival},clinic).start : null;
+  const estimateText = `${e.basis === "sessionStart" ? "Wait from session start" : "Remaining queue wait"}: ${e.waitMinutes == null ? "Unavailable" : `Approx. ${e.waitMinutes} minutes`}\nSuggested arrival: ${arrival || "Not available"}${arrival ? ` (${view.timezone})` : ""}\nEstimate as of: ${e.asOf}\n${e.guidance}\nDownloaded snapshot; check the live ticket for updates.`;
+  const text = `${view.patientName}\nWaiting number: ${view.token}\nReference: ${view.reference}\nCurrent status: ${view.status}\n${view.branchAddress ? `Address: ${view.branchAddress}\n` : ""}\n${confirmationText(view, clinic).replace("Your appointment is confirmed.", "Visit details.")}\n${estimateText}\nKeep your QR private. Staff must confirm consultation check-in.`;
   const lines = pdf.splitTextToSize(text, 175);
   let y = 40;
   for (const line of lines) {
     if (y > 270) { pdf.addPage(); y = 15; }
     pdf.text(line, 15, y); y += 6;
   }
+  if (y > 250) { pdf.addPage(); y = 15; }
+  pdf.textWithLink("Open live ticket / status", 15, y, { url: live.url }); y += 7;
+  for (const line of pdf.splitTextToSize(live.url, 175)) {
+    if (y > 270) { pdf.addPage(); y = 15; }
+    pdf.text(line, 15, y); y += 6;
+  }
+  const directions = branchDirectionsUrl(view.branchAddress);
+  if (y > 260) { pdf.addPage(); y = 15; }
+  if (directions) pdf.textWithLink("Get Directions", 15, y, {url:directions});
+  else pdf.text("Directions unavailable: no saved branch address.",15,y);
+  y += 7;
   if (y > 205) { pdf.addPage(); y = 15; }
   pdf.addImage(await QRCode.toDataURL(ticketUrl, { width: 500, margin: 2 }), "PNG", 15, y + 5, 60, 60);
   const confirmed = await one(appointments, id);

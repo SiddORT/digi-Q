@@ -18,6 +18,7 @@ import { appointmentMovement } from "../lib/appointment-movement";
 import { rank, sessionRows } from "../lib/queue-order";
 import { confirmAppointmentEmail, initialConfirmationEmail } from "../lib/appointment-confirmation";
 export const appointmentsRouter = Router();
+appointmentsRouter.use("/appointments", (_req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
 import { ticketEmailPreview, emailTicket } from "../lib/ticket-email";
 import { z as validator } from "zod";
 import { bookingDetailsUpdate, updateBookingDetails } from "../lib/appointment-booking-edit";
@@ -120,7 +121,7 @@ export async function bookAppointment(user: any, body: any, tx: any, guestPolicy
     const expectedDurationMinutes = await snapshotDuration(body, tx);
     const queueRank = Math.max(0, ...sessionRows(existing, body).map(rank)) + 1;
     const result = await put(appointments, { id, status: "waiting", patientId: body.patientId, doctorId: body.doctorId, clinicId: body.clinicId, branchId: body.branchId, date: body.date, tokenNumber, requestId: body.requestId, actorId: user.id, data: { ...body, confirmationEmail, ...(guestPolicy ? { bookingOrigin: "anonymousGuest" } : {}), waitingAt: timestamp, reference: `CF-${uid().replaceAll("-", "").toUpperCase().slice(0,16)}`, token: `${available.tokenPrefix}-${String(tokenNumber).padStart(2, "0")}`, patientName: patient.fullName, patientCode: patient.code, doctorName: doctor.fullName, clinicName: clinic.name, branchName: branch.name, branchAddress: branch.address ?? null, timezone: available.timezone, startTime: available.startTime, endTime: available.endTime, history: [{ status: "waiting", occurredAt: timestamp }] } }, tx);
-    Object.assign(result, { expectedDurationMinutes, queueRank, revision: 0 });
+    Object.assign(result, { expectedDurationMinutes, queueRank, revision: 0, breakStart: available.breakStart ?? null, breakEnd: available.breakEnd ?? null });
     await change(appointments, id, { data: result }, tx);
     await put(appointmentHistory, { id: uid(), appointmentId: id, actorId: user.id, toStatus: "waiting" }, tx);
     await audit(user, "book", "appointments", result, tx);

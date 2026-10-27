@@ -7,6 +7,7 @@ import { useFreshWorkspace } from "../queue/useFreshWorkspace";
 import { confirmationEmailMessage } from "./confirmation-email";
 import { isPrivateAppointmentUnavailable } from "./presentation";
 import { usePublicWebsite, PublicWebsiteStatus } from "../../lib/public-website";
+import { ArrivalGuidance, LiveTicketAction } from "../tickets/ArrivalGuidance";
 
 const statusLabel=(status:string)=>status==="called"?"Called next":["booked","checkedIn","waiting"].includes(status)?"Waiting":title(status);
 
@@ -35,9 +36,10 @@ export function AppointmentTicket({id,showHistory=true}:{id:string;showHistory?:
     if(fresh.revision!==confirmed.revision||fresh.status!==confirmed.status)throw new Error("Appointment changed while preparing the ticket. Refresh and try again.");
     if(!code.checkInUrl)throw new Error("Personal QR unavailable. Refresh and try again.");
     void appointment.refetch();
-    return {dateFormat:confirmed.dateFormat,timeFormat:confirmed.timeFormat,patientName:confirmed.patientName,clinicName:confirmed.clinicName,branchName:confirmed.branchName,address:confirmed.branchAddress,doctorName:confirmed.doctorName,date:confirmed.date,startTime:confirmed.startTime,endTime:confirmed.endTime,timezone:confirmed.timezone,waitingNumber:confirmed.token,reference:confirmed.reference,statusLabel:bookingStatusLabel(confirmed.status),qrUrl:code.checkInUrl};
+    const link=await api.issueLiveTicketLink({appointmentId:id});
+    return {estimate:confirmed.estimate,liveTicketUrl:link.url,dateFormat:confirmed.dateFormat,timeFormat:confirmed.timeFormat,patientName:confirmed.patientName,clinicName:confirmed.clinicName,branchName:confirmed.branchName,address:confirmed.branchAddress,doctorName:confirmed.doctorName,date:confirmed.date,startTime:confirmed.startTime,endTime:confirmed.endTime,timezone:confirmed.timezone,waitingNumber:confirmed.token,reference:confirmed.reference,statusLabel:bookingStatusLabel(confirmed.status),qrUrl:code.checkInUrl};
   }
-  const estimate=queue.error||!online?<p role="alert" className="span-2">Booking status updates unavailable or offline. No estimate is shown. <button onClick={()=>queue.refetch()}>Retry</button></p>:queue.isLoading?<p role="status">Loading booking status…</p>:queue.data?.ownEntry?<p className="notice" data-testid="text-ticket-estimate">{queue.data.ownEntry.patientsAhead} patients ahead · Approx. wait {queue.data.ownEntry.estimatedWaitMinutes==null?"unavailable — duration not configured":`${queue.data.ownEntry.estimatedWaitMinutes} minutes`}<br/><small>An estimate only, not a countdown or appointment time. Breaks and delays may extend the wait.</small></p>:null;
+  const queueFresh=useFreshWorkspace(queue.dataUpdatedAt,!!queue.error);
   return <div className="appt-ticket"><ErrorNotice error={appointment.error}/>{appointment.error&&<button onClick={()=>appointment.refetch()}>Refresh Ticket</button>}{unavailable?<p role="alert">This appointment is unavailable. Private ticket details are hidden.</p>:!a?<p role="status">Loading ticket…</p>:<>
     {(()=>{const message=confirmationEmailMessage(a.confirmationEmail);const delivery=message?.replace(/^Booking confirmed\.\s*/, "");
       // Describe the current booking, not a new creation event or a stale email outcome.
@@ -45,13 +47,12 @@ export function AppointmentTicket({id,showHistory=true}:{id:string;showHistory?:
       return <div className="appt-ticket-confirmation" role="status" data-testid="text-ticket-confirmation"><strong>{heading}</strong>
         {root&&<Link className="text-link appt-ticket-status-link" href={`/${root}/queue?appointment=${encodeURIComponent(id)}`} data-testid="link-ticket-open-status">Open Booking Status</Link>}
         {delivery&&<p className="appt-ticket-delivery" data-testid="text-ticket-delivery">{delivery}</p>}</div>;})()}
-    <VisitTicket testId="appointment-ticket" ticket={{dateFormat:a.dateFormat,timeFormat:a.timeFormat,patientName:a.patientName,clinicName:a.clinicName,branchName:a.branchName,address:a.branchAddress,doctorName:a.doctorName,date:a.date,startTime:a.startTime,endTime:a.endTime,timezone:a.timezone,waitingNumber:a.token,reference:a.reference,statusLabel:bookingStatusLabel(a.status),qrUrl:qr.data?.checkInUrl}} prepareExport={prepareExport} exportDisabled={freshness.stale||!online||appointment.isFetching||!!appointment.error}/>
+    <LiveTicketAction appointmentId={id}/>
+    <VisitTicket testId="appointment-ticket" ticket={{estimate:queueFresh.stale?undefined:queue.data?.ownEntry?.estimate || a.estimate,dateFormat:a.dateFormat,timeFormat:a.timeFormat,patientName:a.patientName,clinicName:a.clinicName,branchName:a.branchName,address:a.branchAddress,doctorName:a.doctorName,date:a.date,startTime:a.startTime,endTime:a.endTime,timezone:a.timezone,waitingNumber:a.token,reference:a.reference,statusLabel:bookingStatusLabel(a.status),qrUrl:qr.data?.checkInUrl}} prepareExport={prepareExport} exportDisabled={freshness.stale||!online||appointment.isFetching||!!appointment.error}/>
     {qr.error&&<><ErrorNotice error={qr.error}/><button onClick={()=>qr.refetch()} data-testid="button-retry-appointment-qr">Retry QR</button></>}
     <ErrorNotice error={queue.error}/>
     <div className="appt-ticket-info" data-testid="ticket-information">
-      <div className="span-2 appt-ticket-live" data-testid="text-ticket-booking-status"><span>Booking status (sign in with the account that owns this booking):</span> {patientLiveUrl ? <a className="text-link" data-testid="link-ticket-patient-live" href={patientLiveUrl} title={patientLiveUrl}>Patient Booking Status Page</a> : <PublicWebsiteStatus/>}</div>
       {!queue.error&&online&&queue.data?.presence&&<p className="notice" data-testid="text-ticket-doctor-status">Doctor status: {queue.data.presence.status==="onBreak"?"On break":queue.data.presence.status==="away"?"Away":"Available"}{queue.data.presence.status!=="available"&&" · Calling is paused; your booking is kept."}</p>}
-      {estimate}
        {showHistory&&(root||!!a.history?.length)&&<div className="appt-ticket-links span-2">
         {!!a.history?.length&&<details><summary>Appointment History</summary><ul>{a.history.map((event,index)=><li key={index}>{new Date(event.occurredAt).toLocaleString()} · {statusLabel(event.status)}{event.reason&&` · ${event.reason}`}</li>)}</ul></details>}
       </div>}

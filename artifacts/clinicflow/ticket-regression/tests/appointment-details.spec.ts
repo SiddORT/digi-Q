@@ -63,9 +63,11 @@ async function mount(page: Page, surface = "", linked = false, initial: Partial<
     } else if (path.endsWith("/qr")) {
       status = state.failQr ? 503 : 200;
       body = state.failQr ? { message: "Fixture QR unavailable" } : { appointmentId: "appointment-1", checkInUrl: qrUrl, payload: "private-fixture" };
+    } else if (path === "/api/live-ticket-links") {
+      body = {url:"https://tickets.example.invalid/live-ticket#"+"b".repeat(64),expiresAt:"2030-06-17T00:00:00Z"};
     } else if (path === "/api/queue") {
       status = state.failQueue ? 503 : 200;
-      body = state.failQueue ? { message: "Fixture status unavailable" } : { entries: [], presence: { status: "onBreak" }, ownEntry: { patientsAhead: 2, estimatedWaitMinutes: 20 } };
+      body = state.failQueue ? { message: "Fixture status unavailable" } : { entries: [], presence: { status: "onBreak" }, ownEntry: { patientsAhead: 2, estimatedWaitMinutes: null, estimate:{state:"paused",basis:"remainingQueue",asOf:new Date().toISOString(),patientsAhead:2,waitMinutes:null,suggestedArrival:null,beyondSessionEnd:false,guidance:"Doctor is on break. Arrival guidance resumes when availability is confirmed."} } };
     } else { status = 501; body = { message: `Unmocked fixture request ${path}` }; }
     await route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
   });
@@ -335,7 +337,8 @@ test("Booking default, keyboard sections, all fields, history and fresh refresh 
   await expect(page.getByTestId("section-detail-additional")).not.toBeVisible();
   await expect(page.getByTestId("section-detail-history")).not.toBeVisible();
   await expect(page.getByText("Appointment History", { exact: true })).toHaveCount(0);
-  await expect(page.getByTestId("text-ticket-estimate")).toContainText("2 patients ahead");
+  await expect(page.getByTestId("text-ticket-estimate")).toContainText("Patients ahead");
+  await expect(page.getByTestId("text-ticket-estimate")).toContainText("Doctor is on break");
   await page.getByTestId("button-copy-reference").click();
   await expect(page.getByTestId("button-copy-reference")).toHaveText("Copied");
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(first.reference);
@@ -452,10 +455,10 @@ test("loading, QR and queue retry states remain accessible; detail refresh error
   await tab(page, "Booking").click();
   await page.getByRole("button", { name: "Refresh fixture" }).click();
   await expect(page.getByTestId("button-retry-appointment-qr")).toBeVisible();
-  await expect(details(page)).toContainText("No estimate is shown.");
+  await expect(details(page)).toContainText("Waiting estimates unavailable while offline or stale.");
   state.failQr = false; state.failQueue = false;
   await page.getByTestId("button-retry-appointment-qr").click();
-  await page.getByRole("button", { name: "Retry", exact: true }).click();
+  await page.getByRole("button", { name: "Refresh fixture", exact: true }).click();
   await expect(page.getByAltText("Personal visit QR")).toBeVisible();
   await expect(page.getByTestId("text-ticket-estimate")).toBeVisible();
 });
@@ -467,7 +470,7 @@ test("QR, status URLs, print/download and switching tabs cannot bypass fresh exp
   const image = page.getByAltText("Personal visit QR");
   await expect(image).toBeVisible();
   expect(await page.evaluate(uri => window.decodeTicketQr(uri!), await image.getAttribute("src"))).toBe(qrUrl);
-  await expect(page.getByTestId("link-ticket-patient-live")).toHaveAttribute("href", /\/patient\/queue\?appointment=appointment-1$/);
+  await expect(page.getByTestId("button-open-live-ticket")).toBeVisible();
   const downloaded = page.waitForEvent("download");
   await download.click();
   expect((await downloaded).suggestedFilename()).toMatch(/\.pdf$/);

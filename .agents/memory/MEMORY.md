@@ -68,3 +68,4 @@
 - [Booking edit revisions](booking-edit-revisions.md) — contact/notes concurrency must not advance lifecycle notification eligibility or recapture automatic messages.
 - [Account notification authority](account-notification-authority.md) — manual SMS requires the account's valid saved mobile; separate patient/visit numbers cannot substitute.
 - [Appointment presentation boundary](appointment-presentation-boundary.md) — preserve approved Booking; deduplicate row context without losing standalone context or real History events.
+- [Live-ticket authority](live-ticket-authority.md) — read-only sharing is separate from existing guest receipt management; signing in does not claim a guest booking.

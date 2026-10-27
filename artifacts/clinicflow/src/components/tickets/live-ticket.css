@@ -1,0 +1,18 @@
+.live-ticket{display:grid;gap:16px;width:100%;max-width:720px;margin:0 auto}
+.live-ticket-head h1{margin:0 0 4px}
+.live-ticket-head p{margin:0}
+.live-ticket-state,.live-ticket-signin,.live-ticket-stale,.live-ticket-address{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:8px 12px;border:1px solid hsl(var(--border));border-radius:8px}
+.live-ticket-state{flex-direction:column;align-items:flex-start}
+.live-ticket-state p{margin:0}
+.live-ticket-signin span,.live-ticket-stale span,.live-ticket-address span{flex:1 1 240px;overflow-wrap:anywhere}
+.live-ticket-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0}
+.live-ticket-grid div{min-width:0}
+.live-ticket-grid dt{font-size:13px;opacity:.75}
+.live-ticket-grid dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.live-ticket-token dd{font-size:32px;line-height:1.1}
+.live-ticket-meta{font-size:13px;margin:0}
+.live-ticket-owner{display:grid;gap:12px}
+.live-ticket-owner h2{margin:0}
+.live-ticket-skeleton{display:grid;gap:8px}
+.live-ticket-skeleton span{display:block;height:40px;border-radius:8px;background:hsl(var(--muted));opacity:.6}
+@media (max-width:767px){.live-ticket-grid{grid-template-columns:1fr}}

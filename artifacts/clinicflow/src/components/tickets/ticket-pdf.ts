@@ -43,6 +43,16 @@ export async function ticketPdfBlob(html: string, format: TicketPdfFormat = "tic
       else pdf.addPage(layout.page, "portrait");
       // Lossless PNG with Flate ("FAST") stream compression: QR edges stay exact while file size drops sharply.
       pdf.addImage(canvas, "PNG", layout.x, layout.y, layout.width, layout.height, undefined, "FAST");
+      // html2canvas rasterizes text; restore clickable live-status links in the PDF.
+      const bounds = target.getBoundingClientRect();
+      for (const link of target.querySelectorAll<HTMLAnchorElement>('a[href]')) {
+        if (!/^https:\/\//.test(link.href)) continue;
+        for (const rect of link.getClientRects()) {
+          pdf.link(layout.x + (rect.x - bounds.x) / bounds.width * layout.width,
+            layout.y + (rect.y - bounds.y) / bounds.height * layout.height,
+            rect.width / bounds.width * layout.width, rect.height / bounds.height * layout.height, { url: link.href });
+        }
+      }
     }
     return pdf!.output("blob");
   } finally { frame.remove(); }

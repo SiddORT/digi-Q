@@ -24,12 +24,14 @@ import type { AppointmentActionType } from './appointmentActionType';
 import type { AppointmentBookingContactSource } from './appointmentBookingContactSource';
 import type { AppointmentBookingFields } from './appointmentBookingFields';
 import type { AppointmentStatus } from './appointmentStatus';
+import type { ArrivalEstimate } from './arrivalEstimate';
 import type { ClinicDateFormat } from './clinicDateFormat';
 import type { ClinicTimeFormat } from './clinicTimeFormat';
 import type { ConfirmationEmailOutcome } from './confirmationEmailOutcome';
 import type { StatusEvent } from './statusEvent';
 
 export type Appointment = AppointmentBookingFields & ({
+  estimate?: ArrivalEstimate;
   /**
      * Submitted visit contact; may be absent on historical bookings.
      * @nullable

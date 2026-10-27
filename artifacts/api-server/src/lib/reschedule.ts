@@ -53,7 +53,7 @@ export async function reschedule(user: any, id: string, body: any, tx: any, staf
   const data = { ...row, doctorId: body.doctorId, branchId: body.branchId, date: body.date, sessionId: body.sessionId,
     token: `${available.tokenPrefix}-${String(tokenNumber).padStart(2, "0")}`, tokenNumber,
     doctorName: doctor.fullName, branchName: branch.name, branchAddress: branch.address ?? null, timezone: available.timezone,
-    startTime: available.startTime, endTime: available.endTime,
+    startTime: available.startTime, endTime: available.endTime, breakStart: available.breakStart ?? null, breakEnd: available.breakEnd ?? null,
     expectedDurationMinutes: duration, queueRank: Math.max(0, ...rows.map(rank)) + 1, revision: (row.revision || 0) + 1,
     waitingAt: timestamp, calledAt: null,
     history: [...(row.history || []), { status: "waiting", action: "reschedule", occurredAt: timestamp, actorId: user.id, actorKind: user.privateReceipt ? "privateReceipt" : user.role, reason: body.reason, ...(row.status === "called" ? { callReleased: true } : {}),

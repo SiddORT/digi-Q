@@ -14,6 +14,7 @@ import { useFreshWorkspace } from "./queue/useFreshWorkspace";
 import { canPollGuestReceipt } from "../guest-receipt";
 import { SessionSelector, useDailySession } from "./queue/SessionSelector";
 import { VisitTicket, bookingStatusLabel, type TicketData } from "./tickets/VisitTicket";
+import { LiveTicketAction } from "./tickets/ArrivalGuidance";
 import { BookingDiscovery, useBookingDiscovery } from "./booking/BookingDiscovery";
 import "./guest-booking.css";
 import { confirmationEmailMessage } from "./appointments/confirmation-email";
@@ -30,7 +31,7 @@ import { normalizePhone } from "../lib/validators";
 import { HelpTip } from "./HelpTip";
 import "./booking/booking-visit.css";
 
-const toTicket=(r:api.GuestReceipt):TicketData=>({dateFormat:r.dateFormat,timeFormat:r.timeFormat,patientName:r.fullName,clinicName:r.clinicName,branchName:r.branchName,address:r.branchAddress,doctorName:r.doctorName,date:r.date,startTime:r.startTime,endTime:r.endTime,timezone:r.timezone,waitingNumber:r.token,reference:r.reference,statusLabel:bookingStatusLabel(r.appointmentStatus),qrUrl:r.checkInUrl});
+const toTicket=(r:api.GuestReceipt):TicketData=>({estimate:r.estimate,dateFormat:r.dateFormat,timeFormat:r.timeFormat,patientName:r.fullName,clinicName:r.clinicName,branchName:r.branchName,address:r.branchAddress,doctorName:r.doctorName,date:r.date,startTime:r.startTime,endTime:r.endTime,timezone:r.timezone,waitingNumber:r.token,reference:r.reference,statusLabel:bookingStatusLabel(r.appointmentStatus),qrUrl:r.checkInUrl});
 
 export function GuestBooking({reference,context}:{reference:string;context:api.QrContext}) {
  return <DateTimePreferencesProvider value={context}><GuestBookingForm reference={reference} context={context}/></DateTimePreferencesProvider>;
@@ -121,7 +122,8 @@ function GuestBookingForm({reference,context}:{reference:string;context:api.QrCo
   accept(second);
   if(second.status==="pending"||second.status==="rejected")throw new Error("This booking has no issued ticket.");
   if(!second.checkInUrl)throw new Error("Your personal QR is not available. Refresh and try again.");
-  return toTicket(second);
+  const link=await api.issueLiveTicketLink({receiptSecret:attempt.receiptSecret});
+  return {...toTicket(second),liveTicketUrl:link.url};
  }
  const issued=r&&r.status!=="pending"&&r.status!=="rejected";
  const currentTitle=r?.appointmentStatus==="cancelled"?"Booking Cancelled":r?.appointmentStatus==="completed"?"Visit Completed":r?.appointmentStatus==="noShow"?"Patient Marked Absent":"You're Booked";
@@ -129,7 +131,7 @@ function GuestBookingForm({reference,context}:{reference:string;context:api.QrCo
   if(attempt)return <section className="booking-ticket-stage" aria-label="Your visit ticket" data-testid="guest-receipt"><BookingSteps step={issued?4:3}/>
   <h2>{issued?currentTitle:r?.status==="rejected"?"Booking Not Available":r?"Booking Received":"Issuing Your Ticket"}</h2>
   {!r&&<p role="status">{attempt.fullName} · {attempt.date}. Keep this page open; do not book again.</p>}
-  {issued&&r&&<>{showConfirmationEmail&&confirmationEmailMessage(r.confirmationEmail)&&<p role="status">{confirmationEmailMessage(r.confirmationEmail)}</p>}<VisitTicket testId="guest-ticket" ticket={toTicket(r)} prepareExport={prepareExport} exportDisabled={!committed||status.isPending}/>{committed&&attempt&&<ReceiptManagement receiptSecret={attempt.receiptSecret} onRefresh={()=>pollRef.current()}/>}</>}
+  {issued&&r&&<>{showConfirmationEmail&&confirmationEmailMessage(r.confirmationEmail)&&<p role="status">{confirmationEmailMessage(r.confirmationEmail)}</p>}{attempt&&<LiveTicketAction receiptSecret={attempt.receiptSecret}/>}<VisitTicket testId="guest-ticket" ticket={{...toTicket(r),estimate:receiptFresh.stale?undefined:r.estimate}} prepareExport={prepareExport} exportDisabled={!committed||status.isPending||receiptFresh.stale}/>{committed&&attempt&&<ReceiptManagement receiptSecret={attempt.receiptSecret} onRefresh={()=>pollRef.current()}/>}</>}
   {r?.status==="pending"&&<p className="notice">This earlier request is still with reception. No waiting number has been issued yet.</p>}
   {r?.status==="rejected"&&<p role="status">{r.reason||"Please speak to reception."}</p>}
   {receiptFresh.stale&&updated>0&&<p className="muted">Ticket shown as last loaded.</p>}

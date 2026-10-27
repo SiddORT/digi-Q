@@ -154,7 +154,11 @@ export function Onboarding(){
  const {isLoaded,isSignedIn}=useNativeAuth();const [,navigate]=useLocation();const client=useQueryClient();
  const me=api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),enabled:!!isSignedIn}});
  const onboard=api.useOnboard({mutation:{onSuccess:()=>{sessionStorage.removeItem("clinicflow-intent");client.invalidateQueries();}}});
-  useEffect(()=>{if(me.data?.user&&!me.data.needsOnboarding){navigate(postOnboardingDestination(me.data.user.role,sessionStorage.getItem("clinicflow-qr")));}},[me.data,navigate]);
+  useEffect(()=>{if(me.data?.user&&!me.data.needsOnboarding){
+    const liveReturn=me.data.user.role==="patient"&&sessionStorage.getItem("clinicflow-return-live-ticket")==="yes"&&!!sessionStorage.getItem("clinicflow-live-ticket");
+    sessionStorage.removeItem("clinicflow-return-live-ticket");
+    navigate(liveReturn?"/live-ticket":postOnboardingDestination(me.data.user.role,sessionStorage.getItem("clinicflow-qr")));
+  }},[me.data,navigate]);
  if(!isLoaded||me.isLoading)return <div className="page-loading">Connecting your account…</div>;
  if(!isSignedIn)return <Redirect to="/login"/>;
   if(me.data?.user?.role==="clinicAdmin"&&!me.data.user.clinicIds?.length)return <Redirect to="/register-clinic"/>;

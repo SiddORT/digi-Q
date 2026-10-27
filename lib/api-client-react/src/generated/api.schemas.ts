@@ -20,6 +20,272 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+export type ArrivalEstimateState = typeof ArrivalEstimateState[keyof typeof ArrivalEstimateState];
+
+
+export const ArrivalEstimateState = {
+  ready: 'ready',
+  paused: 'paused',
+  unavailable: 'unavailable',
+  ended: 'ended',
+  terminal: 'terminal',
+} as const;
+
+export type ArrivalEstimateBasis = typeof ArrivalEstimateBasis[keyof typeof ArrivalEstimateBasis];
+
+
+export const ArrivalEstimateBasis = {
+  sessionStart: 'sessionStart',
+  remainingQueue: 'remainingQueue',
+} as const;
+
+export interface ArrivalEstimate {
+  state: ArrivalEstimateState;
+  basis: ArrivalEstimateBasis;
+  asOf: string;
+  /** @nullable */
+  patientsAhead: number | null;
+  /** @nullable */
+  waitMinutes: number | null;
+  /**
+     * Session-local HH:mm; not an appointment time
+     * @nullable
+     */
+  suggestedArrival: string | null;
+  beyondSessionEnd: boolean;
+  guidance: string;
+}
+
+export interface LiveTicketLinkInput {
+  appointmentId?: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  receiptSecret?: string;
+}
+
+export interface LiveTicketLink {
+  url: string;
+  expiresAt: string;
+}
+
+export interface LiveTicketAccess {
+  /** @pattern ^[a-f0-9]{64}$ */
+  capability: string;
+}
+
+/**
+ * Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.
+ */
+export type ClinicDateFormat = typeof ClinicDateFormat[keyof typeof ClinicDateFormat];
+
+
+export const ClinicDateFormat = {
+  DD_MMM_YYYY: 'DD MMM YYYY',
+  'DD/MM/YYYY': 'DD/MM/YYYY',
+  'MM/DD/YYYY': 'MM/DD/YYYY',
+  'YYYY-MM-DD': 'YYYY-MM-DD',
+} as const;
+
+/**
+ * Parent Clinic Group display preference; locations inherit it. Default 12h.
+ */
+export type ClinicTimeFormat = typeof ClinicTimeFormat[keyof typeof ClinicTimeFormat];
+
+
+export const ClinicTimeFormat = {
+  '12h': '12h',
+  '24h': '24h',
+} as const;
+
+export type BookingSource = typeof BookingSource[keyof typeof BookingSource];
+
+
+export const BookingSource = {
+  online: 'online',
+  walkIn: 'walkIn',
+  phone: 'phone',
+  qr: 'qr',
+} as const;
+
+export interface AppointmentBookingFields {
+  sessionId?: string;
+  startTime?: string;
+  patientId: string;
+  doctorId: string;
+  clinicId: string;
+  branchId: string;
+  date: string;
+  source: BookingSource;
+  appointmentTypeId?: string;
+  consultationTypeId?: string;
+  qrReference?: string;
+  /** Client-generated idempotency key */
+  requestId?: string;
+  termsAccepted?: boolean;
+  /** @maxLength 1000 */
+  notes?: string;
+}
+
+/**
+ * Server-derived submitter provenance, not contact ownership or verification.
+ * @nullable
+ */
+export type AppointmentBookingContactSource = typeof AppointmentBookingContactSource[keyof typeof AppointmentBookingContactSource] | null;
+
+
+export const AppointmentBookingContactSource = {
+  staff: 'staff',
+  patient: 'patient',
+  guest: 'guest',
+} as const;
+
+/**
+ * Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.
+ */
+export type ConfirmationEmailOutcome = typeof ConfirmationEmailOutcome[keyof typeof ConfirmationEmailOutcome];
+
+
+export const ConfirmationEmailOutcome = {
+  provider_accepted: 'provider_accepted',
+  unavailable: 'unavailable',
+  disabled: 'disabled',
+  no_recipient: 'no_recipient',
+  not_attempted: 'not_attempted',
+} as const;
+
+export type AppointmentStatus = typeof AppointmentStatus[keyof typeof AppointmentStatus];
+
+
+export const AppointmentStatus = {
+  booked: 'booked',
+  checkedIn: 'checkedIn',
+  waiting: 'waiting',
+  called: 'called',
+  inConsultation: 'inConsultation',
+  completed: 'completed',
+  noShow: 'noShow',
+  cancelled: 'cancelled',
+} as const;
+
+export type AppointmentActionType = typeof AppointmentActionType[keyof typeof AppointmentActionType];
+
+
+export const AppointmentActionType = {
+  checkIn: 'checkIn',
+  enqueue: 'enqueue',
+  call: 'call',
+  start: 'start',
+  complete: 'complete',
+  noShow: 'noShow',
+  requeue: 'requeue',
+  cancel: 'cancel',
+  shift: 'shift',
+} as const;
+
+export interface AppointmentSessionHistory {
+  doctorId?: string;
+  branchId?: string;
+  date?: string;
+  token?: string;
+  tokenNumber?: number;
+}
+
+export interface StatusEvent {
+  status: AppointmentStatus;
+  occurredAt: string;
+  reason?: string;
+  action?: string;
+  position?: number;
+  from?: AppointmentSessionHistory;
+  to?: AppointmentSessionHistory;
+}
+
+export type Appointment = AppointmentBookingFields & ({
+  estimate?: ArrivalEstimate;
+  /**
+     * Submitted visit contact; may be absent on historical bookings.
+     * @nullable
+     */
+  bookingMobile?: string | null;
+  /**
+     * Server-derived submitter provenance, not contact ownership or verification.
+     * @nullable
+     */
+  bookingContactSource?: AppointmentBookingContactSource;
+  confirmationEmail?: ConfirmationEmailOutcome;
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
+  id: string;
+  reference: string;
+  token: string;
+  tokenNumber?: number;
+  queueRank?: number;
+  revision?: number;
+  /** @nullable */
+  expectedDurationMinutes?: number | null;
+  status: AppointmentStatus;
+  patientName: string;
+  patientCode?: string;
+  doctorName: string;
+  clinicName: string;
+  branchName: string;
+  /**
+     * Booking branch address snapshot; for legacy bookings the current branch address is resolved.
+     * @nullable
+     */
+  branchAddress?: string | null;
+  /**
+     * Time zone for the consulting session range.
+     * @nullable
+     */
+  timezone?: string | null;
+  startTime?: string;
+  endTime?: string;
+  createdAt: string;
+  /** @nullable */
+  checkedInAt?: string | null;
+  /** @nullable */
+  calledAt?: string | null;
+  /** @nullable */
+  consultationStartedAt?: string | null;
+  /** @nullable */
+  completedAt?: string | null;
+  allowedActions: AppointmentActionType[];
+  canReschedule?: boolean;
+  /** Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save. */
+  canEditBooking?: boolean;
+  /**
+     * Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.
+     * @minimum 0
+     */
+  bookingDetailsRevision?: number;
+  /** @nullable */
+  movementReason?: string | null;
+  history?: StatusEvent[];
+});
+
+export interface LiveTicket {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
+  clinicName: string;
+  doctorName: string;
+  branchName: string;
+  /** @nullable */
+  branchAddress?: string | null;
+  date: string;
+  /** @nullable */
+  startTime?: string | null;
+  /** @nullable */
+  endTime?: string | null;
+  /** @nullable */
+  timezone?: string | null;
+  status: string;
+  token: string;
+  presence: string;
+  updatedAt: string;
+  estimate: ArrivalEstimate;
+  appointment?: Appointment;
+}
+
 export interface NotificationChoice {
   /** @maxLength 100 */
   key: string;
@@ -1601,30 +1867,6 @@ export interface DemoSetupStatus {
   password?: string;
 }
 
-/**
- * Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.
- */
-export type ClinicDateFormat = typeof ClinicDateFormat[keyof typeof ClinicDateFormat];
-
-
-export const ClinicDateFormat = {
-  DD_MMM_YYYY: 'DD MMM YYYY',
-  'DD/MM/YYYY': 'DD/MM/YYYY',
-  'MM/DD/YYYY': 'MM/DD/YYYY',
-  'YYYY-MM-DD': 'YYYY-MM-DD',
-} as const;
-
-/**
- * Parent Clinic Group display preference; locations inherit it. Default 12h.
- */
-export type ClinicTimeFormat = typeof ClinicTimeFormat[keyof typeof ClinicTimeFormat];
-
-
-export const ClinicTimeFormat = {
-  '12h': '12h',
-  '24h': '24h',
-} as const;
-
 export type AvailabilityQueueMode = typeof AvailabilityQueueMode[keyof typeof AvailabilityQueueMode];
 
 
@@ -2394,21 +2636,8 @@ export const GuestReceiptStatus = {
   rejected: 'rejected',
 } as const;
 
-/**
- * Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.
- */
-export type ConfirmationEmailOutcome = typeof ConfirmationEmailOutcome[keyof typeof ConfirmationEmailOutcome];
-
-
-export const ConfirmationEmailOutcome = {
-  provider_accepted: 'provider_accepted',
-  unavailable: 'unavailable',
-  disabled: 'disabled',
-  no_recipient: 'no_recipient',
-  not_attempted: 'not_attempted',
-} as const;
-
 export interface GuestReceipt {
+  estimate?: ArrivalEstimate;
   confirmationEmail?: ConfirmationEmailOutcome;
   dateFormat?: ClinicDateFormat;
   timeFormat?: ClinicTimeFormat;
@@ -2531,30 +2760,6 @@ export interface ApiError {
 export interface Message {
   message: string;
 }
-
-export type AppointmentStatus = typeof AppointmentStatus[keyof typeof AppointmentStatus];
-
-
-export const AppointmentStatus = {
-  booked: 'booked',
-  checkedIn: 'checkedIn',
-  waiting: 'waiting',
-  called: 'called',
-  inConsultation: 'inConsultation',
-  completed: 'completed',
-  noShow: 'noShow',
-  cancelled: 'cancelled',
-} as const;
-
-export type BookingSource = typeof BookingSource[keyof typeof BookingSource];
-
-
-export const BookingSource = {
-  online: 'online',
-  walkIn: 'walkIn',
-  phone: 'phone',
-  qr: 'qr',
-} as const;
 
 export interface ProfileInput {
   /** @minLength 1 */
@@ -3096,25 +3301,6 @@ export type AvailabilityException = AvailabilityExceptionInput & {
   id: string;
 };
 
-export interface AppointmentBookingFields {
-  sessionId?: string;
-  startTime?: string;
-  patientId: string;
-  doctorId: string;
-  clinicId: string;
-  branchId: string;
-  date: string;
-  source: BookingSource;
-  appointmentTypeId?: string;
-  consultationTypeId?: string;
-  qrReference?: string;
-  /** Client-generated idempotency key */
-  requestId?: string;
-  termsAccepted?: boolean;
-  /** @maxLength 1000 */
-  notes?: string;
-}
-
 export type AppointmentInput = AppointmentBookingFields & {
   /**
      * Required visit contact. Does not change patient or account contacts, verification or notification recipients.
@@ -3123,115 +3309,6 @@ export type AppointmentInput = AppointmentBookingFields & {
      */
   bookingMobile: string;
 };
-
-/**
- * Server-derived submitter provenance, not contact ownership or verification.
- * @nullable
- */
-export type AppointmentBookingContactSource = typeof AppointmentBookingContactSource[keyof typeof AppointmentBookingContactSource] | null;
-
-
-export const AppointmentBookingContactSource = {
-  staff: 'staff',
-  patient: 'patient',
-  guest: 'guest',
-} as const;
-
-export type AppointmentActionType = typeof AppointmentActionType[keyof typeof AppointmentActionType];
-
-
-export const AppointmentActionType = {
-  checkIn: 'checkIn',
-  enqueue: 'enqueue',
-  call: 'call',
-  start: 'start',
-  complete: 'complete',
-  noShow: 'noShow',
-  requeue: 'requeue',
-  cancel: 'cancel',
-  shift: 'shift',
-} as const;
-
-export interface AppointmentSessionHistory {
-  doctorId?: string;
-  branchId?: string;
-  date?: string;
-  token?: string;
-  tokenNumber?: number;
-}
-
-export interface StatusEvent {
-  status: AppointmentStatus;
-  occurredAt: string;
-  reason?: string;
-  action?: string;
-  position?: number;
-  from?: AppointmentSessionHistory;
-  to?: AppointmentSessionHistory;
-}
-
-export type Appointment = AppointmentBookingFields & ({
-  /**
-     * Submitted visit contact; may be absent on historical bookings.
-     * @nullable
-     */
-  bookingMobile?: string | null;
-  /**
-     * Server-derived submitter provenance, not contact ownership or verification.
-     * @nullable
-     */
-  bookingContactSource?: AppointmentBookingContactSource;
-  confirmationEmail?: ConfirmationEmailOutcome;
-  dateFormat?: ClinicDateFormat;
-  timeFormat?: ClinicTimeFormat;
-  id: string;
-  reference: string;
-  token: string;
-  tokenNumber?: number;
-  queueRank?: number;
-  revision?: number;
-  /** @nullable */
-  expectedDurationMinutes?: number | null;
-  status: AppointmentStatus;
-  patientName: string;
-  patientCode?: string;
-  doctorName: string;
-  clinicName: string;
-  branchName: string;
-  /**
-     * Booking branch address snapshot; for legacy bookings the current branch address is resolved.
-     * @nullable
-     */
-  branchAddress?: string | null;
-  /**
-     * Time zone for the consulting session range.
-     * @nullable
-     */
-  timezone?: string | null;
-  startTime?: string;
-  endTime?: string;
-  createdAt: string;
-  /** @nullable */
-  checkedInAt?: string | null;
-  /** @nullable */
-  calledAt?: string | null;
-  /** @nullable */
-  consultationStartedAt?: string | null;
-  /** @nullable */
-  completedAt?: string | null;
-  allowedActions: AppointmentActionType[];
-  canReschedule?: boolean;
-  /** Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save. */
-  canEditBooking?: boolean;
-  /**
-     * Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.
-     * @minimum 0
-     */
-  bookingDetailsRevision?: number;
-  /** @nullable */
-  movementReason?: string | null;
-  history?: StatusEvent[];
-});
 
 export interface AppointmentQr {
   appointmentId: string;
@@ -3309,6 +3386,7 @@ export interface QueueSelection {
 }
 
 export interface OwnQueueEntry {
+  estimate?: ArrivalEstimate;
   dateFormat?: ClinicDateFormat;
   timeFormat?: ClinicTimeFormat;
   appointmentId: string;

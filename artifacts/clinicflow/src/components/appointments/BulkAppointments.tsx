@@ -15,6 +15,7 @@ import { RowMenu } from "../RowMenu";
 import { downloadPdf } from "./ticket-export";
 import { TicketEmailDialog } from "./TicketEmailDialog";
 import { X } from "lucide-react";
+import { estimateFacts, directionsUrl } from "../tickets/ArrivalGuidance";
 
 function download(content:string,type:string,name:string) {
   const url=URL.createObjectURL(new Blob([content],{type}));
@@ -40,7 +41,7 @@ export function BulkAppointments({ids,disabled,onClear,onRetain,labels={}}:{ids:
       for(const id of ids) {
         try {
           if(!navigator.onLine)throw new Error("Offline — reconnect and retry.");
-          const a=await api.getAppointment(id);
+          let a=await api.getAppointment(id);
           if((kind==="print"||kind==="download")&&!canShowAppointmentTicket(a)){messages.push(`${a.reference}: skipped — completed visits do not need a ticket.`);continue;}
           if(kind==="cancel") {
             if(!a.allowedActions.includes("cancel")){messages.push(`${a.reference}: skipped — cancellation is not allowed.`);continue;}
@@ -50,14 +51,23 @@ export function BulkAppointments({ids,disabled,onClear,onRetain,labels={}}:{ids:
             const qr=await api.getAppointmentQr(id);
             if(!qr.checkInUrl?.trim())throw new Error("Personal QR unavailable. Refresh and try again.");
             if(qr.appointmentId!==id)throw new Error("Personal QR does not match the selected appointment.");
+            const link=await api.issueLiveTicketLink({appointmentId:id});
+            const confirmed=await api.getAppointment(id);
+            if(a.revision!==confirmed.revision||a.status!==confirmed.status)throw new Error("Appointment changed while preparing the ticket. Refresh and try again.");
+            a=confirmed;
             const url=await absolutePublicUrl(qr.checkInUrl);
             const image=await QRCode.toDataURL(url,{width:250,margin:2});
             const section=documentOut.createElement("section");section.style.cssText="page-break-after:always;padding:24px;font-family:sans-serif;color:#10274e;background:#fff;border-top:4px solid #087cb7";
             const brand=documentOut.createElement("img");brand.src=logo!;brand.alt="DigiQ Doctors logo";brand.style.cssText="display:block;width:108px;height:54px;object-fit:contain";
             const heading=documentOut.createElement("h2");heading.textContent="Private appointment ticket";heading.style.color="#10274e";
-            const detail=documentOut.createElement("p");detail.style.whiteSpace="pre-line";detail.textContent=`${a.patientName}\n${a.reference} · Token ${a.token}\n${a.clinicName} · ${a.branchName}\n${a.doctorName} · ${formatDate(a.date,a)}\nSession ${a.startTime?formatTime(a.startTime,a):"—"}–${a.endTime?formatTime(a.endTime,a):"—"}\n${a.status}\nToken is not queue position. Staff must explicitly confirm consultation check-in.`;
+            const detail=documentOut.createElement("p");detail.style.whiteSpace="pre-line";detail.style.overflowWrap="anywhere";detail.textContent=`${a.patientName}\n${a.reference} · Token ${a.token}\n${a.clinicName} · ${a.branchName}\n${a.branchAddress?`Address: ${a.branchAddress}\n`:""}${a.doctorName} · ${formatDate(a.date,a)}\nSession ${a.startTime?formatTime(a.startTime,a):"—"}–${a.endTime?formatTime(a.endTime,a):"—"} (${a.timezone||"timezone unavailable"})\n${a.status}\n${estimateFacts(a.estimate,a).map(([key,value])=>`${key}: ${value}`).join("\n")}\nPrinted/downloaded snapshot; check the live ticket for updates.\nToken is not queue position. Staff must explicitly confirm consultation check-in.`;
+            const live=documentOut.createElement("a");live.href=link.url;live.textContent=link.url;live.rel="noreferrer";live.style.cssText="display:block;overflow-wrap:anywhere;font-size:12px";live.setAttribute("aria-label","Open live ticket");
+            const maps=documentOut.createElement("a"),destination=directionsUrl(a.branchAddress);
+            maps.textContent=destination?"Get Directions":"Directions unavailable: no saved branch address. Contact the clinic.";
+            if(destination)maps.href=destination;
+            maps.rel="noreferrer";maps.style.cssText="display:block;font-size:12px;margin:4px 0";
             const img=documentOut.createElement("img");img.src=image;img.alt="Private appointment QR";
-            section.append(brand,heading,detail,img);documentOut.body.append(section);
+            section.append(brand,heading,detail,live,maps,img);documentOut.body.append(section);
           }
           completedIds.push(id);
           messages.push(`${a.reference}: ${kind==="cancel"?"cancelled":"prepared"}.`);

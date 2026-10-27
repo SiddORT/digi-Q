@@ -77,6 +77,9 @@ export function PatientLogin() {
       setCode("");
       await refresh();
       sessionStorage.removeItem("clinicflow-intent");
+      // Only this exact value is honoured; the capability stays in per-tab storage, never in the URL.
+      if (!signup && new URLSearchParams(search).get("returnTo") === "live-ticket" && sessionStorage.getItem("clinicflow-live-ticket"))
+        sessionStorage.setItem("clinicflow-return-live-ticket", "yes");
       navigate("/onboarding", { replace: true });
     } catch (caught) { setError(authErrorMessage(caught, "That code is invalid or expired. Request a new code.")); }
     finally { setBusy(false); }

@@ -45,6 +45,7 @@ export function publicHtmlMiddleware(
       // Do not let proxies mix routes, hosts, signed-in requests or old clinic state.
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("X-Robots-Tag", page.metadata.robots);
+      if (path === "/live-ticket") res.setHeader("Referrer-Policy", "no-referrer");
       if (page.status === 503) res.setHeader("Retry-After", "60");
       res.end(req.method === "HEAD" ? undefined : page.html);
     } catch (error) { next(error); }

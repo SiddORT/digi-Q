@@ -165,6 +165,10 @@ import type {
   ListSchedulesParams,
   ListUsersParams,
   LiveQueue,
+  LiveTicket,
+  LiveTicketAccess,
+  LiveTicketLink,
+  LiveTicketLinkInput,
   LogoUploadInput,
   LogoutNativeSession200,
   ManagedNotificationInput,
@@ -304,6 +308,238 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getIssueLiveTicketLinkUrl = () => {
+
+
+
+
+  return `/api/live-ticket-links`
+}
+
+export const issueLiveTicketLink = async (liveTicketLinkInput: LiveTicketLinkInput, options?: Parameters<typeof customFetch>[1]): Promise<LiveTicketLink> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<LiveTicketLink>(getIssueLiveTicketLinkUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(liveTicketLinkInput)
+  }
+);}
+
+
+
+
+
+export const getIssueLiveTicketLinkMutationKey = () => ['issueLiveTicketLink'] as const;
+
+export const getIssueLiveTicketLinkMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof issueLiveTicketLink>>, TError,IssueLiveTicketLinkMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof issueLiveTicketLink>>, TError,IssueLiveTicketLinkMutationVariables, TContext> => {
+
+const mutationKey = getIssueLiveTicketLinkMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof issueLiveTicketLink>>, IssueLiveTicketLinkMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  issueLiveTicketLink(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IssueLiveTicketLinkMutationResult = NonNullable<Awaited<ReturnType<typeof issueLiveTicketLink>>>
+    export type IssueLiveTicketLinkMutationBody = BodyType<LiveTicketLinkInput>
+    export type IssueLiveTicketLinkMutationError = ErrorType<unknown>
+    export type IssueLiveTicketLinkMutationVariables = {data: BodyType<LiveTicketLinkInput>}
+
+    export const useIssueLiveTicketLink = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof issueLiveTicketLink>>, TError,IssueLiveTicketLinkMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof issueLiveTicketLink>>,
+        TError,
+        IssueLiveTicketLinkMutationVariables,
+        TContext
+      > => {
+      return useMutation(getIssueLiveTicketLinkMutationOptions(options));
+    }
+
+export const getReadLiveTicketUrl = () => {
+
+
+
+
+  return `/api/public/live-ticket`
+}
+
+export const readLiveTicket = async (liveTicketAccess: LiveTicketAccess, options?: Parameters<typeof customFetch>[1]): Promise<LiveTicket> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<LiveTicket>(getReadLiveTicketUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(liveTicketAccess)
+  }
+);}
+
+
+
+
+
+export const getReadLiveTicketMutationKey = () => ['readLiveTicket'] as const;
+
+export const getReadLiveTicketMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof readLiveTicket>>, TError,ReadLiveTicketMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof readLiveTicket>>, TError,ReadLiveTicketMutationVariables, TContext> => {
+
+const mutationKey = getReadLiveTicketMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof readLiveTicket>>, ReadLiveTicketMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  readLiveTicket(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReadLiveTicketMutationResult = NonNullable<Awaited<ReturnType<typeof readLiveTicket>>>
+    export type ReadLiveTicketMutationBody = BodyType<LiveTicketAccess>
+    export type ReadLiveTicketMutationError = ErrorType<void>
+    export type ReadLiveTicketMutationVariables = {data: BodyType<LiveTicketAccess>}
+
+    export const useReadLiveTicket = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof readLiveTicket>>, TError,ReadLiveTicketMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof readLiveTicket>>,
+        TError,
+        ReadLiveTicketMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReadLiveTicketMutationOptions(options));
+    }
+
+export const getRevokeLiveTicketLinksUrl = (id: string,) => {
+
+
+
+
+  return `/api/appointments/${id}/live-ticket-links`
+}
+
+export const revokeLiveTicketLinks = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getRevokeLiveTicketLinksUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRevokeLiveTicketLinksMutationKey = () => ['revokeLiveTicketLinks'] as const;
+
+export const getRevokeLiveTicketLinksMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeLiveTicketLinks>>, TError,RevokeLiveTicketLinksMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeLiveTicketLinks>>, TError,RevokeLiveTicketLinksMutationVariables, TContext> => {
+
+const mutationKey = getRevokeLiveTicketLinksMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeLiveTicketLinks>>, RevokeLiveTicketLinksMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  revokeLiveTicketLinks(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeLiveTicketLinksMutationResult = NonNullable<Awaited<ReturnType<typeof revokeLiveTicketLinks>>>
+
+    export type RevokeLiveTicketLinksMutationError = ErrorType<unknown>
+    export type RevokeLiveTicketLinksMutationVariables = {id: string}
+
+    export const useRevokeLiveTicketLinks = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeLiveTicketLinks>>, TError,RevokeLiveTicketLinksMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeLiveTicketLinks>>,
+        TError,
+        RevokeLiveTicketLinksMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRevokeLiveTicketLinksMutationOptions(options));
+    }
 
 export const getGetStaffVerificationUrl = () => {
 

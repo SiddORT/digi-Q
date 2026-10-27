@@ -14,7 +14,7 @@ export const reservedPublicPaths = new Set([
   "__mockup", "clinicflow-project-deck", "register-clinic", "register-doctor",
   "patient-login", "demo-login", "scan-qr", "guest-booking", "set-password", "check-in",
   "doctor", "patient", "receptionist", "audit", "qrs", "exceptions", "health", "healthz",
-  "robots", "sitemap",
+  "robots", "sitemap", "live-ticket",
 ]);
 // Match the saved-slug contract, including existing consecutive hyphens.
 export function validPublicSlug(value: unknown): value is string {

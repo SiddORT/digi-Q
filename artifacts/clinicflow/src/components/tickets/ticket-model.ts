@@ -31,10 +31,13 @@ export function ticketCssVars(theme: TicketTheme = TICKET_THEME): Record<string,
 }
 export const ticketCssVarString = (theme: TicketTheme = TICKET_THEME) => Object.entries(ticketCssVars(theme)).map(([k, v]) => `${k}:${v}`).join(";");
 
+import type { ArrivalEstimate, ClinicTimeFormat } from "@workspace/api-client-react";
+import { estimateFacts } from "./ArrivalGuidance";
 export type TicketModelInput = {
   patientName: string; clinicName: string; branchName: string; address?: string | null; doctorName: string;
   waitingNumber?: string | null; reference?: string | null; statusLabel?: string;
   dateText: string; sessionText: string;
+  estimate?: ArrivalEstimate; timeFormat?: ClinicTimeFormat; liveTicketUrl?: string;
 };
 /** Ordered ticket content shared by screen and export. */
 export function ticketModel(t: TicketModelInput) {
@@ -48,7 +51,7 @@ export function ticketModel(t: TicketModelInput) {
     visitLabel: "Date · Location",
     visitPrimary: `${t.dateText} · ${t.branchName}`,
     visitSecondary: `Session ${t.sessionText}`,
-    facts: [["Clinic", t.clinicName], ...(t.address ? [["Address", t.address]] : []), ["Doctor", t.doctorName]] as [string, string][],
+    facts: [["Clinic", t.clinicName], ...(t.address ? [["Address", t.address]] : []), ["Doctor", t.doctorName], ...estimateFacts(t.estimate, t), ...(t.liveTicketUrl ? [["Live ticket", t.liveTicketUrl]] : [])] as [string, string][],
     qrAlt: "Personal visit QR",
     qrCaption: "Personal QR for reception. Keep it private.",
     footer: "Show this ticket at reception. The session is a time range, not an exact consultation time.",

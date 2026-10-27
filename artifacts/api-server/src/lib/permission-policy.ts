@@ -13,6 +13,7 @@ export async function enforcePermissionPolicy(user: any, req: { method: string; 
   if (user.role === "superAdmin") return;
   const parts = req.path.split("/").filter(Boolean);
   let module = parts[0];
+  if (module === "live-ticket-links") module = "appointments";
   // Alternate read/download routes must not bypass the source module's policy.
   if (module === "notifications" || (module === "search" && parts[1] === "records")) module = "appointments";
   if (module === "patient-documents") module = "patients";
@@ -22,6 +23,7 @@ export async function enforcePermissionPolicy(user: any, req: { method: string; 
   if (module === "clinic-settings") module = "clinics";
   if (!(permissionModules as readonly string[]).includes(module)) return;
   let action = req.method === "GET" ? "read" : req.method === "DELETE" ? "delete" : req.method === "POST" && parts.length === 1 ? "create" : "update";
+  if (parts[0] === "live-ticket-links") action = "read";
   // Marking a notification read does not mutate the clinical appointment.
   if (parts[0] === "notifications") action = "read";
   if (parts[0] === "me" && parts[1] === "doctor-profile" && req.method === "POST") action = "create";

@@ -11,6 +11,7 @@ import { Portal, Onboarding, PublicBooking } from "./clinic";
 import { CheckInScanner } from "./CheckIn";
 import { StaffLogin } from "./auth/StaffLogin";
 import { PatientLogin } from "./auth/PatientLogin";
+import { LiveTicketPage } from "./components/tickets/LiveTicketPage";
 import { patientSignupDestination } from "./auth/patient-access-links";
 import { ForgotPassword, SetPassword } from "./auth/PasswordFlows";
 import { AuthAccess } from "./auth/AuthAccess";
@@ -97,6 +98,7 @@ function Providers(){
     <Route path="/sign-up/*?" component={SignUpRoute}/>
     <Route path="/register-clinic/*?" component={ClinicRegistration}/>
     <Route path="/patient-login" component={PatientLogin}/>
+    <Route path="/live-ticket" component={LiveTicketPage}/>
     <Route path="/demo-login" component={DemoLogin}/>
     <Route path="/scan-qr" component={PatientScanner}/>
     <Route path="/guest-booking" component={GuestClinicFinder}/>

@@ -57,6 +57,8 @@ async function mount(page: Page, mode: Mode, f: Fixtures, recovered = false) {
     let reply: Reply;
     if (path === "/api/public/website-config") {
       reply = { body: { publicOrigin: f.publicOrigin || "https://tickets.example.invalid" } };
+    } else if (path === "/api/live-ticket-links") {
+      reply = { body: { url: (f.publicOrigin || "https://tickets.example.invalid") + "/live-ticket#" + "b".repeat(64), expiresAt: "2030-06-17T00:00:00Z" } };
     } else if (path === "/api/auth/csrf") {
       reply = { body: { csrfToken: "isolated-ticket-fixture-csrf" } };
     } else if (path === "/api/public/guest-receipt/manage" && req.method() === "POST") {
@@ -466,6 +468,7 @@ test("appointment missing initial QR disables exports until API retry", async ({
 
 test("guest immediate creation commits recoverable receipt without account", async ({ page }) => {
   const f = fixture();
+  await page.route("**/api/live-ticket-links", route => route.fulfill({json:{url:"https://tickets.example.invalid/live-ticket#"+"b".repeat(64),expiresAt:"2030-06-17T00:00:00Z"}}));
   await page.route("**/api/public/website-config", route =>
     route.fulfill({ json: { publicOrigin: "https://tickets.example.invalid" } }));
   await page.route("**/api/auth/csrf", route =>
@@ -502,7 +505,7 @@ test("guest immediate creation commits recoverable receipt without account", asy
   expect(JSON.parse(saved[0]!).requestId).toBe(saved[1]);
   expect(f.calls).toContain("POST /api/public/guest-requests");
   await verifyPdf(page, await download(page));
-  expect(f.calls.slice(-2)).toEqual(["POST /api/public/guest-receipt", "POST /api/public/guest-receipt"]);
+  expect(f.calls.filter(c=>c==="POST /api/public/guest-receipt").slice(-2)).toEqual(["POST /api/public/guest-receipt", "POST /api/public/guest-receipt"]);
 });
 
 async function assertExportNotClipped(page: Page) {
@@ -550,11 +553,33 @@ for (const mode of ["guest", "appointment"] as const) {
 }
 
 // Intentionally not ID-sorted: the PDF must retain selection order.
+const arrivalSnapshot = {state:"ready",basis:"sessionStart",asOf:"2030-06-14T08:00:00Z",patientsAhead:3,waitMinutes:90,suggestedArrival:"11:20",beyondSessionEnd:false,guidance:"Estimate only, not an appointment time. Breaks and delays can change the wait."};
+test("ticket outputs retain safe estimated fields and a clickable live status link",async({page})=>{
+  const f=fixture();
+  f.mutateAppointment=()=>({body:{...appointment,estimate:arrivalSnapshot,bookingMobile:"+14155550000",notes:"PRIVATE-NOTE-MUST-NOT-EXPORT",expectedDurationMinutes:30}});
+  await mount(page,"appointment",f);
+  await interceptPrint(page);
+  const html=await print(page,async popup=>{
+    await expect(popup.locator("body")).toContainText("Approx. 90 minutes");
+    await expect(popup.locator("body")).toContainText("Suggested arrival");
+    await expect(popup.locator("body")).toContainText("Estimate as of");
+    await expect(popup.locator("body")).toContainText("2030-06-14 08:00:00");
+    await expect(popup.locator('a[href*="/live-ticket#"]')).toHaveAttribute("rel","noreferrer");
+    const maps=await popup.getByRole("link",{name:"Get Directions",exact:true}).getAttribute("href");
+    expect(new URL(maps!).searchParams.get("destination")).toBe(appointment.branchAddress);
+    expect(maps).not.toContain("live-ticket");
+  });
+  for(const hidden of ["+14155550000","PRIVATE-NOTE-MUST-NOT-EXPORT","expectedDurationMinutes","minutes per patient"]) expect(html).not.toContain(hidden);
+  const pdf=await download(page);
+  expect(pdf.bytes.toString("latin1")).toContain("/URI (https://tickets.example.invalid/live-ticket#");
+  expect(pdf.bytes.toString("latin1")).toContain("https://www.google.com/maps/dir/");
+});
 const bulkAppointments = [3, 1, 2].map(n => ({
   ...appointment, id: `appointment-${n}`, patientId: `patient-${n}`,
   patientName: ["Fictional Alice Cedar", "Fictional Bruno Maple", "Fictional Cara Willow"][n - 1],
   reference: `BULK-00${n}`, token: `B-${n}0`,
   checkInUrl: `https://tickets.example.invalid/check-in/signed-bulk-${n}`,
+  estimate:arrivalSnapshot,
 }));
 type QrFailure = "outage" | "unavailable" | "mismatch";
 async function mountBulk(page: Page, state: { failure?: QrFailure; origin?: string; configUnavailable?: boolean } = {}) {
@@ -566,7 +591,11 @@ async function mountBulk(page: Page, state: { failure?: QrFailure; origin?: stri
         ? { status: 503, json: { error: "Public website links are unavailable. Retry." } }
         : { json: { publicOrigin: state.origin || "https://tickets.example.invalid" } }); return;
     }
+    if (path === "/api/auth/csrf") { await route.fulfill({json:{csrfToken:"bulk-fictional"}}); return; }
     calls.push(path);
+    if (path === "/api/live-ticket-links") {
+      await route.fulfill({json:{url:(state.origin||"https://tickets.example.invalid")+"/live-ticket#"+"b".repeat(64),expiresAt:"2030-06-17T00:00:00Z"}}); return;
+    }
     const a = bulkAppointments.find(a => path === `/api/appointments/${a.id}` || path === `/api/appointments/${a.id}/qr`);
     if (route.request().method() !== "GET" || !a) {
       await route.fulfill({ status: 501, json: { message: `Unmocked ${path}` } });
@@ -588,7 +617,7 @@ async function mountBulk(page: Page, state: { failure?: QrFailure; origin?: stri
   await expect(page.getByTestId("text-bulk-count")).toHaveText("3 selected");
   return calls;
 }
-const bulkCalls = bulkAppointments.flatMap(a => [`/api/appointments/${a.id}`, `/api/appointments/${a.id}/qr`]);
+const bulkExpected = (failure?:QrFailure) => bulkAppointments.flatMap(a => [`/api/appointments/${a.id}`, `/api/appointments/${a.id}/qr`, ...(failure&&a.id===bulkAppointments[1].id?[]:["/api/live-ticket-links",`/api/appointments/${a.id}`])]);
 
 for (const origin of ["https://care.example.invalid", "https://uat-care.example.invalid:8443"]) {
   test(`single and bulk PDF QR outputs use runtime ${origin}, not the alternate browser host`, async ({ page }) => {
@@ -596,7 +625,7 @@ for (const origin of ["https://care.example.invalid", "https://uat-care.example.
     f.publicOrigin = origin;
     f.mutateQr = () => ({ body: { appointmentId: appointment.id, payload: "v1.fictional.signature", checkInUrl: "/check-in?payload=v1.fictional.signature" } });
     await mount(page, "appointment", f);
-    await expect(page.getByTestId("link-ticket-patient-live")).toHaveAttribute("href", `${origin}/patient/queue?appointment=appointment-1`);
+    await expect(page.getByTestId("button-open-live-ticket")).toBeVisible();
     const single = await download(page);
     expect(await decode(page, single.images[0])).toBe(`${origin}/check-in?payload=v1.fictional.signature`);
     await mountBulk(page, { origin });
@@ -660,7 +689,7 @@ for (const kind of ["download", "print"] as const) {
         const item = await event;
         expect(item.suggestedFilename()).toBe("private-appointment-tickets.pdf");
         await verifyBulkPdf(page, await readPdf(await item.path()));
-        expect(calls).toEqual(bulkCalls);
+        expect(calls).toEqual(bulkExpected());
       }
       return;
     } else {
@@ -672,7 +701,7 @@ for (const kind of ["download", "print"] as const) {
       html = await popup.content();
       await popup.close();
     }
-    expect(calls).toEqual(bulkCalls);
+    expect(calls).toEqual(bulkExpected());
     expect(html).toContain("Private appointment ticket");
     expect(html).not.toMatch(/<script\b|<link\b|<iframe\b/i);
     const offline = await page.context().newPage();
@@ -713,7 +742,7 @@ for (const failure of ["outage", "unavailable", "mismatch"] as const) {
     await expect(page.getByTestId("status-bulk-progress")).toHaveCount(0);
     await page.getByText("Review Failures and Skipped Appointments").click();
     await expect(page.getByRole("listitem")).toContainText("appointment-1: failed");
-    expect(calls).toEqual(bulkCalls);
+    expect(calls).toEqual(bulkExpected(failure));
     expect(downloads).toEqual([]);
 
     // No stale/partial pages from the failed attempt may leak into the retry.
@@ -724,7 +753,7 @@ for (const failure of ["outage", "unavailable", "mismatch"] as const) {
     const item = await event;
     await verifyBulkPdf(page, await readPdf(await item.path()));
     expect(downloads).toEqual(["private-appointment-tickets.pdf"]);
-    expect(calls).toEqual(bulkCalls);
+    expect(calls).toEqual(bulkExpected());
     await expect(page.getByRole("alert")).toHaveCount(0);
   });
 }

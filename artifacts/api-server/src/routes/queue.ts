@@ -12,7 +12,9 @@ import { readDuration } from "../lib/session-duration";
 import { getPresence } from "../lib/presence";
 import { clinicDisplayPreferences } from "../lib/display-preferences";
 import { staffQueueList } from "../lib/queue-list";
+import { arrivalEstimate } from "../lib/arrival-estimate";
 export const queueRouter = Router();
+queueRouter.use("/queue", (_req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
 async function selectQueue(q: any, conn: any, scopedRows?: any[]) {
   const rows = sessionRows(scopedRows ?? await all(appointments, conn), { doctorId: q.doctorId, branchId: q.branchId, date: q.date });
   if (q.appointmentId) {
@@ -74,9 +76,15 @@ queueRouter.get("/queue", async (req, res) => {
     : q.appointmentId ? rows.find(a => a.id === q.appointmentId) : undefined;
   if (user.role === "patient") assert(own, 403, "You do not have an appointment in this queue");
   const summary = queueSummary(rows, own, duration);
-  res.json({ doctorId: q.doctorId, branchId: q.branchId, date: q.date, ...clinicDisplayPreferences(context.clinic), sessionId: selected.sessionId || rows[0]?.sessionId || null, startTime: selected.startTime || null, presence: await getPresence(selected), ...summary,
+  const presence = await getPresence(selected);
+  if (summary.ownEntry && own) {
+    const estimate = arrivalEstimate(own, rows, duration, presence.status);
+    Object.assign(summary.ownEntry, { estimate, estimatedWaitMinutes: estimate.waitMinutes });
+  }
+  if (user.role === "patient") delete (summary as any).expectedDurationMinutes;
+  res.json({ doctorId: q.doctorId, branchId: q.branchId, date: q.date, ...clinicDisplayPreferences(context.clinic), sessionId: selected.sessionId || rows[0]?.sessionId || null, startTime: selected.startTime || null, presence, ...summary,
     pollIntervalSeconds: 30, updatedAt: new Date().toISOString(),
-     ...(listing ? { ...listing, entries: listing.entries.map((row:any) => appointmentView({ ...row, ...clinicDisplayPreferences(context.clinic), branchAddress: row.branchAddress ?? context.branch.address ?? null },user)) } : {}),
+     ...(listing ? { ...listing, entries: listing.entries.map((row:any) => appointmentView({ ...row, estimate: arrivalEstimate(row, rows, duration, presence.status), ...clinicDisplayPreferences(context.clinic), branchAddress: row.branchAddress ?? context.branch.address ?? null },user)) } : {}),
   });
 });
 queueRouter.post("/queue/call-next", async (req, res) => {

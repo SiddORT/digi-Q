@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./notification-variable-contract": "./src/notification-variable-contract.ts",
     "./public-website": "./src/public-website.ts",
-    "./public-page": "./src/public-page.ts"
+    "./public-page": "./src/public-page.ts",
+    "./ticket-directions": "./src/ticket-directions.ts"
   },
   "dependencies": {
     "zod": "catalog:"
