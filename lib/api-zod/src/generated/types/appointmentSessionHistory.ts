@@ -22,6 +22,12 @@
  */
 
 export interface AppointmentSessionHistory {
+  /** Private detail only. Display name recorded at the move, never reconstructed from the current directory. */
+  doctorName?: string;
+  /** Private detail only. Location name recorded at the move. */
+  branchName?: string;
+  /** Private detail only. Clinician attribution was erased; takes precedence over any name. */
+  deletedDoctor?: boolean;
   doctorId?: string;
   branchId?: string;
   date?: Date;

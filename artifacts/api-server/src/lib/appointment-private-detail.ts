@@ -36,9 +36,14 @@ export async function privateAppointmentDetail(row: any, user: any, conn: any = 
       text(actor.fullName)) names.set(actor.id, actor.fullName);
   }
   const history = row.history && events.map((event: any) => {
-    // Whitelist event coordinates; never return identity/order IDs, cached names or unclassified JSON.
-    const snapshot = (value: any) => value ? Object.fromEntries(
-      ["date", "startTime", "endTime", "timezone"].filter(key => typeof value[key] === "string").map(key => [key, value[key]])) : undefined;
+    // Explicitly recorded move labels only. Never fill historical gaps from today's directory.
+    // A deletion marker wins even if an old cached label survived in malformed data.
+    const snapshot = (value: any) => value ? {
+      ...Object.fromEntries(["date", "startTime", "endTime", "timezone"]
+        .filter(key => typeof value[key] === "string").map(key => [key, value[key]])),
+      ...(value.deletedDoctor ? { deletedDoctor: true } : text(value.doctorName) ? { doctorName: value.doctorName } : {}),
+      ...(text(value.branchName) ? { branchName: value.branchName } : {}),
+    } : undefined;
     const actorState = event.deletedActor ? "deleted" : event.actorKind === "system" ? "system" :
       event.actorKind === "privateReceipt" ? "receipt" :
       !event.actorId ? "unknown" : names.has(event.actorId) ? "named" :

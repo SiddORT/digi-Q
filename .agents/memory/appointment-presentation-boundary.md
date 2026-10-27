@@ -20,3 +20,9 @@ Patient demographics and actor display names belong to the independently permiss
 **Why:** The screenshot requests richer private cards and attribution, but a shared booking serializer also serves capability-based and list contexts. A current actor account role/name is not automatically a historical role/name, and a reschedule's current session does not establish prior session coordinates.
 
 **How to apply:** Add narrowly selected details only after the exact-visit authorization check, keep public and list serializers unchanged, retain recorded actor role/session snapshots when genuinely present, and show missing/anonymized data explicitly.
+
+New reschedule name snapshots describe the moment of the move, not the original booking. Do not reuse a potentially older booking label or reconstruct legacy events from today's directory.
+
+**Why:** Booking-time caches and later directory renames represent different points in time. The approved scope preserves names for new moves only, with no backfill or revival of erased staff attribution.
+
+**How to apply:** Capture source and destination labels at the move; retain explicit missing-name and removed-doctor states in private History. Keep those labels out of shared list, ticket and guest receipt responses.

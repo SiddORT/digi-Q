@@ -70,6 +70,8 @@ export async function createQueueHarness({ empty = false, pre0008 = false } = {}
       stdin: { contents: `
         export * from "./lib/appointments";
         export * from "./lib/reschedule";
+        export * from "./lib/reschedule-display-snapshot";
+        export * from "./lib/staff-attribution-erasure";
         export * from "./lib/queue-order";
         export * from "./lib/arrival-estimate";
         export * from "./lib/live-ticket";

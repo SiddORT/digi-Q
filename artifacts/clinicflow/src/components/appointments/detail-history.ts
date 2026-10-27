@@ -29,9 +29,11 @@ export function actorLabel(e: StatusEvent): { name: string; role?: string; muted
 
 /** Wall-clock snapshot range. Times are only stated as appointment-local if the snapshot recorded the same zone. */
 export function snapshotText(s: HistorySnapshot | undefined, zone: string | null | undefined, prefs: Parameters<typeof formatDate>[1]): string | undefined {
-  if (!s || (!s.date && !s.startTime)) return undefined;
+  if (!s) return undefined;
+  const doctor = s.deletedDoctor ? "Removed doctor" : s.doctorName?.trim() ? `${s.doctorName.trim()} (name recorded at move)` : "Doctor name not recorded";
+  const branch = s.branchName?.trim() ? `${s.branchName.trim()} (name recorded at move)` : "Location name not recorded";
   const date = s.date ? formatDate(s.date, prefs) : "Date not recorded";
   const range = s.startTime ? `${formatTime(s.startTime, prefs)}${s.endTime ? `–${formatTime(s.endTime, prefs)}` : ""}` : "";
   const tz = !s.startTime ? "" : !s.timezone ? " (original timezone not recorded)" : zone && s.timezone !== zone ? ` (${s.timezone})` : "";
-  return `${date}${range ? `, ${range}` : ""}${tz}`;
+  return `${doctor} · ${branch} · ${date}${range ? `, ${range}` : ""}${tz}`;
 }

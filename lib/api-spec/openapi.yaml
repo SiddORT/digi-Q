@@ -4070,6 +4070,9 @@ components:
     AppointmentSessionHistory:
       type: object
       properties:
+        doctorName: { type: string, description: "Private detail only. Display name recorded at the move, never reconstructed from the current directory." }
+        branchName: { type: string, description: "Private detail only. Location name recorded at the move." }
+        deletedDoctor: { type: boolean, description: "Private detail only. Clinician attribution was erased; takes precedence over any name." }
         doctorId: { type: string }
         branchId: { type: string }
         date: { type: string, format: date }

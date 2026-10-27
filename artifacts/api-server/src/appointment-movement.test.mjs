@@ -215,6 +215,11 @@ test("private receipt reschedules and refreshes ticket; cancelled/revoked capabi
   assert.equal(saved.appointment.reference,r.appointment.reference); assert.match(saved.appointment.token,/^B-/);
   assert.equal(saved.appointment.privatePatient, undefined, "guest management must not receive the detail-only profile");
   assert.equal(saved.appointment.history.at(-1).actorDisplayName, undefined, "guest management must not receive private actor names");
+  for (const side of ["from", "to"]) {
+    assert.equal(saved.appointment.history.at(-1)[side].doctorName, undefined);
+    assert.equal(saved.appointment.history.at(-1)[side].branchName, undefined);
+    assert.equal(saved.appointment.history.at(-1)[side].deletedDoctor, undefined);
+  }
   const receiptAfter=await h.route(h.api.guestRequestsRouter,"post","/public/guest-receipt",null,{receiptSecret:secret});
   assert.equal(receiptAfter.token,saved.appointment.token);
   assert.equal(receiptAfter.privatePatient, undefined);

@@ -83,6 +83,8 @@ test("private history pages retain the initial event, tie order and actor privac
     ...Array.from({ length: 65 }, (_, i) => ({
       status: "waiting", occurredAt: time, reason: `event-${i}`,
       actorKind: "doctor", actorId: "removed", deletedActor: true,
+      from: { date: "2030-01-06", doctorId: "d", doctorName: `Recorded doctor ${i}`, branchName: `Recorded location ${i}` },
+      to: { date: "2030-01-07", doctorId: "d2", doctorName: "Erased name", deletedDoctor: true, branchName: "Retained location" },
     })),
   ];
   await h.api.change(h.t.appointments, a.id, { data: { ...row, history } });
@@ -99,6 +101,17 @@ test("private history pages retain the initial event, tie order and actor privac
   assert.deepEqual(last.history.map(e => e.reason), ["event-4", "event-3", "event-2", "event-1", "event-0", "initial"]);
   assert.equal(last.nextCursor, null);
   assert.equal(second.history[0].actorState, "deleted");
+  for (const page of [detail, second, last]) {
+    for (const event of page.history.filter(event => event.reason !== "initial")) {
+      const i = event.reason.slice("event-".length);
+      assert.equal(event.from.doctorName, `Recorded doctor ${i}`);
+      assert.equal(event.from.branchName, `Recorded location ${i}`);
+      assert.equal(event.from.doctorId, undefined);
+      assert.equal(event.to.doctorName, undefined);
+      assert.equal(event.to.deletedDoctor, true);
+      assert.equal(event.to.branchName, "Retained location");
+    }
+  }
   assert.equal(JSON.stringify([detail, second, last]).includes('"actorId"'), false);
   await assert.rejects(fetchPage(detail.historyNextCursor, { ...h.staff, clinicIds: [] }), /scope/);
   await assert.rejects(fetchPage("not-a-cursor"), /Invalid history cursor/);
@@ -120,6 +133,80 @@ test("history ordering compares actual instants and distinguishes missing from e
   await h.api.change(h.t.appointments, a.id, { data: withoutHistory });
   const missing = await h.route(h.api.appointmentsRouter, "get", "/appointments/:id/history", h.staff, {}, { id: a.id });
   assert.equal(missing.history, null);
+});
+
+test("new moves capture contemporaneous labels, keep old events untouched, and expose snapshots only in private detail", async () => {
+  const a = await h.book();
+  // The booking's cached label predates a rename. A new move captures the name at the move, not at booking.
+  await h.api.change(h.t.users, "du", { fullName: "Source at move" });
+  await h.api.change(h.t.branches, "b", { data: { name: "Source location at move", timezone: "UTC" } });
+  await assert.rejects(h.route(h.api.appointmentsRouter, "post", "/appointments/:id/reschedule", h.staff,
+    { doctorId: "d2", branchId: "b2", date: h.tomorrow, expectedRevision: 0, reason: "Another session",
+      from: { doctorName: "Injected label" }, to: { branchName: "Injected location" } }, { id: a.id }));
+  const saved = await h.route(h.api.appointmentsRouter, "post", "/appointments/:id/reschedule", h.staff,
+    { doctorId: "d2", branchId: "b2", date: h.tomorrow, expectedRevision: 0, reason: "Another session" }, { id: a.id });
+  const stored = await h.api.one(h.t.appointments, a.id);
+  const event = stored.history.at(-1);
+  assert.equal(event.from.doctorName, "Source at move");
+  assert.equal(event.from.branchName, "Source location at move");
+  assert.equal(event.to.doctorName, "Doctor Two");
+  assert.equal(event.to.branchName, "b2");
+  assert.deepEqual(stored.history.slice(0, -1), a.history, "no backfill");
+  for (const side of ["from", "to"]) {
+    assert.equal(saved.history.at(-1)[side].doctorName, undefined);
+    assert.equal(saved.history.at(-1)[side].branchName, undefined);
+  }
+  await h.api.change(h.t.users, "du", { fullName: "Source renamed later" });
+  await h.api.change(h.t.users, "du2", { fullName: "Destination renamed later" });
+  await h.api.change(h.t.branches, "b2", { data: { name: "Destination renamed later", timezone: "UTC" } });
+  for (const actor of [h.staff, h.patient]) {
+    const detail = await h.route(h.api.appointmentsRouter, "get", "/appointments/:id", actor, {}, { id: a.id });
+    const move = detail.history.find(event => event.action === "reschedule");
+    assert.equal(move.from.doctorName, "Source at move");
+    assert.equal(move.to.doctorName, "Doctor Two");
+    assert.equal(move.to.branchName, "b2");
+    for (const side of ["from", "to"]) {
+      assert.equal(move[side].doctorId, undefined);
+      assert.equal(move[side].branchId, undefined);
+    }
+    const listed = await h.route(h.api.appointmentsRouter, "get", "/appointments", actor, {});
+    const shared = listed.items.find(item => item.id === a.id).history.at(-1);
+    for (const side of ["from", "to"]) {
+      assert.equal(shared[side].doctorName, undefined);
+      assert.equal(shared[side].branchName, undefined);
+      assert.equal(shared[side].deletedDoctor, undefined);
+    }
+  }
+});
+
+test("erasure removes both sides of historical doctor attribution without erasing locations or inventing legacy names", async () => {
+  const a = await h.book();
+  await h.route(h.api.appointmentsRouter, "post", "/appointments/:id/reschedule", h.staff,
+    { doctorId: "d2", branchId: "b2", date: h.tomorrow, expectedRevision: 0 }, { id: a.id });
+  const stored = await h.api.one(h.t.appointments, a.id);
+  const erased = h.api.eraseStaffAttribution(stored, { userId: "du", doctorIds: new Set(["d"]) });
+  assert.equal(erased.history.at(-1).from.doctorName, "Deleted doctor");
+  assert.equal(erased.history.at(-1).from.deletedDoctor, true);
+  assert.equal(erased.history.at(-1).from.branchName, "b");
+  assert.equal(erased.history.at(-1).to.doctorName, "Doctor Two");
+  const both = h.api.eraseStaffAttribution(erased, { userId: "du2", doctorIds: new Set(["d2"]) });
+  assert.equal(both.history.at(-1).to.deletedDoctor, true);
+  // Even a stale name accidentally left beside the deletion marker must never be revived.
+  both.history.at(-1).from.doctorName = "Must not leak";
+  await h.api.change(h.t.appointments, a.id, { data: both });
+  const detail = await h.route(h.api.appointmentsRouter, "get", "/appointments/:id", h.staff, {}, { id: a.id });
+  for (const side of ["from", "to"]) {
+    const move = detail.history.find(event => event.action === "reschedule");
+    assert.equal(move[side].deletedDoctor, true);
+    assert.equal(move[side].doctorName, undefined);
+  }
+  assert.deepEqual(detail.history.find(event => !event.action), { status: a.history[0].status, occurredAt: a.history[0].occurredAt,
+    actorState: "unknown", actorDisplayName: null, actorRecordedRole: null });
+  // No fallback to an appointment cache or a retired doctor's old data.
+  await h.api.change(h.t.doctors, "d", { status: "retired", data: { fullName: "Stale personal name", deletedDoctor: true } });
+  const snapshot = await h.api.rescheduleDisplaySnapshot("d", "b", h.db);
+  assert.deepEqual(snapshot, { deletedDoctor: true, branchName: "b" });
+  assert.deepEqual(await h.api.rescheduleDisplaySnapshot("missing-doctor", "b", h.db), { branchName: "b" });
 });
 
 test("strict input denies scheduling, identity and recipient overrides and rejects invalid mobile or long notes", async () => {

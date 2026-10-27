@@ -164,7 +164,8 @@ export async function createFeatureHarness({administration=false, simulatedMail=
           export const confirmAppointmentEmail=(id,conn)=>real(id,conn,(...args)=>sendAuthEmail(...args));
         `}));
         b.onResolve({ filter: /\/auth-email$/ }, () => ({ path: "mail", namespace: "booking-mail" }));
-        b.onLoad({ filter: /.*/, namespace: "booking-mail" }, () => ({ contents: `
+        b.onLoad({ filter: /.*/, namespace: "booking-mail" }, () => ({ resolveDir: root, contents: `
+          export { EmailRejectionError } from "${resolve(root,"artifacts/api-server/src/lib/auth-email.ts")}";
           export const smtpConfig = () => ({});
           export async function sendAuthEmail(to, subject, text) {
             if (globalThis.__featureMail.fail) throw new Error("Simulated uncertain dispatch");

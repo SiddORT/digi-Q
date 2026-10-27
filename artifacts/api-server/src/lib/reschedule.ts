@@ -9,6 +9,7 @@ import { sessionRows, rank } from "./queue-order";
 import { enrich } from "./entities";
 import { recordStaffHandoffTransition } from "./staff-handoff-transition";
 import { movementReason, assertSourceSessionOpen } from "./appointment-eligibility";
+import { rescheduleDisplaySnapshot } from "./reschedule-display-snapshot";
 
 export async function reschedule(user: any, id: string, body: any, tx: any, staffHandoff?: { operationId: string; targetUserId: string }) {
   let row = await one(appointments, id, tx);
@@ -49,6 +50,8 @@ export async function reschedule(user: any, id: string, body: any, tx: any, staf
   await allocateToken(row, tx, false);
   const duration = await snapshotDuration(destination, tx), tokenNumber = await allocateToken(destination, tx);
   const doctor = await enrich("doctors", await one(doctors, body.doctorId, tx), tx);
+  const fromDisplay = await rescheduleDisplaySnapshot(row.doctorId, row.branchId, tx);
+  const toDisplay = await rescheduleDisplaySnapshot(body.doctorId, body.branchId, tx);
   const timestamp = new Date().toISOString();
   const data = { ...row, doctorId: body.doctorId, branchId: body.branchId, date: body.date, sessionId: body.sessionId,
     token: `${available.tokenPrefix}-${String(tokenNumber).padStart(2, "0")}`, tokenNumber,
@@ -57,8 +60,8 @@ export async function reschedule(user: any, id: string, body: any, tx: any, staf
     expectedDurationMinutes: duration, queueRank: Math.max(0, ...rows.map(rank)) + 1, revision: (row.revision || 0) + 1,
     waitingAt: timestamp, calledAt: null,
     history: [...(row.history || []), { status: "waiting", action: "reschedule", occurredAt: timestamp, actorId: user.id, actorKind: user.privateReceipt ? "privateReceipt" : user.role, reason: body.reason, ...(row.status === "called" ? { callReleased: true } : {}),
-      from: { doctorId: row.doctorId, branchId: row.branchId, date: row.date, sessionId: row.sessionId, startTime: row.startTime, endTime: row.endTime, timezone: row.timezone, token: row.token, tokenNumber: row.tokenNumber },
-      to: { doctorId: body.doctorId, branchId: body.branchId, date: body.date, sessionId: body.sessionId, startTime: available.startTime, endTime: available.endTime, timezone: available.timezone, token: `${available.tokenPrefix}-${String(tokenNumber).padStart(2, "0")}`, tokenNumber } }],
+      from: { doctorId: row.doctorId, branchId: row.branchId, ...fromDisplay, date: row.date, sessionId: row.sessionId, startTime: row.startTime, endTime: row.endTime, timezone: row.timezone, token: row.token, tokenNumber: row.tokenNumber },
+      to: { doctorId: body.doctorId, branchId: body.branchId, ...toDisplay, date: body.date, sessionId: body.sessionId, startTime: available.startTime, endTime: available.endTime, timezone: available.timezone, token: `${available.tokenPrefix}-${String(tokenNumber).padStart(2, "0")}`, tokenNumber } }],
   };
   const updated = await change(appointments, id, { status: "waiting", doctorId: body.doctorId, branchId: body.branchId, date: body.date, tokenNumber, data }, tx);
   if (staffHandoff)

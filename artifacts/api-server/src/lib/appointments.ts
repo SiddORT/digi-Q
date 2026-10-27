@@ -1,5 +1,6 @@
 import { db, appointments, patients, branches, clinics, appointmentHistory } from "@workspace/db";
 import { sql } from "drizzle-orm";
+import { withoutRescheduleDisplaySnapshots } from "./reschedule-display-snapshot";
 import { all, one, change, put, uid, audit, getSettings } from "./store";
 import { assert } from "./http";
 import { canRead, roles } from "./auth";
@@ -27,6 +28,7 @@ export async function lockQueue(conn: any, doctorId: string, branchId: string, d
   await conn.execute(sql`select pg_advisory_xact_lock(hashtext(${`${doctorId}:${branchId}:${date}`}))`);
 }
 export function appointmentView(row: any, user: any) {
+  if (row.history) row = { ...row, history: withoutRescheduleDisplaySnapshots(row.history) };
   const reason = movementReason(row, user);
   const allowedActions = Object.entries(transitions).filter(([action, rule]) => !["enqueue", "call", "start"].includes(action) && rule.from.includes(row.status) &&
     (action === "shift" ? !reason : action === "cancel" ? !row.checkedInAt && !row.consultationStartedAt : row.date === localNow(row.timezone || "Asia/Kolkata").date) &&

@@ -152,6 +152,9 @@ export const ReadLiveTicketResponse = zod.object({
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -162,6 +165,9 @@ export const ReadLiveTicketResponse = zod.object({
   "tokenNumber": zod.number().int().optional()
 }).optional(),
   "to": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -7355,6 +7361,9 @@ export const ListAppointmentsResponse = zod.object({
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -7365,6 +7374,9 @@ export const ListAppointmentsResponse = zod.object({
   "tokenNumber": zod.number().int().optional()
 }).optional(),
   "to": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -7493,6 +7505,9 @@ export const CreateAppointmentResponse = zod.object({
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -7503,6 +7518,9 @@ export const CreateAppointmentResponse = zod.object({
   "tokenNumber": zod.number().int().optional()
 }).optional(),
   "to": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -7621,6 +7639,9 @@ export const UpdateAppointmentBookingResponse = zod.object({
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -7631,6 +7652,9 @@ export const UpdateAppointmentBookingResponse = zod.object({
   "tokenNumber": zod.number().int().optional()
 }).optional(),
   "to": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -7813,6 +7837,9 @@ export const GetAppointmentResponse = zod.object({
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -7823,6 +7850,9 @@ export const GetAppointmentResponse = zod.object({
   "tokenNumber": zod.number().int().optional()
 }).optional(),
   "to": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -7859,6 +7889,9 @@ export const GetAppointmentHistoryResponse = zod.object({
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -7869,6 +7902,9 @@ export const GetAppointmentHistoryResponse = zod.object({
   "tokenNumber": zod.number().int().optional()
 }).optional(),
   "to": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -7991,6 +8027,9 @@ export const ResolveAppointmentQrResponse = zod.object({
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -8001,6 +8040,9 @@ export const ResolveAppointmentQrResponse = zod.object({
   "tokenNumber": zod.number().int().optional()
 }).optional(),
   "to": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -8113,6 +8155,9 @@ export const CheckInAppointmentQrResponse = zod.object({
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -8123,6 +8168,9 @@ export const CheckInAppointmentQrResponse = zod.object({
   "tokenNumber": zod.number().int().optional()
 }).optional(),
   "to": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -8264,6 +8312,9 @@ export const GetAppointmentMovementResponse = zod.object({
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -8274,6 +8325,9 @@ export const GetAppointmentMovementResponse = zod.object({
   "tokenNumber": zod.number().int().optional()
 }).optional(),
   "to": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -8409,6 +8463,9 @@ export const ManageGuestReceiptResponse = zod.object({
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -8419,6 +8476,9 @@ export const ManageGuestReceiptResponse = zod.object({
   "tokenNumber": zod.number().int().optional()
 }).optional(),
   "to": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -8540,6 +8600,9 @@ export const RescheduleAppointmentResponse = zod.object({
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -8550,6 +8613,9 @@ export const RescheduleAppointmentResponse = zod.object({
   "tokenNumber": zod.number().int().optional()
 }).optional(),
   "to": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -8680,6 +8746,9 @@ export const TransitionAppointmentResponse = zod.object({
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -8690,6 +8759,9 @@ export const TransitionAppointmentResponse = zod.object({
   "tokenNumber": zod.number().int().optional()
 }).optional(),
   "to": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -8866,6 +8938,9 @@ export const GetQueueResponse = zod.object({
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -8876,6 +8951,9 @@ export const GetQueueResponse = zod.object({
   "tokenNumber": zod.number().int().optional()
 }).optional(),
   "to": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -8996,6 +9074,9 @@ export const CallNextResponse = zod.object({
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -9006,6 +9087,9 @@ export const CallNextResponse = zod.object({
   "tokenNumber": zod.number().int().optional()
 }).optional(),
   "to": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -9262,6 +9346,9 @@ export const GetDashboardResponse = zod.object({
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
   "position": zod.number().int().optional(),
   "from": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
@@ -9272,6 +9359,9 @@ export const GetDashboardResponse = zod.object({
   "tokenNumber": zod.number().int().optional()
 }).optional(),
   "to": zod.object({
+  "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
+  "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
+  "deletedDoctor": zod.boolean().optional().describe('Private detail only. Clinician attribution was erased; takes precedence over any name.'),
   "doctorId": zod.string().optional(),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
