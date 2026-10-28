@@ -100,6 +100,14 @@ export async function createQueueHarness({ empty = false, pre0008 = false } = {}
           app.use((error,req,res,next)=>res.status(error.status||500).json({error:error.message}));
           return app;
         }
+        export function appointmentDetailApp(actor){
+          const app=express();
+          app.use((req,res,next)=>globalThis.queueContentionContext.context.run({actor},next));
+          app.use("/api",appointmentsRouter);
+          app.use((error,req,res,next)=>res.status(error.status||500).json({error:error.message}));
+          return app;
+        }
+        import { appointmentsRouter } from "./routes/appointments";
       `, resolveDir: root },
       outfile: bundle, bundle: true, platform: "node", format: "esm", packages: "external",
       plugins: [{ name: "disposable-postgres", setup(b) {

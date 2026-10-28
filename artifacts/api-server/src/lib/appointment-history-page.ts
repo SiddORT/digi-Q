@@ -37,16 +37,26 @@ function decodeCursor(value: unknown): Cursor | null {
 export async function appointmentHistoryPage(id: string, cursorValue?: unknown, conn: any = db) {
   const cursor = decodeCursor(cursorValue);
   const result = await conn.execute(sql`
-    with events as (
+    with parsed as (
       select event, ordinal::integer as ordinal,
-        case when pg_input_is_valid(event->>'occurredAt', 'timestamp with time zone')
-          then extract(epoch from (event->>'occurredAt')::timestamptz)::double precision
-          else null end as instant
+        -- JSONPath's silent datetime parser also exists before PostgreSQL 16.
+        -- Restrict to calendar dates/timestamps so a valid time-only value cannot
+        -- reach the timestamptz cast. Normalize Z: automatic JSONPath parsing
+        -- otherwise rejects fractional-second UTC timestamps on older servers.
+        case when event->>'occurredAt' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}([Tt ].*)?$'
+          then jsonb_path_query_first(
+            to_jsonb(regexp_replace(event->>'occurredAt', '[zZ]$', '+00:00')),
+            '$.datetime()', '{}'::jsonb, true) #>> '{}'
+          else null end as parsed_time
       from ${appointments} a
       cross join lateral jsonb_array_elements(
         case when jsonb_typeof(a.data->'history') = 'array' then a.data->'history' else '[]'::jsonb end
       ) with ordinality as h(event, ordinal)
       where a.id = ${id}
+    ), events as (
+      select event, ordinal,
+        extract(epoch from parsed_time::timestamptz)::double precision as instant
+      from parsed
     )
     select event, ordinal, instant from events
     ${cursor ? sql`where (coalesce(instant, '-Infinity'::double precision), ordinal)

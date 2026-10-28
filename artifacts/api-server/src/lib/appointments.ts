@@ -28,7 +28,10 @@ export async function lockQueue(conn: any, doctorId: string, branchId: string, d
   await conn.execute(sql`select pg_advisory_xact_lock(hashtext(${`${doctorId}:${branchId}:${date}`}))`);
 }
 export function appointmentView(row: any, user: any) {
-  if (row.history) row = { ...row, history: withoutRescheduleDisplaySnapshots(row.history) };
+  // Actor attribution belongs only to the exact-visit private detail projection,
+  // not list, write or receipt responses (including staff responses).
+  if (row.history) row = { ...row, history: withoutRescheduleDisplaySnapshots(row.history)
+    .map(({ actorId: _actor, actorDisplayName: _name, ...event }: any) => event) };
   const reason = movementReason(row, user);
   const allowedActions = Object.entries(transitions).filter(([action, rule]) => !["enqueue", "call", "start"].includes(action) && rule.from.includes(row.status) &&
     (action === "shift" ? !reason : action === "cancel" ? !row.checkedInAt && !row.consultationStartedAt : row.date === localNow(row.timezone || "Asia/Kolkata").date) &&

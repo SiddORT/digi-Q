@@ -19,7 +19,7 @@ const first = {
   history: Array.from({ length: 24 }, (_, i) => ({ action: i ? "requeue" : "book", status: i ? "waiting" : "booked", occurredAt: "2030-06-01T10:00:00Z", reason: `Event ${i}: ` + "A long fictional reason with complete information. ".repeat(5), actorState: i % 2 ? "named" : "unknown", actorDisplayName: i % 2 ? "Long Fictional Receptionist Name" : null, actorRecordedRole: i % 2 ? "receptionist" : null })),
 };
 const second = { ...first, id: "appointment-2", patientName: "Morgan Sample", reference: "BOOKING-SECOND", token: "A-02", tokenNumber: 2, notes: "", history: [], status: "completed", checkedInAt: "2030-06-14T09:00:00Z", completedAt: "2030-06-14T09:15:00Z" };
-type State = { appointment: typeof first; failAppointment?: boolean; failStatus?: number; failQr?: boolean; failQueue?: boolean; delay?: number; reads: number };
+type State = { appointment: typeof first; role?: string; failAppointment?: boolean; failStatus?: number; failQr?: boolean; failQueue?: boolean; delay?: number; reads: number };
 
 test("patient editor opens a fresh authorized profile and saves demographics without moving registration or visit contact", async ({ page }) => {
   let submitted: Record<string, unknown> | undefined;
@@ -86,7 +86,7 @@ async function mount(page: Page, surface = "", linked = false, initial: Partial<
     if (path === "/api/public/website-config") body = { publicOrigin: "https://tickets.example.invalid" };
     else if (path === "/api/auth/csrf") body = {csrfToken:"fictional-browser-csrf"};
     else if (path === "/api/auth/status") body = { authenticated: true, role: "superAdmin" };
-    else if (path === "/api/me") body = { user: { id: "fixture-admin", fullName: "Fictional Administrator", email: "fixture@example.invalid", role: surface === "application" ? "superAdmin" : "clinicAdmin", timezone: "UTC" }, needsOnboarding: false };
+    else if (path === "/api/me") body = { user: { id: "fixture-admin", fullName: "Fictional Administrator", email: "fixture@example.invalid", role: state.role || (surface === "application" ? "superAdmin" : "clinicAdmin"), timezone: "UTC" }, needsOnboarding: false };
     else if (path === "/api/appointments") body = { items: [state.appointment, second], total: 2, page: 1, pageSize: 100 };
     else if (path === "/api/appointments/appointment-1" || path === "/api/appointments/appointment-2") {
       state.reads++;
@@ -111,6 +111,48 @@ async function mount(page: Page, surface = "", linked = false, initial: Partial<
 }
 const details = (page: Page) => page.getByTestId("appointment-details");
 const tab = (page: Page, name: string) => details(page).getByRole("tab", { name, exact: true });
+
+for (const status of ["waiting", "cancelled"]) {
+  test(`Super Admin ${status} expansion waits for private details, retries and pages history`, async ({ page }) => {
+    const state = await mount(page, "rows", false, {
+      role: "superAdmin", failAppointment: true,
+      appointment: { ...structuredClone(first), status, history: [] },
+    });
+    const privateRecord = {
+      ...structuredClone(first), status, patientName: "Authorized fictional patient",
+      history: [{ status, occurredAt: "2030-06-01T10:00:00Z", reason: "Latest private event" }],
+      historyNextCursor: "fictional-next-page",
+    };
+    await page.getByTestId("button-expand-appointment-appointment-1").click();
+    const expansion = page.getByTestId("expansion-appointment-appointment-1");
+    await expect(expansion.getByRole("button", { name: "Retry Details", exact: true })).toBeVisible();
+    await expect(details(page)).toHaveCount(0);
+    await expect(expansion).not.toContainText("Nothing to show.");
+    await expect(expansion).not.toContainText(first.privatePatient.mobile);
+    await page.route("**/api/appointments/appointment-1", route => route.fulfill({ json: privateRecord }));
+    let historyReads = 0;
+    await page.route("**/api/appointments/appointment-1/history?cursor=fictional-next-page", route => {
+      historyReads++;
+      return historyReads === 1
+        ? route.fulfill({ status: 503, json: { message: "Temporary fixture failure" } })
+        : route.fulfill({ json: { history: [{ status: "waiting", occurredAt: "2030-05-01T10:00:00Z", reason: "Older private event" }], nextCursor: null } });
+    });
+    await expansion.getByRole("button", { name: "Retry Details", exact: true }).click();
+    await expect(tab(page, "Booking")).toHaveAttribute("aria-selected", "true");
+    await tab(page, "Details").click();
+    await expect(page.getByTestId("section-detail-additional")).toContainText(first.reference);
+    await tab(page, "History").click();
+    await expect(details(page)).toContainText("Latest private event");
+    await page.getByTestId("button-older-history").click();
+    await expect(page.getByTestId("button-older-history")).toHaveText("Retry older events");
+    await expect(details(page)).not.toContainText("Nothing to show.");
+    await expect(details(page)).toContainText("Latest private event");
+    await page.getByTestId("button-older-history").click();
+    await expect(details(page)).toContainText("Older private event");
+    await expect(details(page).getByRole("table").locator("tbody tr")).toHaveCount(2);
+    await expect(page.getByTestId("button-older-history")).toHaveCount(0);
+  });
+}
 
 for (const width of [1024, 1440, 820, 390]) {
   test(`ticket layering in the complete application at ${width}px`, async ({ page }, testInfo) => {
