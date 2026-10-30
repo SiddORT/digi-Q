@@ -95,6 +95,7 @@ export async function createQueueHarness({ empty = false, pre0008 = false, pgBin
         export { publicRouter, resolveQr } from "./routes/public";
         export { authorizeWrite, createClinicAdminOnboarding, resourcesRouter } from "./routes/resources";
         export { clinicExpansionRouter } from "./routes/clinic-expansion";
+        export { identityRouter } from "./routes/identity";
         export * as tables from "@workspace/db";
         import express from "express";
         import { nativeSession } from "./lib/native-auth";
@@ -165,7 +166,7 @@ export async function createQueueHarness({ empty = false, pre0008 = false, pgBin
         return result;
       });
     }
-    async function race(operations, { doctorIds = ["d"], lockKeys = [], orderedWaiters = false, onContention } = {}) {
+    async function race(operations, { doctorIds = ["d"], lockKeys = [], rowLocks = [], orderedWaiters = false, onContention } = {}) {
       const gate = await connect();
       const workers = await Promise.all(operations.map(() => connect()));
       let results;
@@ -175,6 +176,10 @@ export async function createQueueHarness({ empty = false, pre0008 = false, pgBin
           await gate.query("select pg_advisory_xact_lock(hashtext($1))", [`schedules:${id}`]);
         }
         for (const key of [...lockKeys].sort()) await gate.query("select pg_advisory_xact_lock(hashtext($1))", [key]);
+        for (const { table, id } of rowLocks) {
+          assert.ok(["users", "patients", "doctors"].includes(table), "Only profile fixture tables may be row-locked");
+          await gate.query(`select id from ${table} where id=$1 for update`, [id]);
+        }
         const pids = await Promise.all(workers.map(async c => (await c.query("select pg_backend_pid() as pid")).rows[0].pid));
         assert.equal(new Set(pids).size, operations.length, "independent PostgreSQL backends");
         const pending = [];
@@ -190,23 +195,23 @@ export async function createQueueHarness({ empty = false, pre0008 = false, pgBin
             const until = performance.now() + 5000;
             let queued = false;
             while (performance.now() < until) {
-              const locks = await control.query("select 1 from pg_locks where pid=$1 and locktype='advisory' and not granted", [pids[index]]);
+              const locks = await control.query("select 1 from pg_locks where pid=$1 and locktype = any($2::text[]) and not granted", [pids[index], rowLocks.length ? ["transactionid", "tuple", "advisory"] : ["advisory"]]);
               if (locks.rows.length) { queued = true; break; }
               await delay(10);
             }
-            assert.equal(queued, true, `backend ${pids[index]} must enter the real advisory-lock queue before the next contender starts`);
+            assert.equal(queued, true, `backend ${pids[index]} must enter the real lock queue before the next contender starts`);
           }
         }
         const deadline = performance.now() + 5000;
         let waiting = 0;
         while (performance.now() < deadline) {
           const activity = await control.query(
-            "select count(distinct pid)::int as count from pg_locks where pid = any($1::int[]) and locktype = 'advisory' and not granted", [pids]);
+            "select count(distinct pid)::int as count from pg_locks where pid = any($1::int[]) and locktype = any($2::text[]) and not granted", [pids, rowLocks.length ? ["transactionid", "tuple", "advisory"] : ["advisory"]]);
           waiting = activity.rows[0].count;
           if (waiting === workers.length) break;
           await delay(10);
         }
-        assert.equal(waiting, workers.length, "every contender must overlap at an actual PostgreSQL advisory-lock wait");
+        assert.equal(waiting, workers.length, "every contender must overlap at an actual PostgreSQL lock wait");
         onContention?.({ pids, waiting, orderedWaiters });
         await gate.query("commit");
         return await results;

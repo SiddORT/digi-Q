@@ -13,3 +13,9 @@ Missing editable profile values use direct actions such as “Add gender” or �
 **Why:** The user explicitly requested concise completion actions and preservation of the existing contact and permission boundaries.
 
 **How to apply:** Reuse authorized persistence and existing fields on each surface; distinguish missing, inaccessible, loading and malformed data.
+
+Profile completion and self-account updates must share database serialization before checking a saved baseline or merging profile data. Lock an account before its linked doctor profile, consistently across entry points.
+
+**Why:** An advisory lock used only by completion does not protect against a self-account save waiting on a row lock. A baseline can pass before that save commits, and opposite account/profile lock orders can deadlock.
+
+**How to apply:** For new profile writers and contention checks, coordinate the real shared rows, reread after acquiring them, and verify both acquisition orders using separate PostgreSQL connections with observable lock waits.

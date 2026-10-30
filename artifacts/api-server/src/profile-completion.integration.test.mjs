@@ -1,7 +1,8 @@
-import { test, before, after } from "node:test";
+import { test, describe, before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import { createFeatureHarness } from "./test-support/feature-harness.mjs";
 import { seedFeatureFixtures } from "./test-support/feature-fixtures.mjs";
+import { createQueueHarness } from "./test-support/postgres-queue.mjs";
 let h;
 before(async () => { h = await createFeatureHarness({ administration: true, appointmentDetails: true }); await seedFeatureFixtures(h.pg); });
 after(async () => h?.close());
@@ -110,4 +111,162 @@ test("private appointment information refreshes from patient data without changi
   assert.equal(after.privatePatient.age,0);assert.match(after.privatePatient.ageReferenceDate,/^\d{4}-\d{2}-\d{2}$/);
   assert.equal(after.bookingMobile,before.bookingMobile);
   assert.equal(after.patientId,before.patientId);
+});
+
+describe("profile completion on competing PostgreSQL connections", () => {
+  let pg;
+  const admin = {id:"admin",role:"clinicAdmin",clinicIds:["c"],branchIds:["b","b2"]};
+  const self = {id:"du",role:"doctor",doctorId:"d",managingAdminId:"admin",clinicIds:["c"],branchIds:["b"]};
+  const oldMobile = "+14155552671", newMobile = "+14155552672";
+  let assignments, visits;
+  before(async () => {
+    pg = await createQueueHarness();
+    await pg.control.query(`create table auth_challenges(
+      id text primary key,user_id text,purpose text,consumed_at timestamptz,data jsonb not null default '{}')`);
+  });
+  after(async () => pg?.close());
+  beforeEach(async () => {
+    await pg.seed();
+    await pg.control.query("truncate auth_challenges");
+    await pg.control.query("update users set mobile=$1,data=$2 where id='du'", [oldMobile, JSON.stringify({
+      staffMobileProof:{mobile:oldMobile,verifiedAt:"2026-01-01T00:00:00.000Z"}, photoUrl:"https://example.test/old.jpg", sentinel:"account",
+    })]);
+    await pg.control.query("update doctors set data=$1 where id='d'", [JSON.stringify({mobile:oldMobile,photoUrl:"https://example.test/old.jpg",sentinel:"doctor"})]);
+    await pg.control.query("update patients set mobile_verified=true,data=data || '{\"email\":\"old@example.test\",\"sentinel\":\"patient\"}' where id='p1'");
+    await pg.control.query("insert into auth_challenges values ('sms','du','staff-contact:sms',null,'{\"proof\":\"pending\"}'),('email','du','staff-contact:email',null,'{\"proof\":\"email\"}')");
+    await pg.api.put(pg.t.appointments, {id:"profile-visit",patientId:"p1",doctorId:"d",clinicId:"c",branchId:"b",date:pg.today,tokenNumber:1,actorId:"admin",
+      data:{bookingMobile:"+14155552673",patientEmail:"visit@example.test",notes:"Visit contact stays separate"}});
+    assignments = (await pg.control.query("select * from assignments order by id")).rows;
+    visits = (await pg.control.query("select * from appointments order by id")).rows;
+  });
+  const current = (kind, id) => pg.api.one(pg.t[kind], id);
+  const patch = (kind, id, values, baseline, tx, actor = admin) =>
+    pg.route(pg.api.resourcesRouter,"patch",`/${kind}/:id/profile-fields`,actor,{values,baseline},{id},{},tx);
+  const own = (body, tx) => pg.route(pg.api.identityRouter,"patch","/me",self,body,{}, {},tx);
+  async function race(operations, options) {
+    let observed = false;
+    const results = await pg.race(operations, {doctorIds:[],orderedWaiters:true,...options,onContention:({pids,waiting}) => {
+      assert.equal(new Set(pids).size,2);
+      assert.equal(waiting,2);
+      observed = true;
+    }});
+    assert.equal(observed,true,"both independent workers were observed waiting before release");
+    assert.deepEqual((await pg.control.query("select * from assignments order by id")).rows,assignments);
+    assert.deepEqual((await pg.control.query("select * from appointments order by id")).rows,visits);
+    return results;
+  }
+  function staleLoser(results) {
+    assert.equal(results[0].status,"fulfilled");
+    assert.equal(results[1].status,"rejected");
+    assert.equal(results[1].reason.status,409);
+    assert.match(results[1].reason.message,/profile field changed/);
+  }
+  for (const first of ["DOB","approximate age"]) {
+    test(`${first} wins a competing demographic mode change without mixing modes`, async () => {
+      const values = first === "DOB" ? [{dateOfBirth:"2000-02-29"},{age:26}] : [{age:26},{dateOfBirth:"2000-02-29"}];
+      const baseline = {dateOfBirth:null,age:null};
+      const results = await race(values.map(value => tx => patch("patients","p1",value,baseline,tx)),{lockKeys:["patients:p1"]});
+      staleLoser(results);
+      const saved = await current("patients","p1");
+      if (first === "DOB") {
+        assert.equal(saved.dateOfBirth,"2000-02-29");
+        assert.ok(saved.age == null); assert.ok(saved.ageReferenceDate == null);
+      } else {
+        assert.equal(saved.age,26); assert.match(saved.ageReferenceDate,/^\d{4}-\d{2}-\d{2}$/);
+        assert.ok(saved.dateOfBirth == null);
+      }
+      assert.equal(saved.sentinel,"patient");
+    });
+  }
+  test("same-field patient contenders reject the stale editor and leave contact proof unchanged", async () => {
+    const results = await race([
+      tx => patch("patients","p1",{gender:"female"},{gender:null},tx),
+      tx => patch("patients","p1",{gender:"male"},{gender:null},tx),
+    ],{lockKeys:["patients:p1"]});
+    staleLoser(results);
+    const saved = await current("patients","p1");
+    assert.equal(saved.gender,"female"); assert.equal(saved.mobileVerified,true);
+    assert.equal(saved.mobile,"+15555550001");
+  });
+  test("separate patient fields both survive, with mobile proof invalidated only for the changed profile contact", async () => {
+    const results = await race([
+      tx => patch("patients","p1",{mobile:newMobile},{mobile:"+15555550001"},tx),
+      tx => patch("patients","p1",{email:"new@example.test"},{email:"old@example.test"},tx),
+    ],{lockKeys:["patients:p1"]});
+    assert.deepEqual(results.map(r => r.status),["fulfilled","fulfilled"]);
+    const saved = await current("patients","p1");
+    assert.equal(saved.mobile,newMobile); assert.equal(saved.mobileVerified,false);
+    assert.equal(saved.email,"new@example.test"); assert.equal(saved.sentinel,"patient");
+  });
+  test("replacing an exact DOB with an estimate cannot erase another editor's newer DOB", async () => {
+    await pg.control.query("update patients set data=data || '{\"dateOfBirth\":\"2000-01-01\",\"age\":26,\"ageReferenceDate\":\"2026-01-01\"}' where id='p1'");
+    const baseline = {dateOfBirth:"2000-01-01",age:26};
+    const results = await race([
+      tx => patch("patients","p1",{dateOfBirth:"2001-02-03"},baseline,tx),
+      tx => patch("patients","p1",{dateOfBirth:null,age:27},baseline,tx),
+    ],{lockKeys:["patients:p1"]});
+    staleLoser(results);
+    const saved = await current("patients","p1");
+    assert.equal(saved.dateOfBirth,"2001-02-03"); assert.equal(saved.age,26);
+    assert.equal(saved.ageReferenceDate,"2026-01-01","retained estimates keep their actual reference date");
+  });
+  for (const selfFirst of [true,false]) {
+    test(`patient completion preserves a linked self-account contact update (${selfFirst ? "self first" : "completion first"})`, async () => {
+      await pg.api.put(pg.t.users,{id:"u1",email:"patient@example.test",fullName:"Patient 1",role:"patient",mobile:"+15555550001"});
+      const patient = {id:"u1",role:"patient",patientId:"p1",clinicIds:[],branchIds:[]};
+      const completion = tx => patch("patients","p1",{gender:"female"},{gender:null},tx);
+      const contact = tx => pg.route(pg.api.identityRouter,"patch","/me",patient,{mobile:newMobile},{},{},tx);
+      const results = await race(selfFirst ? [contact,completion] : [completion,contact],{rowLocks:[{table:"patients",id:"p1"}]});
+      assert.deepEqual(results.map(r => r.status),["fulfilled","fulfilled"],JSON.stringify(results));
+      const saved = await current("patients","p1");
+      assert.equal(saved.gender,"female"); assert.equal(saved.mobile,newMobile);
+      assert.equal(saved.mobileVerified,false); assert.equal(saved.email,"old@example.test");
+      assert.equal(saved.sentinel,"patient"); assert.equal((await current("users","u1")).mobile,newMobile);
+    });
+  }
+  for (const kind of ["users","doctors"]) {
+    for (const selfFirst of [true,false]) {
+      test(`${kind} completion and self-account contact change preserve separate fields (${selfFirst ? "self first" : "completion first"})`, async () => {
+        const id = kind === "users" ? "du" : "d";
+        const completion = tx => patch(kind,id,{photoUrl:"https://example.test/new.jpg"},{photoUrl:"https://example.test/old.jpg"},tx,kind === "users" ? self : admin);
+        const contact = tx => own({mobile:newMobile},tx);
+        const results = await race(selfFirst ? [contact,completion] : [completion,contact],{rowLocks:[{table:"users",id:"du"}]});
+        assert.deepEqual(results.map(r => r.status),["fulfilled","fulfilled"],JSON.stringify(results));
+        const account = await current("users","du"), doctor = await current("doctors","d");
+        assert.equal(account.mobile,newMobile); assert.equal(account.staffMobileProof,null);
+        assert.equal(doctor.mobile,newMobile);
+        assert.equal((kind === "users" ? account : doctor).photoUrl,"https://example.test/new.jpg");
+        assert.equal(account.email,"d@example.com"); assert.equal(account.role,"doctor");
+        assert.equal(account.sentinel,"account"); assert.equal(doctor.sentinel,"doctor");
+        const challenges = (await pg.control.query("select * from auth_challenges order by id")).rows;
+        assert.equal(challenges[0].consumed_at,null); assert.deepEqual(challenges[0].data,{proof:"email"});
+        assert.ok(challenges[1].consumed_at); assert.deepEqual(challenges[1].data,{});
+      });
+    }
+    test(`${kind} same-mobile completion rejects a stale baseline after a self-account change`, async () => {
+      const id = kind === "users" ? "du" : "d";
+      const results = await race([
+        tx => own({mobile:newMobile},tx),
+        tx => patch(kind,id,{mobile:"+14155552674"},{mobile:oldMobile},tx,kind === "users" ? self : admin),
+      ],{rowLocks:[{table:"users",id:"du"}]});
+      staleLoser(results);
+      assert.equal((await current("users","du")).mobile,newMobile);
+      assert.equal((await current("doctors","d")).mobile,newMobile);
+      assert.equal((await current("users","du")).staffMobileProof,null);
+    });
+    test(`${kind} winning mobile completion invalidates proof without losing a later self-account photo`, async () => {
+      const id = kind === "users" ? "du" : "d";
+      const results = await race([
+        tx => patch(kind,id,{mobile:newMobile},{mobile:oldMobile},tx,kind === "users" ? self : admin),
+        tx => own({photoUrl:"https://example.test/self.jpg"},tx),
+      ],{rowLocks:[{table:"users",id:"du"}]});
+      assert.deepEqual(results.map(r => r.status),["fulfilled","fulfilled"],JSON.stringify(results));
+      const account = await current("users","du"), doctor = await current("doctors","d");
+      assert.equal(account.mobile,newMobile); assert.equal(doctor.mobile,newMobile);
+      assert.equal(account.photoUrl,"https://example.test/self.jpg"); assert.equal(doctor.photoUrl,"https://example.test/self.jpg");
+      assert.equal(account.staffMobileProof,null);
+      const sms = (await pg.control.query("select * from auth_challenges where id='sms'")).rows[0];
+      assert.ok(sms.consumed_at); assert.deepEqual(sms.data,{});
+    });
+  }
 });

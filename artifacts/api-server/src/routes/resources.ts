@@ -873,6 +873,14 @@ for (const [kind, table, schema, listSchema] of definitions) {
     const saved = await db.transaction(async tx => {
       const id = req.params.id as string;
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${kind + ":" + id}))`);
+      // PATCH /me serializes on the account row, not this advisory key.
+      // Match its account-before-doctor order, then read the baseline only
+      // after the competing writer has committed.
+      if (kind === "doctors") {
+        const linked = await one(table, id, tx);
+        await tx.select().from(users).where(eq(users.id, linked.userId)).for("update");
+      }
+      await tx.select().from(table).where(eq(table.id, id)).for("update");
       const current = await enrich(kind, await one(table, id, tx), tx);
       assert(await canRead(actor, kind, current, tx), 403, "Record outside your scope");
       assertProfileBaseline(current, input.values, input.baseline, kind === "patients");

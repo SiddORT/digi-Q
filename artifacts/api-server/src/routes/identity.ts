@@ -49,13 +49,13 @@ export async function saveOwnProfile(user: any, body: any, tx: any) {
     const [account] = await tx.select().from(users).where(eq(users.id,user.id)).for("update");
     const mobileChanged = body.mobile !== undefined && body.mobile !== account.mobile;
     if (mobileChanged) await tx.execute(sql`update auth_challenges set consumed_at=now(),data='{}'::jsonb where user_id=${user.id} and purpose='staff-contact:sms'`);
-    await change(users, user.id, { ...(body.fullName ? { fullName: body.fullName } : {}), ...(body.mobile !== undefined ? { mobile: body.mobile } : {}), data: { ...account.data, photoUrl: body.photoUrl ?? user.photoUrl, ...(mobileChanged ? { staffMobileProof: null } : {}) } }, tx);
+    await change(users, user.id, { ...(body.fullName ? { fullName: body.fullName } : {}), ...(body.mobile !== undefined ? { mobile: body.mobile } : {}), data: { ...account.data, ...(body.photoUrl !== undefined ? { photoUrl: body.photoUrl } : {}), ...(mobileChanged ? { staffMobileProof: null } : {}) } }, tx);
     if (user.patientId) {
-      const [p] = await tx.select().from(patients).where(eq(patients.id, user.patientId));
+      const [p] = await tx.select().from(patients).where(eq(patients.id, user.patientId)).for("update");
       await change(patients, p.id, { data: { ...p.data, ...(body.fullName ? { fullName: body.fullName } : {}) }, ...(body.mobile !== undefined ? { mobile: body.mobile, mobileVerified: body.mobile === p.mobile && p.mobileVerified } : {}) }, tx);
     }
     if (user.doctorId) {
-      const [d] = await tx.select().from(doctors).where(eq(doctors.id, user.doctorId));
+      const [d] = await tx.select().from(doctors).where(eq(doctors.id, user.doctorId)).for("update");
       await change(doctors, d.id, { data: { ...d.data, ...body } }, tx);
     }
     await audit(user, "updateProfile", "users", user, tx);
