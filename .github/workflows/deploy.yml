@@ -7,7 +7,11 @@ on:
   workflow_dispatch:
 
 jobs:
+  appointment-detail-compatibility:
+    uses: ./.github/workflows/appointment-detail-compatibility.yml
+
   deploy:
+    needs: appointment-detail-compatibility
     runs-on: ubuntu-latest
 
     steps:

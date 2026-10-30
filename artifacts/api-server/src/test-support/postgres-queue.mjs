@@ -11,19 +11,22 @@ import { performance } from "node:perf_hooks";
 import { build } from "esbuild";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { queueFixtureSql, seedQueueFixtures } from "./queue-fixtures.mjs";
+import { resolvePostgresTools } from "./postgres-tools.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const { Client } = createRequire(resolve(root, "../../../lib/db/package.json"))("pg");
 
-export async function createQueueHarness({ empty = false, pre0008 = false } = {}) {
+export async function createQueueHarness({ empty = false, pre0008 = false, pgBin, expectedMajor } = {}) {
+  const tools = resolvePostgresTools({ bin: pgBin, expectedMajor });
   const temp = await mkdtemp(join(tmpdir(), "clinicflow-contention-"));
   const data = join(temp, "data");
   const bundle = join(root, `.contention-${process.pid}.mjs`);
   const context = new AsyncLocalStorage();
   const clients = new Set();
   let started = false;
-  const pg = (command, args) => execFileSync(command, args, {
+  const pg = (command, args) => execFileSync(tools[command], args, {
     encoding: "utf8", timeout: 20000, stdio: "pipe",
+    env: Object.fromEntries(Object.entries(process.env).filter(([key]) => key !== "DATABASE_URL" && !key.startsWith("PG"))),
   });
   async function connect(database = "postgres") {
     const client = new Client({
@@ -59,12 +62,15 @@ export async function createQueueHarness({ empty = false, pre0008 = false } = {}
     pg("initdb", ["-D", data, "-U", "queue_test", "-A", "trust", "--no-locale", "--encoding=UTF8"]);
     // The private Unix socket directory is unique; no TCP port is opened.
     pg("pg_ctl", ["-D", data, "-l", join(temp, "postgres.log"),
+      "-p", tools.postgres,
       "-o", `-k ${temp} -c listen_addresses='' -c max_connections=12`, "-w", "start"]);
     started = true;
     const control = await connect();
+    const { rows: [server] } = await control.query("select current_setting('server_version_num')::int as number");
+    assert.equal(Math.floor(server.number / 10000), tools.major, "Disposable server must match the selected tool major");
     const db = drizzle(control);
     // Migration tests require an actually empty private database, not fixtures.
-    if (empty) return { control, db, connect, close, temp };
+    if (empty) return { control, db, connect, close, temp, postgresTools: tools };
     globalThis.queueContentionContext = { db, context };
     await build({
       stdin: { contents: `
@@ -211,7 +217,7 @@ export async function createQueueHarness({ empty = false, pre0008 = false } = {}
       }
     }
     return {
-      api, t, staff, patient, today, tomorrow, db, control, route, race, close,
+      api, t, staff, patient, today, tomorrow, db, control, route, race, close, postgresTools: tools,
       seed: () => db.transaction(tx => context.run({db:tx}, () => seedQueueFixtures(api, t, { exec: sql => control.query(sql) }))),
       rows: () => api.all(t.appointments),
       act: (id, body, actor = staff) => db.transaction(tx => api.transition(actor, id, body, tx)),

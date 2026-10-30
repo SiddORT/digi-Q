@@ -72,19 +72,91 @@ independently authorized rollout. Do not infer hosted repair from this report.
 
 ## Focused verification
 
+### Routine minimum/current compatibility gate (2026-10-29)
+
+The declared **minimum for appointment-detail compatibility is PostgreSQL 15**.
+The **current project toolchain is PostgreSQL 16** (`.replit`); “current” here
+means that configured major, not the newest upstream release. The two roles are
+declared in `scripts/appointment-detail-postgres-versions.json`. When the project
+toolchain changes, update its `current` entry together with it. PostgreSQL 17
+results below remain historical supplementary evidence, not a required gate.
+
+Run the repeatable gate from the workspace root:
+
+```sh
+pnpm test:appointment-detail-compatibility
+```
+
+This first checks the tool selector's fail-closed behavior, then preflights both
+required tool installations and runs the unchanged focused detail regression
+serially on each. A missing tool, mixed patch/major versions, wrong expected
+major, failed assertion, or failed child process makes the command fail; no
+version is skipped or replaced by the tools on PATH. Each run logs all selected
+tools' directory/version and asserts the actual server major through SQL.
+
+By default the runner realizes `postgresql_15` and `postgresql_16` from
+`<nixpkgs>` with `nix-build --no-out-link`. These are test-only store outputs,
+not module/profile changes or database upgrades. CI uses the NixOS 25.05 channel.
+Without Nix, provide both version-specific **absolute** bin directories:
+
+```sh
+CLINICFLOW_TEST_PG15_BIN=/path/to/postgresql-15/bin \
+CLINICFLOW_TEST_PG16_BIN=/path/to/postgresql-16/bin \
+  pnpm test:appointment-detail-compatibility
+```
+
+The shared disposable harness resolves `initdb`, `pg_ctl`, and `postgres` from
+one directory, verifies their full reported versions match, and explicitly
+passes that `postgres` executable to `pg_ctl`. Its default for other tests is
+the real directory of PATH's `postgres`, not three independent PATH lookups.
+Only this test process's tool selection changes. PostgreSQL connection
+environment variables and `DATABASE_URL` are excluded from cluster subprocesses.
+Each run initializes and removes a unique private Unix-socket cluster, opens no
+database TCP listener, and uses explicit local client settings and fictional data.
+No configured application/hosted database is contacted.
+
+The `appointment-detail-compatibility` named validation runs this command.
+`.github/workflows/appointment-detail-compatibility.yml` also runs it on pull
+requests and manual dispatch; the existing UAT deploy workflow calls it as a
+prerequisite, so a failure blocks its SSH deployment step. Adding that gate
+does not itself deploy or change a hosted database. Branch-protection policy
+is managed separately.
+
+Required assertions remain malformed/missing timestamp handling, equal-instant
+ordering and page boundaries, unknown-time page boundaries, exact-once event
+coverage, waiting/cancelled HTTP 200 and no-store, private demographics, denied
+foreign-patient/out-of-scope staff reads, actor/doctor erasure, list privacy, and
+missing-versus-empty history. No unrelated backend suite is part of this gate.
+
+The registered command passed locally on 2026-10-29:
+
+| Routine check | Result |
+| --- | --- |
+| Tool selector: missing tools, mixed versions, wrong major, relative directory | Pass |
+| Minimum PostgreSQL 15.13; validator absent (SQLSTATE 42883 confirmed) | 4/4 pass |
+| Current-major PostgreSQL 16.9; validator present | 4/4 pass |
+
+The patch versions above are the test-only Nix outputs used by this run, not a
+change to the configured application database. All eight regression cases ran
+without skips. The workflow wiring is checked in; a hosted GitHub Actions run
+and a deployment were not performed from this fork. Fixture warnings about
+unavailable notification-history preparation do not indicate live delivery.
+
+### Earlier one-off evidence
+
 All fixtures are fictional and use disposable databases, never the workspace or
 hosted database. Socket cluster tools (`initdb`, `pg_ctl`, `postgres`) must all
 come from the same PostgreSQL installation. To repeat a version-specific check:
 
 ```sh
-PATH="$PG_BIN:$PATH" node --test \
+CLINICFLOW_TEST_PG_BIN="$PG_BIN" CLINICFLOW_TEST_PG_MAJOR=15 node --test \
   artifacts/api-server/src/appointment-detail-loading.integration.test.mjs
 ```
 
 `PG_BIN` is the local bin directory for the version being checked, not a database
-URL. PostgreSQL 15 was installed only as a local verification tool; that temporary
-environment configuration was removed afterward. No application database version
-or checked-in toolchain requirement changed.
+URL; change the asserted major when checking another installation. The earlier
+temporary PostgreSQL 15 environment configuration was removed after that run.
+The routine gate now realizes it without changing the application toolchain.
 
 | Check | Result |
 | --- | --- |

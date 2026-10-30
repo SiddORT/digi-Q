@@ -32,6 +32,10 @@ args = "appointment-movement"
 task = "workflow.run"
 args = "communication-usage"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "appointment-detail-compatibility"
+
 [[workflows.workflow]]
 name = "queue-contention"
 author = "agent"
@@ -72,6 +76,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm test:communication-usage"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "appointment-detail-compatibility"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm test:appointment-detail-compatibility"
 
 [workflows.workflow.metadata]
 isValidation = true

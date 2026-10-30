@@ -14,6 +14,8 @@ const get = (id, actor = root, cursor) => h.route(h.api.appointmentsRouter, "get
 test("records the database compatibility boundary without requiring PostgreSQL 16", async () => {
   const { rows: [version] } = await h.control.query("select current_setting('server_version') as version, current_setting('server_version_num')::int as number, to_regprocedure('pg_input_is_valid(text,text)') as validator");
   console.log("Appointment detail compatibility:", version);
+  assert.equal(Math.floor(version.number / 10000), h.postgresTools.major);
+  assert.ok(version.number >= 150000, "Declared appointment-detail minimum is PostgreSQL 15");
   if (version.number < 160000) {
     assert.equal(version.validator, null);
     await assert.rejects(h.control.query("select pg_input_is_valid('2030-01-07T10:00:00Z', 'timestamp with time zone')"),
