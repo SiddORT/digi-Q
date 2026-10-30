@@ -40,6 +40,10 @@ args = "appointment-detail-compatibility"
 task = "workflow.run"
 args = "postgres-migrations"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "live-ticket-compatibility"
+
 [[workflows.workflow]]
 name = "queue-contention"
 author = "agent"
@@ -102,6 +106,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm test:migrations"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "live-ticket-compatibility"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm test:live-tickets"
 
 [workflows.workflow.metadata]
 isValidation = true

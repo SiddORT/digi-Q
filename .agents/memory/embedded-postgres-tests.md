@@ -49,3 +49,12 @@ Distinguish native Node/Wasm crashes from relational assertion failures.
 **Why:** Node 24.13 occasionally aborted during PGlite teardown with a V8 JIT allocation assertion while compilation and test processes ran together. The affected relational assertions passed when run alone.
 
 **How to apply:** Inspect the native stack, rerun only the affected file without parallel builds, and report the interrupted combined run accurately. Do not weaken relational assertions to hide an engine crash.
+
+Independent child test runners must not inherit the parent's Node test context.
+
+**Why:** Node's test runner treats an inherited test context as recursive invocation
+and can skip child files while returning success, hiding the assertions that a
+matrix gate intended to run.
+
+**How to apply:** Strip the parent test context when spawning an independent
+`node --test` process; contract-test that each required child actually executes.

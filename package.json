@@ -13,7 +13,7 @@
     "test:appointment-detail-compatibility": "node --test artifacts/api-server/src/test-support/postgres-tools.test.mjs && node scripts/test-appointment-detail-compatibility.mjs",
     "test:migrations": "node --test artifacts/api-server/src/test-support/postgres-tools.test.mjs && node scripts/test-postgres-migrations.mjs",
     "test:tickets": "playwright test --config artifacts/clinicflow/ticket-regression/playwright.config.ts",
-    "test:live-tickets": "node --test --test-concurrency=1 artifacts/api-server/src/arrival-estimate.test.mjs artifacts/api-server/src/live-ticket.integration.test.mjs",
+    "test:live-tickets": "node --test --test-concurrency=1 artifacts/api-server/src/test-support/postgres-tools.test.mjs scripts/postgres-version-matrix.test.mjs artifacts/api-server/src/arrival-estimate.test.mjs && node scripts/test-live-ticket-compatibility.mjs",
     "test:clinic-metadata": "node --test --test-concurrency=1 artifacts/api-server/src/clinic-metadata.integration.test.mjs artifacts/api-server/src/registration-onboarding.integration.test.mjs artifacts/clinicflow/src/components/clinic-metadata.test.mjs artifacts/clinicflow/src/components/clinic-navigation.test.mjs artifacts/clinicflow/src/components/scope-completion.test.mjs",
     "test:communication-usage": "node --test --test-concurrency=1 artifacts/api-server/src/communication-usage.integration.test.mjs artifacts/api-server/src/notification-history-provenance.integration.test.mjs artifacts/api-server/src/notification-history-reconciliation.integration.test.mjs artifacts/api-server/src/notification-settings.integration.test.mjs artifacts/clinicflow/src/components/communication-usage.test.mjs artifacts/clinicflow/src/components/notification-logs.test.mjs"
   },
