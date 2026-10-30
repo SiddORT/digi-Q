@@ -1,3 +1,4 @@
+- [Post-merge verification](post-merge-verification.md) — setup success alone does not establish schema synchronization or service readiness.
 - [Worker execution failures](worker-isolation.md) — helper tool disconnections can be isolated; preserve healthy backend work rather than treating them as project-wide failures.
 - [Audit report durability](audit-report-durability.md) — ignored local reports may be omitted from completion commits; preserve verification evidence in tracked documentation.
 - [Structural merge verification](structural-merge-verification.md) — clean rebases can still misplace handler statements; verify incoming behavior and intended safety additions together.
