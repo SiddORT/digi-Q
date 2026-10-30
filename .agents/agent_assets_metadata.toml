@@ -512,3 +512,31 @@ mtime_ms = 1793362263290
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/5a5a48c8-64ff-42d4-b63b-8cae4a3692e5/6cdc00e6-8b56-4b1d-8a2e-f5d8ee4e7774"
 storage_version_token = "1793362343915536"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "1qo_IGEfU_XLUqSo8WcjI"
+uri = "file://docs/audits/close-placement/README.md"
+type = "text"
+title = "Close and dismiss placement audit"
+description = "Confirmed selector layering defect, exact role/route coverage, reproduction steps, explicit verification gaps, and durable screenshot links."
+logical_id = "d0eddbff-3728-456c-9d3a-730274be204e"
+content_hash = "sha256:6c2d33405b88b2d599055326228981545aaf839c1bbfc4d17362437b50d9f2af"
+size = 19356
+mtime_ms = 1793365585694
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/d0eddbff-3728-456c-9d3a-730274be204e/7cd429ed-e7b2-4af1-922e-a0506ad902ed"
+storage_version_token = "1793365644983868"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "hksX3djWADWxVhsz2Hpfp"
+uri = "file://docs/audits/close-placement/evidence/schedule-discard-390x500.png"
+type = "image"
+title = "Confirmed overlap: Add Schedule discard prompt"
+description = "Fictional Superadmin at 390×500: the weekday clear X paints over Discard changes. No live writes."
+logical_id = "1513de5b-bc80-4323-a0a8-fbb54c5e2e28"
+content_hash = "sha256:942238331b55e8e40c6dbbe9ed9c7e35aed2c6e2e7f099d073e27a972d04d192"
+size = 38120
+mtime_ms = 1793365585695
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/1513de5b-bc80-4323-a0a8-fbb54c5e2e28/c8002988-28e8-4096-bea0-3029bb5a0d18"
+storage_version_token = "1793365646282407"
+content_type = "image/png"

@@ -1,0 +1,27 @@
+{
+  "route": "/admin/availability",
+  "role": "superAdmin",
+  "fixture": "full app; fictional intercepted API; no native login or backend authorization asserted",
+  "viewport": {
+    "width": 390,
+    "height": 500
+  },
+  "nonReadRequests": 0,
+  "clear": {
+    "x": 288,
+    "y": 289.15625,
+    "width": 44,
+    "height": 44
+  },
+  "discard": {
+    "x": 185.6875,
+    "y": 272.6875,
+    "width": 162.3125,
+    "height": 44
+  },
+  "hitTestAtClearCenter": "button-discard-changes",
+  "clearParentZ": "20",
+  "scrimZ": "10",
+  "bodyInert": true,
+  "defaultCloseDisplay": "none"
+}
