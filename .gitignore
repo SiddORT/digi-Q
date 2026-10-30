@@ -63,6 +63,7 @@ Thumbs.db
 .acceptance-*.mjs
 .feature-harness-*.mjs
 /generated-artifacts/
+/artifacts/clinicflow/generated-artifacts/
 .appointment-activation-*.mjs
 .appointment-registration-*.mjs
 # Production VPS files
