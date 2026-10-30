@@ -26,11 +26,11 @@ Confirm the observation tool is capturing the same page being driven, and rechec
 
 **How to apply:** Prefer one observable page per testing pass where tooling cannot switch reliably. Wait for loaded, signed-in state and inspect that page's actual app network responses; confirm `/me` again after reattachment rather than treating a separate raw probe as equivalent. A real isolated DEV provider identity with a random password supports registration and app-owned password confirmation; helper identity authentication alone does not establish staff password proof or email delivery. Treat context mismatches as test-tool limitations, not successful role login or application failures; never bypass authentication. Verify the intended role and fixture ownership before each mutation, and never edit an existing customer record as a substitute for creating test-owned data.
 
-Create booking fixtures through the real booking API when testing queue summaries.
+Create booking fixtures through the real booking API when testing queue or private-ticket summaries.
 
-**Why:** Hand-inserted rows lacking generated token data produced blank current/next summaries and a false application-bug report even though row transitions worked. Real API bookings passed the same checks.
+**Why:** Hand-inserted rows lacking generated token data produced blank current/next summaries and a false application-bug report even though row transitions worked. Private-ticket projections also rely on saved booking display snapshots; a named patient record alone does not make a hand-inserted appointment production-valid. Real API bookings passed the same checks.
 
-**How to apply:** Use database setup only for identities, assignments and prerequisite configuration; exercise appointment creation through the API and compare raw queue responses with the displayed state before attributing a mismatch to the app.
+**How to apply:** Use database setup only for identities, assignments and prerequisite configuration; exercise appointment creation through the API and compare raw queue/ticket responses with the displayed state before attributing a mismatch to the app. Where synthetic status/date fixtures are necessary, preserve the complete persisted booking contract and label them separately from normal booking evidence.
 
 Use independent database connections for concurrent requests to a disposable full-app server.
 

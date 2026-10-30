@@ -80,13 +80,14 @@ test("QR paste: relative and absolute same-origin links normalise; foreign links
   assert.deepEqual(qr.staffQrPayload("  raw.signed.token ", origin), { payload: "raw.signed.token" });
   for (const bad of ["https://evil.example/check-in?payload=abc", "//evil.example/check-in?payload=abc", "javascript:alert(1)", `${origin}/admin/dashboard?payload=abc`, "/check-in", "", `https://u:p@clinicflow.example/check-in?payload=a`]) assert.ok("error" in qr.staffQrPayload(bad, origin), bad);
 });
-test("in-app QR entries open inline; public /check-in remains a direct route", () => {
+test("in-app QR entries share a compact dialog; /check-in remains a direct route", () => {
   const read = rel => readFileSync(new URL(rel, import.meta.url), "utf8");
   assert.match(read("./WorkspaceSearch.tsx"), /href: "\/check-in", inline: true/);
   assert.match(read("./WorkspaceSearch.tsx"), /openQrInline\(\)/);
   assert.match(read("./WorkspaceShell.tsx"), /openQrInline\(\)/);
   assert.match(read("../clinic.tsx"), /<main className="content"><QrInlineHost\/>/);
   assert.match(read("../App.tsx"), /path="\/check-in" component=\{CheckInScanner\}/);
+  assert.match(read("../CheckIn.tsx"), /<AppDialog open=\{open\}/);
 });
 
 test("owner-only clinic/location fields: UI locks mirror the server list; creation is never locked", () => {

@@ -47,7 +47,7 @@ test("G: in-app QR validation dialog with Close; public booking only via explici
   const queue=read("./queue/SessionQueue.tsx"), checkIn=read("../CheckIn.tsx");
   assert.match(queue,/onClick=\{openQrInline\}/);
   assert.doesNotMatch(queue,/href="\/check-in"/);
-  assert.match(checkIn,/button-qr-validation-close/);
+  assert.match(checkIn,/<AppDialog open=\{open\}[^]*title="Validate Appointment QR"/);
   assert.match(checkIn,/link-check-in-return/);
   assert.doesNotMatch(resources,/window\.location\.assign\(url\)/);
   assert.match(resources,/in new tab<\/a>/);

@@ -36,6 +36,8 @@ export interface AppDialogProps {
   size?: "default" | "wide" | "medium";
   /** "drawer" docks the panel to the right edge (full-screen sheet on phones). Same close/dirty lifecycle. */
   variant?: "modal" | "drawer";
+  /** Stable launcher when an intermediate menu/dialog unmounts on selection. */
+  returnFocusElement?: HTMLElement | null;
 }
 
 export function AppDialog({
@@ -48,6 +50,7 @@ export function AppDialog({
   busy = false,
   size = "default",
   variant = "modal",
+  returnFocusElement,
 }: AppDialogProps) {
   const [confirming, setConfirming] = useState(false);
   const [actionsHost,setActionsHost]=useState<HTMLDivElement|null>(null);
@@ -129,7 +132,7 @@ export function AppDialog({
         }}
         onCloseAutoFocus={(event) => {
           // Controlled dialogs have no Radix DialogTrigger to restore focus to.
-          const opener = openerRef.current;
+          const opener = returnFocusElement ?? openerRef.current;
           if (opener?.isConnected && opener !== document.body) {
             event.preventDefault();
             opener.focus({ preventScroll: true });

@@ -1,3 +1,10 @@
+# Shared appointment QR validator
+
+Existing staff QR actions use one compact modal without shifting the listing.
+Printed ticket links use the same scanner and verification outcomes. See
+[compact QR contract and entry-point checklist](compact-qr-validation.md) and
+[acceptance evidence](../verification/compact-qr-test-results.md).
+
 # Compact UI acceptance checklist
 
 Applies to every new or modified ClinicFlow/DigiQ screen, destination and role.

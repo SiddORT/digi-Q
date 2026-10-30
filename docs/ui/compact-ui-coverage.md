@@ -1,3 +1,11 @@
+# Compact appointment QR validation
+
+See [the QR entry-point/role checklist](compact-qr-validation.md) for the three
+existing workspace entries, printed-link destination, input lifecycle and
+read-only/explicit-consultation boundary. [Acceptance results](../verification/compact-qr-test-results.md)
+separate disposable real authentication/API evidence, camera simulations,
+responsive/zoom checks and physical-device limitations.
+
 # Compact UI coverage and evidence
 
 ## Current tab-only presentation pass
