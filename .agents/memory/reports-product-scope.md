@@ -20,3 +20,9 @@ The user instructed: “use existing ui ux standards, no duplicate code or styli
 **Why:** The user explicitly required reuse when authorizing the Reports implementation.
 
 **How to apply:** Reuse the existing listing, form, date, lookup, dialog, saved-view, table-column and Communication Usage components. Add only report-specific composition and analytics rather than parallel UI primitives.
+
+Reports filter editing is drawer-only; applying filters must not automatically save a persistent named view.
+
+**Why:** The user explicitly superseded the earlier Reports reference's inline dropdowns and kept explicit saved-view functionality separate.
+
+**How to apply:** Keep compact readable pills as drawer entry points, draft all report filter edits until Apply, and preserve pinned/read-only workspace restrictions. This approval is bounded to Reports, not an app-wide filter redesign.

@@ -9,7 +9,7 @@ export type Preset = "today" | "7d" | "30d" | "month" | "custom";
 
 export interface ReportFilters {
   from: string; to: string; preset: Preset; groupBy: ReportGroup; reportType: ReportType; status: ReportStatus;
-  compare: boolean; clinicId: string; branchId: string; doctorId: string; sort: ReportSort | ""; pageSize: number;
+  compare: boolean; clinicId: string; branchId: string; doctorId: string; sessionId?: string; sort: ReportSort | ""; pageSize: number;
 }
 
 /** Saved-view contract. tableKey is "report-analytics"; filter keys are exactly these. */

@@ -83,10 +83,26 @@ test("templates list families, saved configurations and empty state", async () =
   assert.match(some, /Weekly/); assert.match(some, /No-show Analysis · 7 Days/);
   assert.doesNotMatch(renderToStaticMarkup(createElement(ReportTemplates, { ...base, canUsage: false, saved: [] })), /button-template-communication/);
 });
-test("filters use shared draft; inline apply is explicit", () => {
+test("Reports filters are drawer-only and applied as a complete draft", () => {
   const src = readFileSync(new URL("./ReportsDashboard.tsx", import.meta.url), "utf8");
   assert.match(src, /select\("Report Type", draft\.reportType/); assert.match(src, /kind="clinics" label="Clinic" value=\{draft\.clinicId\}/);
-  assert.match(src, /button-report-apply/); assert.match(src, /onOpen=\{openDrawer\}/); assert.match(src, /exportAll|buildReportExport\(api\.getReportAnalytics/);
+  assert.doesNotMatch(src, /report-inline-filters|button-report-apply|report-custom-range|filters=\{inline\}|choosePreset/);
+  assert.match(src, /onOpen=\{openDrawer\}/); assert.match(src, /setDraft\(\{ \.\.\.applied, sessionId/);
+  assert.match(src, /compactChips/); assert.match(src, /drawerTarget/);
+  assert.match(src, /onResetDraft=\{resetDraft\}/); assert.match(src, /onCancel=\{\(\) => setDraft\(applied\)\}/);
+  assert.match(src, /exportAll|buildReportExport\(api\.getReportAnalytics/);
+});
+test("Operational and Usage filters preserve shared transactional drawer semantics", () => {
+  const legacy = readFileSync(new URL("../../clinic.tsx", import.meta.url), "utf8").split("function LegacyReports")[1];
+  assert.ok(legacy);
+  assert.doesNotMatch(legacy, /quick-filters-reports|reports-quick-range/);
+  assert.match(legacy, /onCancel=\{openFilters\} onResetDraft=\{resetReportDraft\}/);
+  const usage = readFileSync(new URL("../CommunicationUsage.tsx", import.meta.url), "utf8");
+  assert.match(usage, /compactChips chips=\{usageChips\}/);
+  assert.match(usage, /onResetDraft=\{\(\) => setDraft\(EMPTY_USAGE\)\}/);
+  const shared = readFileSync(new URL("../ListingControls.tsx", import.meta.url), "utf8");
+  assert.match(shared, /if \(onApply\?\.\(\) === false\)/);
+  assert.match(shared, /onClick=\{e => openFilters\(chip.drawerTarget, e.currentTarget\)\}/);
 });
 test("report tabs reuse the shared wrapping style on narrow screens", () => {
   const css = readFileSync(new URL("../communication-usage.css", import.meta.url), "utf8");

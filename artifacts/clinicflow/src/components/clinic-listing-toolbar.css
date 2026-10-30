@@ -1,3 +1,9 @@
+.lh-chips-row--compact{min-width:0;max-width:100%;flex-wrap:nowrap!important}
+.lh-chips-row--compact .filter-chips{flex:1;min-width:0;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
+.lh-chips-row--compact .filter-chips li{flex:none;max-width:none;white-space:nowrap}
+.lh-chips-row--compact .filter-chips .filter-chip-edit{width:auto;max-width:none;height:auto;min-height:30px;padding:3px 8px;border:0;border-radius:inherit;background:transparent;color:inherit;font:inherit;white-space:nowrap;cursor:pointer}
+.lh-chips-row--compact .filter-chip-edit:focus-visible{outline:2px solid hsl(var(--primary));outline-offset:-2px}
+.lh-chips-row--compact .lh-clear-all{flex:none}
 /* One header composition for all consumers, inside and outside the workspace.
  * Component selectors deliberately outrank legacy resource-specific styling. */
 .list-header.list-header--compact{--lh-h:var(--control-md,38px);display:flex;flex-direction:column;gap:8px;margin:0 0 12px;min-width:0}

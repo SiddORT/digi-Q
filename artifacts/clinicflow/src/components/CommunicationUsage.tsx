@@ -8,6 +8,7 @@ import { FilterBar, ListingRegion } from "./ListingControls";
 import { DateTimeFilterInput } from "./DateTimeFilterInput";
 import { dateTimeRangeError } from "../lib/notification-log-format";
 import { csvCell } from "./admin-listing-data";
+import { useSelectedCare } from "./CareLookup";
 import "./communication-usage.css";
 
 export const BUCKETS = ["accepted", "pending", "failed", "unknown", "skipped"] as const;
@@ -79,6 +80,9 @@ export function CommunicationUsage({ userId, role, clinicScope = "own" }: { user
   const [cursors, setCursors] = useState<string[]>([]);
   const [open, setOpen] = useState<string | null>(null);
   const [exportError, setExportError] = useState("");
+  const [drawerRequest, setDrawerRequest] = useState({ key: 0, target: "" });
+  const edit = (target: string) => setDrawerRequest(r => ({ key: r.key + 1, target }));
+  const selectedClinic = useSelectedCare("clinics", f.clinicId === "unattributed" ? "" : f.clinicId);
   const cursor = cursors[cursors.length - 1];
   const params = useMemo(() => buildUsageParams(f, role, cursor), [f, role, cursor]);
   const scope = [userId, role, sa ? f.clinicId || "all" : clinicScope] as const;
@@ -86,7 +90,6 @@ export function CommunicationUsage({ userId, role, clinicScope = "own" }: { user
   const d = q.data;
   const tz = d?.timezone || "Asia/Kolkata";
   const apply = (next: UsageFilters) => { setCursors([]); setF(next); setDraft(next); };
-  const toggle = (k: "channel" | "status", v: string) => apply({ ...f, [k]: f[k] === v ? "" : v });
   const counts = d?.counts ?? [];
   const clinics = useMemo(() => groupByClinic(counts), [counts]);
   const breakdowns = useMemo(() => {
@@ -114,14 +117,27 @@ export function CommunicationUsage({ userId, role, clinicScope = "own" }: { user
    const customBad = draft.preset === "custom" ? dateTimeRangeError(draft.from, draft.to) : undefined;
   const showCounts = !!d && !q.isError;
   const num = (n: number) => showCounts ? n.toLocaleString("en-IN") : "—";
-  const filterCount = [f.preset !== "all", f.channel, f.event, f.status, f.clinicId, f.source].filter(Boolean).length;
+  const filterCount = [f.preset !== "all", f.channel, f.event, f.status, f.clinicId, f.source, f.groupBy && f.groupBy !== "clinic", f.attribution === "actor", f.userId, f.branchId].filter(Boolean).length;
+  const usageChips = [
+    { key: "period", label: `Period: ${PRESET_LABEL[f.preset]}${f.preset === "custom" ? ` ${f.from || "Any start"} – ${f.to || "Any end"} (IST)` : ""}`, drawerTarget: ".cu-presets" },
+    { key: "channel", label: `Channel: ${f.channel ? f.channel === "sms" ? "SMS" : "Email" : "All"}`, drawerTarget: "#cu-channel" },
+    { key: "status", label: `Outcome: ${BUCKET_COPY[f.status] || "All"}`, drawerTarget: "#cu-status" },
+    { key: "event", label: `Event: ${f.event ? label(f.event) : "All"}`, drawerTarget: "#cu-event" },
+    { key: "group", label: `Group: ${{ clinic: "Clinic", user: "Staff User", location: "Location", event: "Message Purpose", recipientGroup: "Recipient Role" }[f.groupBy || "clinic"]}`, drawerTarget: '[data-usage-field="group"]' },
+    { key: "attribution", label: `Attribution: ${f.attribution === "actor" ? "Staff Actor" : "Staff Recipient"}`, drawerTarget: '[data-usage-field="attribution"]' },
+    { key: "user", label: `Staff: ${f.userId ? d?.userOptions?.find(u => u.id === f.userId)?.name || "Name unavailable" : "All permitted"}`, drawerTarget: '[data-usage-field="user"]' },
+    ...(sa ? [
+      { key: "clinic", label: `Clinic: ${f.clinicId === "unattributed" ? "Unattributed / platform" : f.clinicId ? selectedClinic.data?.name || "Name unavailable" : "All permitted"}`, drawerTarget: ".cu-clinic" },
+      { key: "source", label: `Source: ${f.source === "test" ? "Test sends" : "Automatic"}`, drawerTarget: "#cu-source" },
+    ] : [{ key: "clinic", label: `Clinic: ${d?.scopeClinicName || "Assigned clinic"}` }]),
+  ];
   return <section className="cu" aria-labelledby="cu-h" data-testid="communication-usage">
     <div className="cu-coverage notice" role="note" data-testid="note-usage-coverage">
       <p><strong>What these counts are.</strong> Each count is one observed notification per channel and recipient occurrence, dated when first recorded (not its latest status transition). Provider accepted means the provider took the request, not confirmed delivery. This is not billing, SMS segments or a provider balance.</p>
       <p>History is best effort. Purged or never-captured records cannot be recovered, security messages may be incomplete, and legacy records are partial. Times are in {tz}.</p>
       {showCounts && <p data-testid="text-usage-earliest">{d.earliestAvailableAt == null ? "No recorded occurrence timestamp is available in this scope; missing timestamps do not prove there are no records." : `Earliest available record in this scope: ${fmt(d.earliestAvailableAt, tz)}.`} {d.legacyCount > 0 && `${d.legacyCount.toLocaleString("en-IN")} legacy record(s) have partial details. `}{d.unattributedCount > 0 && `${d.unattributedCount.toLocaleString("en-IN")} record(s) are unattributed / platform activity and are not assigned to clinics by guessing.`}</p>}
     </div>
-    <FilterBar title={<h2 id="cu-h">Communication Usage{d?.scopeClinicName ? ` · ${d.scopeClinicName}` : ""}</h2>} actions={<button type="button" className="button secondary" disabled={q.isFetching} onClick={() => void q.refetch()} data-testid="button-refresh-usage">{q.isFetching && !q.isLoading ? "Refreshing…" : "Refresh"}</button>}
+    <FilterBar compactChips chips={usageChips} drawerRequest={drawerRequest} title={<h2 id="cu-h">Communication Usage{d?.scopeClinicName ? ` · ${d.scopeClinicName}` : ""}</h2>} actions={<button type="button" className="button secondary" disabled={q.isFetching} onClick={() => void q.refetch()} data-testid="button-refresh-usage">{q.isFetching && !q.isLoading ? "Refreshing…" : "Refresh"}</button>}
       active={filterCount > 0} activeCount={filterCount} onOpen={() => setDraft(f)} onCancel={() => setDraft(f)} onReset={() => apply(EMPTY_USAGE)} onResetDraft={() => setDraft(EMPTY_USAGE)}
       onApply={() => { if (customBad) return false; apply(draft); return true; }} advanced={<div className="nl-filters">
         <div className="cu-presets" role="group" aria-label="Date Range">{PRESETS.map(p => <button key={p} type="button" aria-pressed={draft.preset === p} className={draft.preset === p ? "cu-pill on" : "cu-pill"} data-testid={`button-usage-preset-${p}`} onClick={() => { if (p !== draft.preset) setDraft({ ...draft, preset: p, from: "", to: "" }); }}>{PRESET_LABEL[p]}</button>)}</div>
@@ -135,9 +151,9 @@ export function CommunicationUsage({ userId, role, clinicScope = "own" }: { user
         {sa && <div className="form-field"><label htmlFor="cu-source">Source</label><select id="cu-source" value={draft.source} onChange={e => setDraft({ ...draft, source: e.target.value })} data-testid="select-usage-source"><option value="">Automatic only (default)</option><option value="automatic">Automatic</option><option value="test">Test sends</option></select></div>}
         {sa && <div className="form-field cu-clinic"><ResourceLookup resource="clinics" label="Clinic" clearable value={draft.clinicId === "unattributed" ? "" : draft.clinicId} onChange={v => setDraft({ ...draft, clinicId: v })} />
           <label className="check-label"><input type="checkbox" checked={draft.clinicId === "unattributed"} onChange={e => setDraft({ ...draft, clinicId: e.target.checked ? "unattributed" : "" })} data-testid="check-usage-unattributed" /> Unattributed / platform only</label></div>}
-        <label>Group By<select value={draft.groupBy || "clinic"} onChange={e => setDraft({ ...draft, groupBy: e.target.value as UsageFilters["groupBy"] })} data-testid="select-usage-group"><option value="clinic">Clinic</option><option value="user">Staff User</option><option value="location">Location</option><option value="event">Message Purpose</option><option value="recipientGroup">Recipient Role</option></select></label>
-        <label>User Attribution<select value={draft.attribution || "recipient"} onChange={e => setDraft({ ...draft, attribution: e.target.value as UsageFilters["attribution"] })}><option value="recipient">Staff Recipient</option><option value="actor">Staff Actor Who Triggered the Event</option></select></label>
-        <SearchableSelect label="Staff User" clearable labelScope={`communication-report-users:${userId}:${role}:${clinicScope}`} value={draft.userId || ""} onChange={v => setDraft({ ...draft, userId: v })} options={(q.data?.userOptions || []).map(u => ({ value: u.id, label: u.name }))} loading={q.isFetching} error={q.error ? "Staff reporting identities could not be loaded." : undefined} onRetry={() => void q.refetch()} />
+        <label data-usage-field="group">Group By<select value={draft.groupBy || "clinic"} onChange={e => setDraft({ ...draft, groupBy: e.target.value as UsageFilters["groupBy"] })} data-testid="select-usage-group"><option value="clinic">Clinic</option><option value="user">Staff User</option><option value="location">Location</option><option value="event">Message Purpose</option><option value="recipientGroup">Recipient Role</option></select></label>
+        <label data-usage-field="attribution">User Attribution<select value={draft.attribution || "recipient"} onChange={e => setDraft({ ...draft, attribution: e.target.value as UsageFilters["attribution"] })}><option value="recipient">Staff Recipient</option><option value="actor">Staff Actor Who Triggered the Event</option></select></label>
+        <div data-usage-field="user"><SearchableSelect label="Staff User" clearable labelScope={`communication-report-users:${userId}:${role}:${clinicScope}`} value={draft.userId || ""} onChange={v => setDraft({ ...draft, userId: v })} options={(q.data?.userOptions || []).map(u => ({ value: u.id, label: u.name }))} loading={q.isFetching} error={q.error ? "Staff reporting identities could not be loaded." : undefined} onRetry={() => void q.refetch()} /></div>
         {customBad && <p className="error-box" role="alert">{customBad}</p>}
       </div>} />
     <ListingRegion>
@@ -145,10 +161,10 @@ export function CommunicationUsage({ userId, role, clinicScope = "own" }: { user
       : q.isError || !d ? <div className="error-box" role="alert" data-testid="error-usage">Usage could not be loaded, so no totals are shown. This is not a count of zero. <button type="button" onClick={() => void q.refetch()} data-testid="button-retry-usage">Retry</button></div>
       : <>
         <div className="cu-total" data-testid="text-usage-total" aria-busy={q.isFetching}><span>{num(d.total)}</span> observed notifications match these filters{f.source === "test" && " (test sends)"}</div>
-        <div className="cu-cards" data-testid="cards-usage-channels">{CHANNELS.map(c => <article key={c} className="cu-channel-card"><button type="button" aria-pressed={f.channel === c && f.status === "accepted"} className={f.channel === c ? "cu-card on" : "cu-card"} onClick={() => apply({...f,channel:c,status:"accepted"})} data-testid={`card-usage-channel-${c}`}><small>{c === "sms" ? "SMS" : "Email"} · Provider accepted</small><strong>{num(sumCounts(counts, c, "accepted"))}</strong></button><div className="cu-channel-breakdown">{BUCKETS.filter(b=>b!=="accepted").map(b=><button type="button" key={b} onClick={()=>apply({...f,channel:c,status:b})}>{BUCKET_COPY[b]}: {num(sumCounts(counts,c,b))}</button>)}</div></article>)}</div>
-        <div className="cu-cards five" data-testid="cards-usage-status">{BUCKETS.map(b => <button key={b} type="button" aria-pressed={f.status === b} className={`cu-card b-${b}${f.status === b ? " on" : ""}`} onClick={() => toggle("status", b)} data-testid={`card-usage-status-${b}`}><small>{BUCKET_COPY[b]}</small><strong>{num(sumCounts(counts, undefined, b))}</strong></button>)}</div>
+        <div className="cu-cards" data-testid="cards-usage-channels">{CHANNELS.map(c => <article key={c} className="cu-channel-card"><button type="button" aria-haspopup="dialog" aria-label={`Edit channel filter, ${c === "sms" ? "SMS" : "Email"}`} className={f.channel === c ? "cu-card on" : "cu-card"} onClick={() => edit("#cu-channel")} data-testid={`card-usage-channel-${c}`}><small>{c === "sms" ? "SMS" : "Email"} · Provider accepted</small><strong>{num(sumCounts(counts, c, "accepted"))}</strong></button><div className="cu-channel-breakdown">{BUCKETS.filter(b=>b!=="accepted").map(b=><button type="button" key={b} onClick={()=>edit("#cu-status")}>{BUCKET_COPY[b]}: {num(sumCounts(counts,c,b))}</button>)}</div></article>)}</div>
+        <div className="cu-cards five" data-testid="cards-usage-status">{BUCKETS.map(b => <button key={b} type="button" aria-haspopup="dialog" className={`cu-card b-${b}${f.status === b ? " on" : ""}`} onClick={() => edit("#cu-status")} data-testid={`card-usage-status-${b}`}><small>{BUCKET_COPY[b]}</small><strong>{num(sumCounts(counts, undefined, b))}</strong></button>)}</div>
         {sa && clinics.length > 0 && <div className="nl-wrap"><table className="nl-table cu-clinics" data-testid="table-usage-clinics"><caption>Clinic breakdown (clinics with matching records)</caption><thead><tr><th>Clinic</th><th>Total</th>{BUCKETS.map(b => <th key={b}>{BUCKET_COPY[b]}</th>)}</tr></thead>
-          <tbody>{clinics.map(g => { const key = g.id ?? "unattributed"; return <tr key={key} className={f.clinicId === key ? "sel" : ""}><td><button type="button" className="table-sort" aria-pressed={f.clinicId === key} onClick={() => apply({ ...f, clinicId: f.clinicId === key ? "" : key })} data-testid={`row-usage-clinic-${key}`}>{g.name}</button></td><td>{g.total.toLocaleString("en-IN")}</td>{BUCKETS.map(b => <td key={b}>{(g.byBucket[b] || 0).toLocaleString("en-IN")}</td>)}</tr>; })}</tbody></table></div>}
+          <tbody>{clinics.map(g => { const key = g.id ?? "unattributed"; return <tr key={key} className={f.clinicId === key ? "sel" : ""}><td><button type="button" className="table-sort" aria-haspopup="dialog" onClick={() => edit(".cu-clinic")} data-testid={`row-usage-clinic-${key}`}>{g.name}</button></td><td>{g.total.toLocaleString("en-IN")}</td>{BUCKETS.map(b => <td key={b}>{(g.byBucket[b] || 0).toLocaleString("en-IN")}</td>)}</tr>; })}</tbody></table></div>}
         <section aria-label="Communication Breakdown">
           <div className="section-head"><h3>Usage by {f.groupBy === "user" ? `Staff ${f.attribution === "actor" ? "Actor" : "Recipient"}` : f.groupBy === "location" ? "Location" : f.groupBy === "event" ? "Message Purpose" : f.groupBy === "recipientGroup" ? "Recipient Role" : "Clinic"}</h3>
             <button type="button" className="button secondary small" onClick={exportBreakdown} disabled={q.isFetching || q.isError || !breakdowns.length}>Export Breakdown CSV</button></div>

@@ -222,6 +222,8 @@ export interface FilterChip {
   key: string;
   label: string;
   onRemove?: () => void;
+  /** Opt-in: open the drawer and focus this field/section selector. */
+  drawerTarget?: string;
 }
 
 export interface FilterBarProps {
@@ -258,6 +260,10 @@ export interface FilterBarProps {
   activeCount?: number;
   /** Common filters exposed under the search row (e.g. date range and status as independent controls). */
   filters?: React.ReactNode;
+  /** Reports opt-in: one horizontally scrollable line of editable pills. */
+  compactChips?: boolean;
+  /** Opt-in drill-down controls may open the same transactional drawer. */
+  drawerRequest?: { key: number; target?: string };
 }
 
 /** Shared list header. Title, search, tools/export and primary actions always
@@ -268,18 +274,32 @@ function useCompactFilters() {
   useEffect(() => { const m = window.matchMedia?.(query); if (!m) return; const on = () => setMatch(m.matches); on(); m.addEventListener("change", on); return () => m.removeEventListener("change", on); }, []);
   return match;
 }
-export function FilterBar({ children, advanced, onReset, onResetDraft, onCancel, active, chips = [], defaultAdvancedOpen, actions, secondary, label = "Filters", onOpen, onApply, title, status, meta, activeCount, filters }: FilterBarProps) {
+export function FilterBar({ children, advanced, onReset, onResetDraft, onCancel, active, chips = [], defaultAdvancedOpen, actions, secondary, label = "Filters", onOpen, onApply, title, status, meta, activeCount, filters, compactChips, drawerRequest }: FilterBarProps) {
   const advancedActiveCount = activeCount ?? chips.filter(c => c.key.startsWith("adv:")).length;
   const [open, setOpen] = useState(!!defaultAdvancedOpen);
   const panelId = React.useId();
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const pillOpener = useRef<HTMLButtonElement | null>(null);
+  const openFilters = (target?: string, opener?: HTMLButtonElement) => {
+    pillOpener.current = opener || null;
+    onOpen?.(); setInvalidMessage(""); setOpen(true);
+    if (target) requestAnimationFrame(() => {
+      const section = formRef.current?.querySelector<HTMLElement>(target);
+      const field = section?.matches("input,select,button") ? section : section?.querySelector<HTMLElement>("input:not([disabled]),select:not([disabled]),button:not([disabled])");
+      field?.focus();
+      section?.scrollIntoView({ block: "nearest" });
+    });
+  };
   const closeFilters = (cancel = true) => {
     if (cancel) onCancel?.();
     setOpen(false);
-    requestAnimationFrame(() => toggleRef.current?.focus());
+    requestAnimationFrame(() => (pillOpener.current || toggleRef.current)?.focus());
   };
   const formRef = useRef<HTMLFormElement>(null);
   const [invalidMessage, setInvalidMessage] = useState("");
+  useEffect(() => {
+    if (drawerRequest?.key) openFilters(drawerRequest.target);
+  }, [drawerRequest?.key]);
   const [draftResetKey, setDraftResetKey] = useState(0);
   /** Apply is gated on the drawer form's constraint validity (DateFormatInput sets custom validity for
    *  malformed, out-of-range or inverted dates) and on the caller's own validation result. */
@@ -308,7 +328,7 @@ export function FilterBar({ children, advanced, onReset, onResetDraft, onCancel,
    const filterTrigger = <button type="button" ref={toggleRef} className={cn("filter-toggle", "listing-icon-trigger", advancedActiveCount > 0 && "has-active")}
      aria-expanded={open} aria-controls={panelId} aria-haspopup="dialog"
      aria-label={`${label}${advancedActiveCount ? `, ${advancedActiveCount} active` : ""}`}
-     onClick={() => { if (!open) { onOpen?.(); setInvalidMessage(""); } setOpen(v => !v); }} data-testid="button-toggle-advanced-filters">
+      onClick={() => { if (open) closeFilters(); else openFilters(); }} data-testid="button-toggle-advanced-filters">
      <Filter aria-hidden className="h-4 w-4" />
      {advancedActiveCount > 0 && <span className="filter-count" aria-hidden>{advancedActiveCount}</span>}
    </button>;
@@ -365,11 +385,11 @@ export function FilterBar({ children, advanced, onReset, onResetDraft, onCancel,
         </div>
       )}
       {chips.length > 0 && (
-        <div className="lh-chips-row">
+        <div className={cn("lh-chips-row", compactChips && "lh-chips-row--compact")}>
           <ul className="filter-chips" aria-label="Active filters">
             {chips.map(chip => (
               <li key={chip.key}>
-                <span>{chip.label}</span>
+                {chip.drawerTarget && advanced ? <button type="button" className="filter-chip-edit" aria-label={`Edit filter ${chip.label}`} aria-haspopup="dialog" onClick={e => openFilters(chip.drawerTarget, e.currentTarget)}>{chip.label}</button> : <span>{chip.label}</span>}
                 {chip.onRemove && (
                   <button type="button" onClick={chip.onRemove} aria-label={`Remove filter ${chip.label}`} data-testid={`chip-remove-${chip.key}`}>
                     <X className="h-3 w-3" />

@@ -1,5 +1,11 @@
 # Reports reference acceptance
 
+## Current filter-interaction amendment — 30 October 2026
+
+The user superseded the original inline-dropdown reference: **Reports filter editing is drawer-only**. Compact pills and Filters open the existing drawer; period/date, group, family, status, comparison and permitted scope/session controls are drafted there. Apply validates and commits together; Cancel/Escape/dismiss discard; Reset remains draft-only. Applying does not save a named View. This applies to existing Reports surfaces only.
+
+The original checklist and browser evidence below describe the earlier implementation, not proof that every current report or hosted environment is correct. See [the current functional audit](reports-functional-audit.md) for confirmed defects, current evidence and access limitations.
+
 ## Environment and product decisions
 
 This change is verified in the **development fork/Preview**, not the deployed UAT or production build. No deployment, production/UAT data mutation, communication configuration change or live notification delivery is authorized or performed.

@@ -498,3 +498,17 @@ mtime_ms = 1793102223142
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/839e94aa-d3db-4460-818c-d9ba8df2fa60/aab4743d-6638-476c-9499-8a6e5f77252c"
 storage_version_token = "1793102241419773"
 content_type = "text/html"
+
+[[outputs]]
+id = "P4QVpMoWmDRYuZDZvwdlf"
+uri = "file://docs/reports-functional-audit.md"
+type = "text"
+title = "Reports functional audit"
+description = "Role and filter coverage, independently reconciled results, confirmed defects, Preview-only limits, and drawer-interface evidence."
+logical_id = "5a5a48c8-64ff-42d4-b63b-8cae4a3692e5"
+content_hash = "sha256:e28bb55fd83429dd4dea6bb907f4bc17fd48bfd829484617c662c179438541d5"
+size = 29142
+mtime_ms = 1793362263290
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/5a5a48c8-64ff-42d4-b63b-8cae4a3692e5/6cdc00e6-8b56-4b1d-8a2e-f5d8ee4e7774"
+storage_version_token = "1793362343915536"
+content_type = "text/markdown"

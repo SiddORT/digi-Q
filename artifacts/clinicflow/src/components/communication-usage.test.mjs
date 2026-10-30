@@ -41,6 +41,8 @@ before(async()=>{
       b.onResolve({filter:/^@workspace\/api-client-react$/},()=>({path:"api",namespace:"fixture"}));
       b.onResolve({filter:/\/(AppDialog|ResourceLookup)$/},()=>({path:"ui",namespace:"fixture"}));
       b.onResolve({filter:/\/ListingControls$/},()=>({path:"filters",namespace:"fixture"}));
+      b.onResolve({filter:/\/CareLookup$/},()=>({path:"care",namespace:"fixture"}));
+      b.onLoad({filter:/^care$/,namespace:"fixture"},()=>({contents:`export const useSelectedCare=()=>({data:undefined});`}));
       b.onLoad({filter:/^filters$/,namespace:"fixture"},()=>({contents:`import {createElement as h} from "react"; export const FilterBar=p=>h("section",null,p.title,p.children,p.secondary,p.actions,p.advanced); export const ListingRegion=p=>h("section",{className:"listing-region"},p.children);`}));
       b.onLoad({filter:/api/,namespace:"fixture"},()=>({contents:`
         export const getGetCommunicationUsageQueryKey=p=>["usage",p];

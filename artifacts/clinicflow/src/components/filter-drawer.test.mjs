@@ -25,9 +25,10 @@ test("drawerValidationMessage pluralises the invalid count", async () => {
 
 test("reports, appointments and resources draft every filter and block invalid ranges", () => {
   const clinic = read("../clinic.tsx"), resources = read("../resources.tsx");
-  assert.match(clinic, /const applyFilters=\(\)=>\{if\(draftRangeError\)return false;setFrom\(draft\.from\);setTo\(draft\.to\)/);
+  assert.match(clinic, /const applyFilters=\(\)=>\{if\(draftRangeError[^;]*return false;setFrom\(draft\.from\);setTo\(draft\.to\)/);
   assert.match(clinic, /<DateRangeInput required testId="report-range" fromTestId="input-report-from" toTestId="input-report-to" onFromValidityChange=\{setReportFromValid\} onToValidityChange=\{setReportToValid\} from=\{draft\.from\} to=\{draft\.to\}/);
-  assert.match(clinic, /const resetReport=\(\)=>\{const d=today\(\);setFrom\(d\);setTo\(d\);[^}]*setDraft\(\{from:d,to:d,/);
+  assert.match(clinic, /const resetReportDraft=\(\)=>\{const d=today\(\);setDraft\(\{from:d,to:d,/);
+  assert.match(clinic, /const resetReport=\(\)=>\{const d=today\(\);setFrom\(d\);setTo\(d\);[^}]*resetReportDraft\(\)/);
   assert.match(clinic, /onReset=\{resetReport\}/);
   assert.match(clinic, /if\(!fromValid\|\|!toValid\|\|draftRangeInvalid\)return false;/);
   assert.match(resources, /const applyDraft=\(\)=>\{if\(rangeError\(draft\.from\|\|"",draft\.to\|\|""\)\)return false;/);
