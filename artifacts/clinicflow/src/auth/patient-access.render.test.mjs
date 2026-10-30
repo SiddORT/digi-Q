@@ -47,7 +47,7 @@ test("access presents three choices and never requires an account for guest book
 test("signup collects email and optional country-coded phone, with required email proof and later profile consent",()=>{
   const html=render("?mode=signup");
   assert.match(html,/<h1>Patient Sign Up/);
-  for(const copy of ["Email address","Optional registration mobile","country code","Email OTP is required","name and consent","Existing accounts keep their saved details"]) assert(html.includes(copy),copy);
+  for(const copy of ["Email address","Optional registration mobile","country code","Email verification is required","name and consent","Existing accounts keep their saved details"]) assert(html.includes(copy),copy);
   assert.doesNotMatch(html,/button-patient-sms-login/);
   assert.match(html,/Send required email code/);
 });
@@ -66,7 +66,7 @@ test("initial SMS outcomes are visible and optional, never imply proof or receip
     assert.match(html,/Request SMS again in 60s/);
     assert.match(html,/form="registration-mobile-proof-code"/);
     assert.doesNotMatch(html,/Mobile verified for this registration intent/);
-    if(status==="provider_accepted") assert.match(html,/delivery is not confirmed/);
+    if(status==="provider_accepted") assert.match(html,/Check for the message/);
     if(status==="disabled") assert.match(html,/no SMS was sent/);
   }
 });

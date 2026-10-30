@@ -9,7 +9,7 @@ export const FRIENDLY = {
   sessionExpired: "Session expired. Please sign in again.",
   accessDenied: "Access denied. You do not have permission to do this.",
   notFound: "Record not found. It may have been removed.",
-  saveFailed: "Unable to save changes. Please try again.",
+  saveFailed: "We couldn’t confirm your changes. Review the current details before trying again.",
   loadFailed: "Unable to load data. Please try again.",
   deleteFailed: "Unable to complete this action. Please try again.",
   network: "Unable to reach DigiQ. Check your connection and try again.",
@@ -22,6 +22,7 @@ const RAW_PATTERNS = [
   /\bat\s+\S+\s*\(.*:\d+:\d+\)/, /\b(TypeError|ReferenceError|SyntaxError|ECONN\w+|ETIMEDOUT|ENOTFOUND)\b/,
   /^\s*[{[<]/, /\b(sql|postgres|drizzle|stack|undefined|null is not|cannot read propert)/i,
   /Failed to fetch|NetworkError|Load failed/i, /\bJSON\b/,
+  /\b(provider|pre.dispatch|dispatch|SMTP|ECONN|payload|traceback|exception|challenge|registration intent|email proof)\b/i,
 ];
 
 /** True when text is safe to show verbatim (plain human sentence). */
@@ -67,21 +68,21 @@ export function friendlyError(error: unknown, context: ErrorContext = "generic",
   const status = errorStatus(error);
   if (error && typeof error === "object" &&
     field((error as {data?: unknown}).data, "code") === "SECURITY_DELIVERY_DISABLED")
-    return "Delivery for this action is disabled by the System Admin. Verification is still required; no message was sent. Contact the System Admin.";
+    return "Sending is turned off. No message was sent. Ask the system administrator for help. Verification is still required.";
   if (context === "auth" && error && typeof error === "object") {
     const code = field((error as {data?: unknown}).data, "code");
     if (code === "EMAIL_UNCONFIGURED" || code === "PUBLIC_ORIGIN_UNCONFIGURED")
-      return "Email recovery or verification is not configured. Contact your clinic administrator. Staff password sign-in is still available.";
+      return "Email recovery or verification is unavailable. Ask your clinic administrator for help. You can still sign in with your staff password.";
     if (code === "EMAIL_DELIVERY_FAILED")
       return "We could not confirm email delivery. Check your inbox and spam folder before requesting another message.";
     if (code === "REGISTRATION_EMAIL_REJECTED")
-      return "The email provider rejected the message. Contact the System Admin to check email settings, then resend after the timer. Your previous code and registration details are retained; email verification is still required.";
+      return "The verification email could not be sent. Ask the system administrator to check email settings, then resend when the timer ends. Your previous code and registration details are kept; email verification is still required.";
     if (code === "REGISTRATION_EMAIL_NOT_SENT")
-      return "The verification email was not sent. Contact the System Admin to check email preparation and settings. Your previous code and registration details are retained; email verification is still required.";
+      return "The verification email was not sent. Ask the system administrator to check email settings. Your previous code and registration details are kept; email verification is still required.";
   }
   const fb = fallback ?? contextFallback(context);
   if (status === 401) return context === "auth" ? serverMessage(error) ?? FRIENDLY.sessionExpired : FRIENDLY.sessionExpired;
-  if (status === 403) return serverMessage(error) ?? FRIENDLY.accessDenied;
+  if (status === 403) return FRIENDLY.accessDenied;
   if (status === 404) return FRIENDLY.notFound;
   if (status === 429) {
     const text = serverMessage(error);
@@ -91,6 +92,28 @@ export function friendlyError(error: unknown, context: ErrorContext = "generic",
   if (error instanceof TypeError && /fetch|network|load failed/i.test(error.message)) return FRIENDLY.network;
   if (typeof error === "string") return isFriendlyText(error) ? error : fb;
   return serverMessage(error) ?? fb;
+}
+
+/** Only server-provided wait periods; never shorten a server's cooldown. */
+export function retryWaitSeconds(error: unknown): number {
+  if (!error || typeof error !== "object") return 0;
+  const e = error as { retryAfterSeconds?: unknown; retryAfter?: unknown; headers?:Headers; data?: { retryAfterSeconds?: unknown; error?: unknown }; message?: unknown };
+  const seconds = e.retryAfterSeconds ?? e.data?.retryAfterSeconds;
+  if (typeof seconds === "number" && Number.isFinite(seconds) && seconds > 0) return Math.ceil(seconds);
+  const retryAfter=e.retryAfter ?? e.headers?.get?.("Retry-After");
+  if (typeof retryAfter === "string") {
+    const wait = /^\d+$/.test(retryAfter) ? Number(retryAfter) : (Date.parse(retryAfter) - Date.now()) / 1000;
+    if (Number.isFinite(wait) && wait > 0) return Math.ceil(wait);
+  }
+  const match = /(?:Try again in|wait)\s+(\d+)\s+seconds/i.exec(String(e.data?.error ?? e.message ?? ""));
+  return match ? Number(match[1]) : 0;
+}
+
+export function canRetryLoad(error: unknown): boolean {
+  const status = errorStatus(error);
+  const code = error && typeof error === "object" ? field((error as {data?: unknown}).data, "code") : undefined;
+  return ![400,401,403,404,410,422].includes(status ?? 0) &&
+    !/UNCONFIGURED|DELIVERY_DISABLED|NOT_SENT|EMAIL_REJECTED/.test(code ?? "");
 }
 
 /** Per-field errors returned by the API (`{ fieldErrors: { name: "..." } }` or `{ errors: [{ path, message }] }`). */

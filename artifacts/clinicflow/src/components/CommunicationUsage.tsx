@@ -1,4 +1,5 @@
 import { Fragment, useMemo, useState } from "react";
+import { friendlyError } from "../lib/friendly-error";
 import { getGetCommunicationUsageQueryKey, getGetCommunicationUsageDetailQueryKey, useGetCommunicationUsage, useGetCommunicationUsageDetail, type CommunicationUsageCount, type CommunicationUsageRecord, type GetCommunicationUsageParams } from "@workspace/api-client-react";
 import { AppDialog } from "./AppDialog";
 import { SearchableSelect } from "./SearchableSelect";
@@ -108,7 +109,7 @@ export function CommunicationUsage({ userId, role, clinicScope = "own" }: { user
       const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
       const a = document.createElement("a"); a.href = url; a.download = `DigiQ-communication-${f.groupBy || "clinic"}.csv`; a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (e) { setExportError(e instanceof Error ? e.message : "Unable to export usage."); }
+    } catch (e) { setExportError(friendlyError(e,"load","Unable to export usage. Your filters are kept; try Export again.")); }
   };
    const customBad = draft.preset === "custom" ? dateTimeRangeError(draft.from, draft.to) : undefined;
   const showCounts = !!d && !q.isError;

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { friendlyError } from "../lib/friendly-error";
+import { RecoveryActions } from "./RecoveryActions";
 import { usePreferredPageSize } from "../lib/page-size-preference";
 import { OverflowText } from "./OverflowText";
 import { HelpTip } from "./HelpTip";
@@ -71,7 +73,7 @@ function PublicClinicResolved({ clinicSlug, branchSlug }: { clinicSlug: string; 
     setMeta("name", "robots", metadata.robots);
   }, [data, query.error, site.origin, clinicSlug, branchSlug, mode, search]);
   if (onlyBranch) return <div className="page-loading" role="status">Opening your clinic’s only location…</div>;
-  if (!data) return <div className="public-clinic"><Logo/><main className="public-clinic-content"><ListingRegion><PageHeader title={query.isLoading?"Clinic":"Clinic Page Unavailable"}/>{query.isLoading?<p role="status">Loading clinic information…</p>:<><p>This address may be unavailable, inactive or temporarily unreachable.</p><div className="error-box" role="alert">Unable to load clinic information. Please try again.</div><button type="button" className="button" data-testid="public-clinic-retry" onClick={() => query.refetch()}>Try Again</button> <Link href="/">Return Home</Link></>}<Pagination state={query.isLoading?"loading":"error"} page={page} pageSize={pageSize} total={0} onPageChange={next=>updateDirectory({page:String(next)})}/></ListingRegion></main></div>;
+  if (!data) return <div className="public-clinic"><Logo/><main className="public-clinic-content"><ListingRegion><PageHeader title={query.isLoading?"Clinic":"Clinic Page Unavailable"}/>{query.isLoading?<p role="status">Loading clinic information…</p>:<><div className="error-box" role="alert">{friendlyError(query.error,"load","We couldn’t load this clinic page.")}<RecoveryActions error={query.error} busy={query.isFetching} onRetry={()=>query.refetch()}/></div><Link href="/guest-booking" className="button secondary">Find a clinic</Link> <Link href="/">Return Home</Link></>}<Pagination state={query.isLoading?"loading":"error"} page={page} pageSize={pageSize} total={0} onPageChange={next=>updateDirectory({page:String(next)})}/></ListingRegion></main></div>;
   const { clinic, branch, branches, doctors, qrReference } = data;
   const path = `/${clinicSlug}${branch?.slug ? `/${branch.slug}` : ""}`;
    const bookingUrl = site.url(`${path}?book=1`);

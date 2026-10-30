@@ -109,7 +109,7 @@ test("edit: validation, keyboard, save payload uses start revision, persisted in
   await mobile.fill("98765 43211");
   await page.getByTestId("input-booking-notes").fill("Updated fictional note");
   await page.getByTestId("button-save-booking").click();
-  expect(s.patch).toMatchObject({ expectedRevision: 1, expectedBookingDetailsRevision: 0, notes: "Updated fictional note" });
+  await expect.poll(()=>s.patch).toMatchObject({ expectedRevision: 1, expectedBookingDetailsRevision: 0, notes: "Updated fictional note" });
   await expect(page.getByTestId("text-detail-notes")).toHaveText("Updated fictional note");
   await expect(page.getByTestId("form-edit-booking")).toHaveCount(0);
 });
@@ -121,7 +121,7 @@ test("edit conflict keeps the draft and polling does not replace the snapshot", 
   s.a = { ...s.a, revision: 5, notes: "Elsewhere" };
   await page.evaluate(() => window.dispatchEvent(new Event("fixture-refresh")));
   await page.getByTestId("button-save-booking").click();
-  expect(s.patch.expectedRevision).toBe(1);
+  await expect.poll(()=>s.patch?.expectedRevision).toBe(1);
   await expect(page.getByTestId("error-booking-save")).toBeVisible();
   await expect(page.getByTestId("input-booking-notes")).toHaveValue("Mine");
 });
@@ -190,7 +190,7 @@ test("revoked authorization hides private dialog and draft", async ({ page }) =>
   await expect(page.getByText("Private draft")).toHaveCount(0);
 });
 
-for (const [result, text] of [["provider_accepted", /does not confirm delivery/], ["provider_rejected", /rejected/], ["delivery_unknown", /Outcome unknown/], ["pre_dispatch_failed", /Nothing reached the provider/], ["blocked", /Not sent/]] as const) {
+for (const [result, text] of [["provider_accepted", /SMS submitted.*delivery to the phone isn’t confirmed/], ["provider_rejected", /could not be sent/], ["delivery_unknown", /couldn’t confirm whether the SMS was sent/], ["pre_dispatch_failed", /SMS was not sent/], ["blocked", /Not sent/]] as const) {
   test(`SMS outcome ${result} is reported accurately with one request id`, async ({ page }) => {
     const s = await mount(page, "rows"); s.smsResult = { state: result, reason: "Fixture reason" };
     await page.getByTestId("button-ticket-sms").click();

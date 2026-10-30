@@ -29,6 +29,7 @@ import { useSettingsBrowserLocation } from "./lib/settings-navigation";
 import { PublicHeader } from "./components/PublicHeader";
 import { RouteMetadataBoundary } from "./lib/page-metadata";
 import { PageDescription } from "./components/PageDescription";
+import { RecoveryActions } from "./components/RecoveryActions";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 export const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 15000 } } });
@@ -72,7 +73,7 @@ function Guard({role, page}: {role:string;page:string}) {
   const me = api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),enabled:!!isSignedIn}});
   if (!isLoaded || (isSignedIn && me.isLoading)) return <div className="page-loading">Preparing your workspace…</div>;
   if (!isSignedIn) return <Redirect to="/login"/>;
-  if (me.error) return <div className="error-box" role="alert">Unable to load your account. {friendlyError(me.error,"load")}<button onClick={()=>me.refetch()}>Try Again</button></div>;
+  if (me.error) return <div className="error-box" role="alert">{friendlyError(me.error,"load","We couldn’t load your account.")}<RecoveryActions error={me.error} onRetry={()=>me.refetch()} busy={me.isFetching}/></div>;
   if (!me.data?.user || me.data.needsOnboarding) return <Redirect to="/onboarding"/>;
   const actual = ["superAdmin","clinicAdmin"].includes(me.data.user.role) ? "admin" : me.data.user.role;
   if(actual !== role) return <Redirect to={`/${actual}/dashboard`}/>;

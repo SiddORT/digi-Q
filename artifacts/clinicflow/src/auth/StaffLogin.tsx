@@ -9,6 +9,7 @@ import { FormField } from "../components/FormField";
 import { PasswordInput } from "../components/PasswordInput";
 import { LoadingButton } from "../components/LoadingButton";
 import { validateEmail } from "../lib/validators";
+import { useServerWait } from "../lib/use-server-wait";
 import "../components/clinic-registration.css";
 
 type LoginResponse = { authenticated: boolean };
@@ -20,6 +21,7 @@ export function StaffLogin() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const limit=useServerWait();
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const params = new URLSearchParams(window.location.search);
   const confirmation = params.get("passwordSet")
@@ -35,7 +37,7 @@ export function StaffLogin() {
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (busy) return;
+    if (busy||limit.wait>0) return;
     // Login only checks presence/format; the password policy applies to new passwords, so existing credentials keep working.
     const errs = { email: email.trim() ? validateEmail(email) : "Enter your email address.", password: password ? undefined : "Enter your password." };
     setFieldErrors(errs);
@@ -47,6 +49,7 @@ export function StaffLogin() {
       if (result.authenticated !== true) throw new Error("Unable to complete sign-in. Please retry.");
       await complete();
     } catch (caught) {
+      limit.record(caught);
       setPassword("");
       setError(authErrorMessage(caught, "Unable to sign in. Check your email and password."));
     } finally { setBusy(false); }
@@ -63,7 +66,7 @@ export function StaffLogin() {
             <PasswordInput data-testid="input-staff-password" name="password" autoComplete="current-password" disabled={busy} value={password} onChange={event => { setPassword(event.target.value); if (fieldErrors.password) setFieldErrors(p => ({ ...p, password: undefined })); }} />
           </FormField>
           {error && <div className="error-box" role="alert" data-testid="status-staff-login-error">{error}</div>}
-          <LoadingButton className="button auth-submit" data-testid="button-staff-login" type="submit" loading={busy} loadingText="Signing in…">Sign In</LoadingButton>
+           <LoadingButton className="button auth-submit" data-testid="button-staff-login" type="submit" disabled={limit.wait>0} loading={busy} loadingText="Signing in…">{limit.wait>0?`Try again in ${limit.wait}s`:"Sign In"}</LoadingButton>
         </form>
         <div className="auth-links"><Link href="/forgot-password" data-testid="link-forgot-password">Forgot password?</Link><Link href="/patient-login" data-testid="link-patient-login">Patient Login</Link></div>
         <div className="register-clinic-entry"><div><strong>Bring your clinic together.</strong><p>Set up your locations, hours and care team.</p></div><Link className="button register-clinic-button" href="/register-clinic" data-testid="link-register-clinic">Register a Clinic</Link></div>

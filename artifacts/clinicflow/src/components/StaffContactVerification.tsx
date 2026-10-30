@@ -4,28 +4,31 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BadgeCheck } from "lucide-react";
 import { FormField } from "./FormField";
 import { staffVerificationKey, confirmStaffVerification, deferStaffVerification, getStaffVerification, requestStaffVerification, STAFF_VERIFICATION_KEY, type VerificationChannel, type VerificationChallenge } from "../lib/staff-verification";
-import { friendlyError } from "../lib/friendly-error";
+import { friendlyError, retryWaitSeconds } from "../lib/friendly-error";
 import { noticeLabel } from "../lib/staff-account";
+import { useServerWait } from "../lib/use-server-wait";
+import { RecoveryActions } from "./RecoveryActions";
 
 function Channel({ channel, label, value, verified }: { channel: VerificationChannel; label: string; value?: string | null; verified: boolean }) {
   const client = useQueryClient();
   const [challenge, setChallenge] = useState<VerificationChallenge | null>(null);
   const [code, setCode] = useState("");
   const [wait, setWait] = useState(0);
+  const limit=useServerWait();
   useEffect(() => { if (wait <= 0) return; const t = window.setTimeout(() => setWait(w => w - 1), 1000); return () => window.clearTimeout(t); }, [wait]);
-  const request = useMutation({ mutationFn: () => requestStaffVerification(channel), onSuccess: c => { setChallenge(c); setCode(""); setWait(c.resendAfterSeconds); } });
+  const request = useMutation({ mutationFn: () => requestStaffVerification(channel), onSuccess: c => { setChallenge(c); setCode(""); setWait(c.resendAfterSeconds); },onError:e=>{limit.record(e);setWait(value=>Math.max(value,retryWaitSeconds(e)));} });
   const confirm = useMutation({ mutationFn: () => confirmStaffVerification({ channel, challengeId: challenge!.challengeId, code }),
-    onSuccess: () => { setChallenge(null); setCode(""); void client.invalidateQueries({ queryKey: STAFF_VERIFICATION_KEY }); } });
+    onSuccess: () => { setChallenge(null); setCode(""); void client.invalidateQueries({ queryKey: STAFF_VERIFICATION_KEY }); },onError:limit.record });
   // A changed contact or flipped verification invalidates any outstanding challenge, code and error.
   useEffect(() => { setChallenge(null); setCode(""); setWait(0); request.reset(); confirm.reset(); }, [value, verified]);
   const id = `staff-verify-${channel}`;
   return <div className="staff-verify-channel" data-testid={`verify-${channel}`}>
     <div><strong>{label}</strong><div className="muted">{value || "Not added"}</div></div>
     {verified ? <span className="badge" role="status"><BadgeCheck size={14} aria-hidden /> Verified</span> : !value ? <small className="muted">Add a {label.toLowerCase()} in your details to verify it.</small> : <>
-      <button type="button" className="button secondary small" disabled={request.isPending || wait > 0} onClick={() => request.mutate()} data-testid={`button-send-code-${channel}`}>{request.isPending ? "Sending…" : challenge ? wait > 0 ? `Resend in ${wait}s` : "Resend Code" : "Send Code"}</button>
-      {challenge && <form noValidate onSubmit={e => { e.preventDefault(); if (code.length === 6 && !confirm.isPending) confirm.mutate(); }}>
+      <button type="button" className="button secondary small" disabled={request.isPending || wait > 0||limit.wait>0} onClick={() => {if(wait<=0&&limit.wait<=0&&!request.isPending)request.mutate();}} data-testid={`button-send-code-${channel}`}>{request.isPending ? "Sending…" : Math.max(wait,limit.wait)>0?`Resend in ${Math.max(wait,limit.wait)}s`:challenge?"Resend Code":"Send Code"}</button>
+      {challenge && <form noValidate onSubmit={e => { e.preventDefault(); if (code.length === 6 && !confirm.isPending&&limit.wait<=0) confirm.mutate(); }}>
         <FormField id={id} label="Confirm Code" required><VerificationCodeInput required value={code} onChange={setCode} data-testid={`input-code-${channel}`} /></FormField>
-        <button type="submit" className="button small" disabled={confirm.isPending || code.length !== 6} data-testid={`button-confirm-code-${channel}`}>{confirm.isPending ? "Verifying…" : "Confirm Code"}</button>
+        <button type="submit" className="button small" disabled={confirm.isPending || limit.wait>0 || code.length !== 6} data-testid={`button-confirm-code-${channel}`}>{confirm.isPending ? "Verifying…" : limit.wait>0?`Try again in ${limit.wait}s`:"Confirm Code"}</button>
       </form>}
       {(request.error || confirm.error) && <p className="field-error" role="alert">{friendlyError(confirm.error || request.error, "save")}</p>}
     </>}
@@ -35,7 +38,7 @@ function Channel({ channel, label, value, verified }: { channel: VerificationCha
 export function StaffContactVerification({ actor }: { actor: string }) {
   const state = useQuery({ queryKey: staffVerificationKey(actor), queryFn: getStaffVerification, retry: false });
   if (state.isLoading) return <section className="panel padded" role="status">Loading contact verification…</section>;
-  if (state.error || !state.data) return <section className="panel padded"><p role="alert">{friendlyError(state.error, "load")}</p><button type="button" onClick={() => void state.refetch()}>Retry</button></section>;
+  if (state.error || !state.data) return <section className="panel padded"><p role="alert">{friendlyError(state.error, "load")}</p><RecoveryActions error={state.error} busy={state.isFetching} onRetry={()=>state.refetch()}/></section>;
   const d = state.data;
   return <section className="panel padded" data-testid="section-contact-verification" aria-labelledby="contact-verification-title">
     <h3 id="contact-verification-title">Contact verification</h3>

@@ -1,4 +1,5 @@
 import { FormActions } from "./FormActions";
+import { friendlyError } from "../lib/friendly-error";
 import { UrlInput } from "./UrlInput";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -202,7 +203,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
     } catch (e: any) {
       if (ctrl.signal.aborted) return;
       const code = status(e);
-      setUpload({ state: "error", pct: 0, msg: code === 400 || code === 413 || code === 422 ? "The server rejected this image. Use PNG, JPEG or WebP up to 2 MB and 2048×2048 px." : e?.message && !code ? e.message : "The logo could not be uploaded. Try again." });
+      setUpload({ state: "error", pct: 0, msg: code === 400 || code === 413 || code === 422 ? "This image couldn’t be used. Choose PNG, JPEG or WebP up to 2 MB and 2048×2048 px." : friendlyError(e,"save","The logo could not be uploaded. Choose the file again to retry.") });
     }
   }
 

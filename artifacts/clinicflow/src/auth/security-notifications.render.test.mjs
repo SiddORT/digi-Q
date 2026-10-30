@@ -30,20 +30,20 @@ test("required registration email errors are prominent, actionable and independe
     const html=renderRegistration({email:{status},sms:{status:"unavailable"}});
     assert.match(html,/role="alert"/);
     assert.match(html,/email verification is not complete/);
-    assert.match(html,/registration details are retained/);
+    assert.match(html,/registration details are kept/);
     assert.match(html,/optional SMS cannot replace/);
     assert.doesNotMatch(html,/SMS:|Approved template and provider configuration/);
     if(status==="delivery_unknown")assert.match(html,/Wait and check/);
-    if(status==="provider_rejected")assert.match(html,/System Admin.*Resend code/);
+    if(status==="provider_rejected")assert.match(html,/system administrator.*Resend code/);
   }
   const accepted=renderRegistration({email:{status:"provider_accepted"},sms:{status:"unavailable"}});
-  assert.match(accepted,/delivery is not confirmed/);
+  assert.match(accepted,/Check your inbox and spam folder for the verification code/);
   assert.doesNotMatch(accepted,/role="alert"|SMS:/);
   assert.match(renderRegistration(undefined),/Email verification is still required/);
   for(const code of ["REGISTRATION_EMAIL_REJECTED","REGISTRATION_EMAIL_NOT_SENT"]) {
     const message=friendly({status:503,data:{code,error:"unsafe-response"}},"auth");
-    assert.match(message,/System Admin/);
-    assert.match(message,/previous code and registration details are retained/);
+    assert.match(message,/system administrator/);
+    assert.match(message,/previous code and registration details are kept/);
     assert.doesNotMatch(message,/unsafe-response/);
   }
 });
@@ -51,11 +51,11 @@ test("channel feedback renders independent outcomes, masked destinations and no 
   const html=render({email:{status:"provider_accepted",destination:"e***@example.invalid"},sms:{status:"delivery_unknown",destination:"***3210"}});
   assert.match(html,/role="status"/);
   assert.match(html,/aria-live="polite"/);
-  assert.match(html,/delivery is not confirmed/);
-  assert.match(html,/Outcome uncertain/);
+  assert.match(html,/Check for the message/);
+  assert.match(html,/couldn’t confirm whether/);
   assert.match(html,/\*\*\*3210/);
   assert.doesNotMatch(html,/\+919876543210/);
-  assert.match(summary({sms:{status:"unavailable"}}),/SMS: Unavailable/);
+  assert.match(summary({sms:{status:"unavailable"}}),/SMS: Messaging is unavailable/);
   for(const status of ["provider_rejected","pre_dispatch_failed","not_requested"])assert(!summary({email:{status}}).includes("undefined"));
 });
 test("security events stay outside Optional Delivery and retain platform-owned activation",()=>{
@@ -90,7 +90,7 @@ test("email registration collects optional phone but separate proof cannot repla
   assert.match(registration,/Required email verification code/);
   assert.match(registration,/RegistrationMobileProof/);
   assert.match(patient,/Optional registration mobile/);
-  assert.match(patient,/If this account is eligible/);
+  assert.match(patient,/not_reported|SecurityChannelNotice/);
   assert.match(proof,/registration\/mobile\/verify/);
   assert.doesNotMatch(proof,/refresh\(|navigate\(|authenticated/);
   assert.match(proof,/type="button"/);

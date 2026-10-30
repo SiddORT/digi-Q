@@ -41,7 +41,7 @@ export function ScheduleExceptions({ doctorId, branchId, doctorName, branchName,
     {open && <AppDialog open size="medium" title="Date Exceptions" onClose={() => setOpen(false)}>
       <p className="doctor-context-value">{doctorName || "Doctor"} · {branchName || "Location"}</p>
       <button type="button" className="button secondary small" onClick={() => edit({ isClosed: true, isExtra: false })}>Add Date Exception</button>
-      {query.isLoading ? <p role="status">Loading date exceptions…</p> : query.error ? <><ErrorNotice error={query.error}/><button type="button" onClick={() => void query.refetch()}>Retry Date Exceptions</button></> :
+      {query.isLoading ? <p role="status">Loading date exceptions…</p> : query.error ? <ErrorNotice error={query.error} onRetry={()=>query.refetch()} busy={query.isFetching}/> :
         query.data?.length ? query.data.map(row => <div className="notice" key={row.id}><strong>{formatDate(row.date, preferences)}</strong> · {row.reason} <button type="button" onClick={() => edit(row)}>Edit Date Exception</button></div>) : <p className="muted">No date exceptions saved at this location.</p>}
     </AppDialog>}
     {editing && <AppDialog open size="medium" title={editing.id ? "Edit Date Exception" : "Add Date Exception"} dirty={dirty} busy={save.isPending} onClose={() => { setEditing(null); setDirty(false); }}>

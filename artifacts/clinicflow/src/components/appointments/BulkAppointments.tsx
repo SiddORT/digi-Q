@@ -1,4 +1,5 @@
 import { assertIndividualCheckIn } from "@/lib/check-in-policy";
+import { friendlyError } from "../../lib/friendly-error";
 import { absolutePublicUrl } from "../../lib/public-website";
 import { useRef, useState } from "react";
 import * as api from "@workspace/api-client-react";
@@ -71,7 +72,7 @@ export function BulkAppointments({ids,disabled,onClear,onRetain,labels={}}:{ids:
           }
           completedIds.push(id);
           messages.push(`${a.reference}: ${kind==="cancel"?"cancelled":"prepared"}.`);
-        }catch(e){messages.push(`${id}: failed — ${e instanceof Error?e.message:"request rejected"}`);}
+        }catch(e){messages.push(`${id}: failed — ${friendlyError(e,"save","This action wasn’t confirmed. Refresh and review this visit before making another change.")}`);}
       }
       if(kind==="csv"&&records.length) {
         const cell=(v:unknown)=>`"${String(v??"").replace(/^[=+@\-\t\r]/,"'$&").replace(/"/g,'""')}"`;

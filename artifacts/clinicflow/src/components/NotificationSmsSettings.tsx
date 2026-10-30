@@ -97,19 +97,19 @@ export function NotificationSmsSettings({ onDirtyChange, onBusyChange, inline = 
   useEffect(() => { parentBusy.current?.(busy); }, [busy]);
   const d = query.data; const r = d?.notificationSms;
   if (inline) return <section className="panel padded int-settings cm-provider" aria-labelledby="sms-config-title" data-testid="panel-sms-config">
-    {query.isLoading && <p role="status" data-testid="status-sms-loading">Loading settings…</p>}
-    {query.isError && <p role="alert" className="error-box">SMS settings are unavailable. <button type="button" className="button secondary" onClick={() => query.refetch()}>Retry</button></p>}
-    {d && !r && <p role="note" className="notice" data-testid="status-sms-unavailable">SMS readiness was not reported by the server.</p>}
+    {query.isLoading && <p role="status" data-testid="status-sms-loading">Checking settings…</p>}
+    {query.isError && <p role="alert" className="error-box">We couldn’t check the SMS settings. <button type="button" className="button secondary" disabled={query.isFetching} onClick={() => query.refetch()}>Check again</button></p>}
+    {d && !r && <p role="note" className="notice" data-testid="status-sms-unavailable">SMS settings are unavailable.</p>}
     {d && r && <SmsProviderPanel key={r.revision ?? "rev"} r={r} editable={!!d.editable} onDirtyChange={setDirty} onBusyChange={setBusy} onSaved={() => { void query.refetch(); }} />}
   </section>;
   return <section className="panel padded int-settings cm-provider" aria-labelledby="sms-config-title" data-testid="panel-sms-config">
     <div className="int-head section-head"><h2 id="sms-config-title">SMS Provider <HelpTip text="Configurable HTTPS POST API. The key is encrypted and never displayed. Account security messages use Twilio separately and are unaffected." /></h2></div>
-    {saved && <p role="status" className="notice">Configuration saved. No test message was sent; readiness is not proof of delivery.</p>}
-    {query.isLoading && <p role="status" data-testid="status-sms-loading">Loading readiness…</p>}
-    {query.isError && <p role="alert" className="error-box">SMS readiness is unavailable. <button type="button" className="button secondary" onClick={() => query.refetch()}>Retry</button></p>}
-    {d && !r && <p role="note" className="notice" data-testid="status-sms-unavailable">SMS readiness was not reported by the server.</p>}
+    {saved && <p role="status" className="notice">Settings saved. Delivery hasn’t been tested. No message was sent.</p>}
+    {query.isLoading && <p role="status" data-testid="status-sms-loading">Checking settings…</p>}
+    {query.isError && <p role="alert" className="error-box">We couldn’t check the SMS settings. <button type="button" className="button secondary" disabled={query.isFetching} onClick={() => query.refetch()}>Check again</button></p>}
+    {d && !r && <p role="note" className="notice" data-testid="status-sms-unavailable">SMS settings are unavailable.</p>}
     {d && r && <div className="int-status"><div className="int-status-row">
-      <p data-testid="status-integration-notificationSms"><span className={`badge ${r.ready ? "" : "muted"}`}>{r.ready ? "Configuration ready" : "Configuration required"}</span> <span className="muted">{r.ready ? "Saved and ready to send." : "Add the API URL and key to enable SMS."} Ready does not mean tested.</span></p>
+      <p data-testid="status-integration-notificationSms"><span className={`badge ${r.ready ? "" : "muted"}`}>{r.ready ? "Settings complete" : "SMS settings are incomplete"}</span> <span className="muted">{r.ready ? "Delivery hasn’t been tested." : "Add the API URL and key using Configure SMS."}</span></p>
       {!inline && <div className="row-actions"><button type="button" className="button small" disabled={!d.editable} onClick={() => { setSaved(false); setDirty(false); setEditing(true); }} data-testid="button-configure-notificationSms">Configure SMS</button></div>}</div>
       <details className="cm-advanced" data-testid="details-sms-technical"><summary>Technical details</summary><ul className="int-keys">{r.keys.map(k => <li key={k.key} data-testid={`status-key-${k.key}`}><code>{k.key}</code>: {k.status}</li>)}</ul></details>
       {!d.editable && <p role="note" className="notice">Website editing is locked until the server encryption key is configured.</p>}

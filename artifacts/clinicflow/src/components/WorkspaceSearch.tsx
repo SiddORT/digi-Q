@@ -15,6 +15,8 @@ import { queueRecordHref, reportSearchHref, reportSearchRange } from "@/lib/sear
 import { CATEGORY_LABEL, MORE_CATEGORIES, PAGE_SIZE, PREVIEW_SIZE, PRIMARY_CATEGORIES, SOURCE_LABEL, appointmentHref, canLoadMore, categorySources, categoryTotal, countLabel, permittedCategories, reachedCap, recordHref, type SearchCategory, type SearchSource, type SearchTab } from "@/lib/search-categories";
 import "./workspace-search.css";
 import { openQrInline } from "@/lib/qr-inline";
+import { friendlyError } from "../lib/friendly-error";
+import { RecoveryActions } from "./RecoveryActions";
 
 /** Real, permitted quick actions only: each target is an existing route for this role. */
 export function quickActions(role: string, navigation: string[]) {
@@ -28,7 +30,7 @@ export function quickActions(role: string, navigation: string[]) {
 
 type Result = { id: string; label: string; detail?: string; href: string };
 type Slice = { items: Result[]; total: number | null };
-type SourceState = Slice & { page: number; loading: boolean; error: string };
+type SourceState = Slice & { page: number; loading: boolean; error: string; cause?:unknown };
 const EMPTY_STATE: SourceState = { items: [], total: null, page: 0, loading: false, error: "" };
 
 /** Destination listing that pages through every match (used beyond the in-dialog cap and as "Open in …"). */
@@ -149,7 +151,7 @@ export function WorkspaceSearch({ navigation, role, page, userId }: {
         const seen = new Set(prev.map(r => r.id));
         return { ...g, [source]: { items: [...prev, ...slice.items.filter(r => !seen.has(r.id))], total: slice.total, page: pageNo, loading: false, error: "" } };
       }); })
-      .catch((error: unknown) => { if (!controller.signal.aborted) setGroups(g => ({ ...g, [source]: { ...(g[source] ?? EMPTY_STATE), loading: false, error: `Unable to search ${SOURCE_LABEL[source].toLowerCase()}${error instanceof Error && error.message ? ` (${error.message})` : ""}. Access may be restricted or the service unavailable.` } })); });
+      .catch((error: unknown) => { if (!controller.signal.aborted) setGroups(g => ({ ...g, [source]: { ...(g[source] ?? EMPTY_STATE), loading: false, cause:error, error: friendlyError(error,"load",`We couldn’t search ${SOURCE_LABEL[source].toLowerCase()}. Your search is kept; try this category again.`) } })); });
   };
 
   // All shows short previews of every permitted category; a category tab loads its first full page.
@@ -189,7 +191,7 @@ export function WorkspaceSearch({ navigation, role, page, userId }: {
   const sourceBlock = (source: SearchSource, preview: boolean, heading: boolean) => {
     const state = groups[source] ?? EMPTY_STATE;
     const full = sourceListingHref(source, role, navigation, search, today);
-    const body = state.error ? <p role="alert" className="ws-error">{state.error} <button type="button" className="button secondary" onClick={() => load(source, 1, preview ? PREVIEW_SIZE : PAGE_SIZE, false)} data-testid={`search-retry-${source}`}><RotateCw size={14} aria-hidden/> Retry {SOURCE_LABEL[source]}</button></p>
+    const body = state.error ? <div role="alert" className="ws-error">{state.error}<RecoveryActions error={state.cause} busy={state.loading} onClose={close} onRetry={() => load(source, state.page>0?state.page+1:1, preview ? PREVIEW_SIZE : PAGE_SIZE, state.page>0)} label={`Retry ${SOURCE_LABEL[source]}`}/></div>
       : state.loading && !state.items.length ? <div className="ws-skeleton" role="status" aria-label={`Searching ${SOURCE_LABEL[source]}`}><span/><span/></div>
       : state.items.length ? <ul className="workspace-command-results">{state.items.map(result => <li key={result.id}><Link href={result.href} onClick={close}><strong>{result.label}</strong><small>{result.detail}</small></Link></li>)}</ul>
       : <p className="muted">No matching {SOURCE_LABEL[source].toLowerCase()}.</p>;

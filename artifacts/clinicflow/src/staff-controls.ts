@@ -23,8 +23,8 @@ export async function resendStaffInvitations(
       const result=await send(tab==="doctors"?row.userId:row.id);
       const ok=result.invitationStatus==="sent";
       outcomes.push({label,ok,message:describeResult?.(result) || (ok ?
-        "Email provider accepted the invitation; inbox delivery is not confirmed." :
-        "Email invitation outcome is unavailable. Check the provider before requesting another link.")});
+        "Invitation submitted. Ask the recipient to check their inbox and spam folder; delivery isn’t confirmed." :
+        "We couldn’t confirm whether the invitation was sent. Ask the recipient to check for it before requesting another link.")});
     } catch(error) {outcomes.push({label,ok:false,message:describeError(error)});}
   }
   return outcomes;

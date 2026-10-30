@@ -7,19 +7,19 @@ export function smsProviderErrorHelp(log: { channel: string; httpStatus?: number
   return "HTTP 401: the SMS provider rejected authentication. For the Keep in Touch API, select Keep in Touch in SMS Settings and check the saved Bearer Token against the working Postman token. Enter the token only, without the “Bearer ” prefix. API Key and Client ID belong in the JSON body and are separate settings. This message is not retried automatically.";
 }
 export const STATUS_COPY: Record<string, string> = {
-  pending: "Queued; not yet dispatched.",
-  sending: "Dispatch claimed. Outcome is unconfirmed.",
-  provider_accepted: "Provider accepted the request. This is not proof of delivery to the handset or inbox.",
-  provider_rejected: "The provider explicitly rejected the message.",
-  pre_dispatch_failed: "Failed before dispatch; nothing was sent.",
-  delivery_unknown: "Dispatch may have succeeded. The outcome is unknown and the message is not resent automatically. Stale sending records are reported this way by the server.",
+  pending: "Waiting to be sent.",
+  sending: "Sending has started. We haven’t confirmed the result yet.",
+  provider_accepted: "Message submitted. Delivery to the phone or inbox isn’t confirmed.",
+  provider_rejected: "The message could not be sent. Check the sending settings and recipient.",
+  pre_dispatch_failed: "The message was not sent.",
+  delivery_unknown: "We couldn’t confirm whether the message was sent. It may still arrive and will not be sent again automatically.",
 };
-STATUS_COPY.not_attempted = "No dispatch was attempted.";
-STATUS_COPY.configuration_failed = "Provider configuration prevented dispatch. Nothing was sent.";
-STATUS_COPY.preparation_failed = "The message could not be prepared before dispatch. Nothing was sent.";
-STATUS_COPY.disabled = "Notifications or this template were disabled before dispatch.";
-STATUS_COPY.obsolete = "The booking or recipient was no longer eligible at dispatch.";
-STATUS_COPY.no_recipient = "No valid recipient was available at dispatch.";
+STATUS_COPY.not_attempted = "No send was attempted.";
+STATUS_COPY.configuration_failed = "Sending settings prevented this message from being sent. Nothing was sent.";
+STATUS_COPY.preparation_failed = "The message could not be prepared. Nothing was sent.";
+STATUS_COPY.disabled = "Sending or this template was turned off. Nothing was sent.";
+STATUS_COPY.obsolete = "The booking or recipient no longer met the requirements for this message.";
+STATUS_COPY.no_recipient = "No valid recipient was available. Nothing was sent.";
 export const EVENT_OPTIONS = ["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder", "provider_test"];
 export const STATUS_OPTIONS = ["pending", "sending", "provider_accepted", "provider_rejected", "pre_dispatch_failed", "delivery_unknown", "not_attempted", "configuration_failed", "preparation_failed", "disabled", "obsolete", "no_recipient"];
 export const GROUP_OPTIONS = ["patient", "clinicAdmin", "doctor", "receptionist", "explicit"];
@@ -55,5 +55,5 @@ export function dateTimeRangeError(from: string, to: string): string | undefined
   if (!empty(from) && !empty(to) && from > to) return "From must not be after To.";
   return undefined;
 }
-export function statusLabel(s: string) { return s.replace(/_/g, " "); }
+export function statusLabel(s: string) { return ({pending:"Waiting",sending:"Sending",provider_accepted:"Submitted",provider_rejected:"Couldn’t send",pre_dispatch_failed:"Not sent",delivery_unknown:"Sending unconfirmed",not_attempted:"Not attempted",configuration_failed:"Settings incomplete",preparation_failed:"Couldn’t prepare",disabled:"Sending turned off",obsolete:"No longer needed",no_recipient:"No recipient"} as Record<string,string>)[s]||"Status unavailable"; }
 

@@ -16,6 +16,7 @@ import { useDateTimePreferences } from "./DateTimePreferences";
 import { resolveDateTimePreferences } from "../lib/date-time";
 import { templateTestValue } from "../lib/template-test-fields";
 import { EmailHtmlPreview } from "./EmailHtmlPreview";
+import { RecoveryActions } from "./RecoveryActions";
 
 type Content = api.NotificationTemplateContent;
 const PH = /\{\{\s*([a-z0-9_]+)\s*\}\}/gi;
@@ -36,16 +37,16 @@ export function useChannelReadiness(channel: "email" | "sms") {
   const q = useGetIntegrationSettings({ query: { queryKey: getGetIntegrationSettingsQueryKey(), staleTime: 30000 } });
   const r = channel === "sms" ? q.data?.notificationSms : q.data?.smtp;
   const missing = (r?.keys ?? []).filter(k => k.status === "missing" || k.status === "invalid").map(k => k.key);
-  const reason = q.isLoading ? "Checking channel readiness…" : q.isError ? "Channel readiness could not be loaded." : !r ? "The server did not report readiness for this channel." : r.ready ? "" : `Configuration required${missing.length ? `: ${missing.join(", ")} ${missing.length > 1 ? "are" : "is"} missing or invalid` : ""}.`;
+  const reason = q.isLoading ? "Checking settings…" : q.isError ? `We couldn’t check the ${channel === "sms" ? "SMS" : "email"} settings.` : !r ? "Messaging settings are unavailable." : r.ready ? "" : `${channel === "sms" ? "SMS" : "Email"} settings are incomplete.`;
   return { ready: !!r?.ready && !q.isError, reason, loading: q.isLoading, retry: () => void q.refetch() };
 }
 
 const OUTCOME: Record<string, string> = {
   preview: "Preview only. Nothing was sent.",
-  provider_accepted: "The provider accepted the message. This does not confirm handset or inbox delivery.",
-  provider_rejected: "The provider rejected the message.",
-  pre_dispatch_failed: "Nothing was sent. Check channel configuration and the template.",
-  delivery_unknown: "The outcome is unknown. Do not resend until you have checked the provider; retrying uses the same request.",
+  provider_accepted: "Test message submitted. Check the recipient’s messages; delivery isn’t confirmed.",
+  provider_rejected: "The test message could not be sent. Check the sending settings and recipient.",
+  pre_dispatch_failed: "Nothing was sent. Check the sending settings and template.",
+  delivery_unknown: "We couldn’t confirm whether the message was sent. Check for it before trying again. Any retry checks the same request.",
 };
 
 /** Test action for one event template: explicit recipient, values for used placeholders, confirmation, no auto retry. */
@@ -138,9 +139,11 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
     {requestError && <div role="alert" className="error-box et-test-request-error" data-testid="status-test-error">
       <strong>{requestError.title}</strong>
       <p>{requestError.detail}</p>
-      {test.isError && submitted.current && <button type="button" className="button secondary" disabled={test.isPending} onClick={retry} data-testid="button-retry-test">Retry Same Request</button>}
+      {test.isError && submitted.current && <RecoveryActions error={test.error} busy={test.isPending} onRetry={retry} label="Check same request" testId="button-retry-test"/>}
+      {test.data?.status==="delivery_unknown"&&submitted.current&&<button type="button" className="button secondary" disabled={test.isPending} onClick={retry}>Check same request</button>}
     </div>}
-    {result && <div role={failed ? "alert" : "status"} className={`et-test-result ${failed ? "error-box" : "et-notice"}`} data-testid="status-test-result"><strong>{OUTCOME[result.status] ?? result.status}</strong> {result.message}
+    {result && <div role={failed ? "alert" : "status"} className={`et-test-result ${failed ? "error-box" : "et-notice"}`} data-testid="status-test-result"><strong>{OUTCOME[result.status] ?? "We couldn’t check the message status."}</strong>
+      {result.message&&<details><summary>Technical details</summary>{result.message}</details>}
       {canStartNewTemplateTest(test.data?.status) && <p>After resolving the issue, start a new test and confirm again.
         <button type="button" className="button secondary small" disabled={test.isPending} onClick={startNewTest} data-testid="button-start-new-test">Start New Test</button></p>}
       {channel === "email" && <div data-testid="text-test-subject">{result.subject}</div>}

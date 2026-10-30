@@ -21,7 +21,8 @@ import "./ClinicRegistrationAccount.css";
 import { PasswordInput } from "./PasswordInput";
 import { FormField } from "./FormField";
 import { required, validatePersonName, validateEmail, validatePassword } from "../lib/validators";
-import { friendlyError } from "../lib/friendly-error";
+import { friendlyError, retryWaitSeconds } from "../lib/friendly-error";
+import { useServerWait } from "../lib/use-server-wait";
 import { notifySuccess } from "../lib/notify";
 import { ActionLabel } from "./ActionLabel";
 import { accountDraftSchema, setupDraftSchema, registrationDraftKey, readRegistrationDraft, writeRegistrationDraft, clearRegistrationDraft } from "../lib/registration-draft";
@@ -56,6 +57,7 @@ function RegistrationAccount() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [cooldown,setCooldown]=useState(0);
+  const limit=useServerWait();
   const [resendNotice,setResendNotice]=useState("");
   useEffect(() => { if (!fullName && !email && step === "details") { clearRegistrationDraft(draftKey); return; } setStored(writeRegistrationDraft(draftKey, accountDraftSchema, { fullName, email, step })); }, [draftKey, fullName, email, step]);
   useEffect(() => {
@@ -70,20 +72,20 @@ function RegistrationAccount() {
   }, [draft]);
   useEffect(()=>{if(cooldown<=0)return;const timer=window.setTimeout(()=>setCooldown(value=>Math.max(0,value-1)),1000);return()=>window.clearTimeout(timer);},[cooldown]);
   async function resendCode(){
-    if(busy||cooldown>0||!challengeId)return;
+    if(busy||limit.wait>0||cooldown>0||!challengeId)return;
     setBusy(true);setError("");setResendNotice("");setCooldown(60);
     try{
       const result=await authRequest<{challengeId:string;channels?:SecurityChannels}>("registration/resend",{challengeId});
       setChannels(result.channels);
       if(!result.challengeId)throw new Error("Could not resend the verification code. Please retry.");
       setChallengeId(result.challengeId);setCode("");setCooldown(60);setResendNotice("Use the code in the latest verification email. Earlier codes no longer work.");notifySuccess("Verification code resent");
-    }catch(caught){const message=caught instanceof Error?caught.message:"";setError(/invalid or expired verification/i.test(message)?"This registration challenge is no longer valid. Choose Change details to restart registration.":friendlyError(caught,"auth"));if((caught as {status?:number})?.status===429||/wait before requesting another code/i.test(message))setCooldown(60);}
+    }catch(caught){limit.record(caught);const message=caught instanceof Error?caught.message:"";setError(/invalid or expired verification/i.test(message)?"This verification session has ended. Choose Change details to restart registration.":friendlyError(caught,"auth"));if((caught as {status?:number})?.status===429||/wait before requesting another code/i.test(message))setCooldown(Math.max(60,retryWaitSeconds(caught)));}
     finally{setBusy(false);}
   }
   const [fieldErrors,setFieldErrors]=useState<Record<string,string|undefined>>({});
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (busy) return;
+    if (busy||limit.wait>0) return;
     if(step==="details"){
       const errors={fullName:required()(fullName)||validatePersonName(fullName),email:required()(email)||validateEmail(email),password:required()(password)||validatePassword(password)};
       setFieldErrors(errors);
@@ -112,7 +114,7 @@ function RegistrationAccount() {
         clearRegistrationDraft(draftKey);
         await refresh();
       }
-    } catch (caught) { setError(friendlyError(caught,"auth")); }
+    } catch (caught) { limit.record(caught);setError(friendlyError(caught,"auth")); }
     finally { setBusy(false); }
   }
   return <AuthShell eyebrow="Register a Clinic" registration><div className="auth-card registration-account-card">
@@ -141,7 +143,7 @@ function RegistrationAccount() {
         {step === "verify" && <><RegistrationEmailNotice channels={channels}/>{(mobile || mobilePending) && (channels?.sms?.status === "provider_accepted" || !channels && mobilePending) && <RegistrationMobileProof key={challengeId} challengeId={challengeId}/>}</>}
         {error && <div className="error-box" role="alert">{error}</div>}
         {step==="verify"&&resendNotice&&<p role="status">{resendNotice}</p>}
-        <button className="button auth-submit" type="submit" disabled={busy}><ActionLabel>{busy ? "Please wait…" : step === "details" ? "Review account details" : step === "review" ? "Send verification code" : "Verify and continue"}</ActionLabel></button>
+        <button className="button auth-submit" type="submit" disabled={busy||limit.wait>0}><ActionLabel>{busy ? "Please wait…" : limit.wait>0?`Try again in ${limit.wait}s`:step === "details" ? "Review account details" : step === "review" ? "Send verification code" : "Verify and continue"}</ActionLabel></button>
         <p className="registration-note" role="status">{stored ? fullName || email || step !== "details" ? "Name, email and stage are temporarily saved in this tab for up to 24 hours. Re-enter passwords and codes after reload." : "New non-secret details will be temporarily saved in this tab as you enter them." : "Browser storage is unavailable. Details remain only while this page is open."}</p>
         <button type="button" className="text-link" disabled={busy} onClick={() => { clearRegistrationDraft(draftKey); setFullName(""); setEmail(""); setPassword(""); setCode(""); setChallengeId(""); setStep("details"); setError(""); setResendNotice(""); setCooldown(0); }}><ActionLabel>Discard account draft</ActionLabel></button>
         {step === "verify" && <><button className="text-link" type="button" disabled={busy||cooldown>0} onClick={()=>void resendCode()} data-testid="registration-resend-code"><ActionLabel>{cooldown>0?`Resend in ${cooldown}s`:"Resend code"}</ActionLabel></button><button className="text-link" type="button" disabled={busy} onClick={() => { setStep("details"); setCode(""); setChallengeId(""); setError("");setResendNotice("");setCooldown(0); }}><ActionLabel>Change Details</ActionLabel></button></>}

@@ -4,7 +4,9 @@ import { Download, Mail, MessageSquare, Printer } from "lucide-react";
 import { AppDialog } from "../AppDialog";
 import { FormActions } from "../FormActions";
 import { IconAction } from "../IconAction";
-import { errorStatus, friendlyError } from "../../lib/friendly-error";
+import { errorStatus, friendlyError, isFriendlyText } from "../../lib/friendly-error";
+import { RecoveryActions } from "../RecoveryActions";
+import { useServerWait } from "../../lib/use-server-wait";
 import { downloadPdf, freshTicketHtml } from "./ticket-export";
 import { canShowAppointmentTicket } from "./presentation";
 import { TicketEmailDialog } from "./TicketEmailDialog";
@@ -37,7 +39,7 @@ export function useAppointmentTicketActions() {
       void client.fetchQuery({ queryKey: api.getGetAppointmentQueryKey(a.id), queryFn: () => api.getAppointment(a.id), staleTime: 0, retry: false }).catch(() => {});
       void refreshAppointmentObservers(client);
       setError({ id: a.id, message: "Appointment unavailable. Private ticket details are hidden." });
-    } else setError({ id: a.id, message: `${a.reference}: ${e instanceof Error ? e.message : "Ticket could not be prepared."}` });
+    } else setError({ id: a.id, message: `${a.reference}: ${friendlyError(e,"load","Ticket could not be prepared. Try the ticket action again.")}` });
   };
   async function download(a: api.Appointment) {
     if (lock.current) return; lock.current = true; setError(null); setBusy({ id: a.id, kind: "download" });
@@ -93,6 +95,8 @@ export function SmsLinkDialog({ appointment, onClose }: { appointment: api.Appoi
 function SmsLinkBody({ appointment, onClose, onBusy }: { appointment: api.Appointment; onClose: () => void; onBusy: (busy: boolean) => void }) {
   const [preview, setPreview] = useState<api.BookingStatusSmsPreview | null>(null);
   const [loadError, setLoadError] = useState("");
+  const [loadCause,setLoadCause]=useState<unknown>();
+  const limit=useServerWait();
   const [state, setState] = useState<SendState | "">("");
   const [reason, setReason] = useState("");
   const requestId = useRef(crypto.randomUUID());
@@ -105,32 +109,34 @@ function SmsLinkBody({ appointment, onClose, onBusy }: { appointment: api.Appoin
     void api.getBookingStatusSmsPreview(appointment.id).then(value => { if (live) setPreview(value); }, e => {
       if (!live) return;
       setPrivateDenied(denied(e));
+      setLoadCause(e);
       setLoadError(denied(e) ? "This appointment is unavailable. Private details are hidden." : friendlyError(e, "load"));
     });
     return () => { live = false; };
   }, [appointment.id, attempt]);
   async function send() {
-    if (lock.current || !preview?.eligible || !navigator.onLine) return;
+    if (lock.current || limit.wait>0 || !preview?.eligible) return;
+    if(!navigator.onLine){setReason("You’re offline. Reconnect before checking this request.");setState("failed");return;}
     lock.current = true; onBusy(true); setState("sending"); setReason("");
-    try { const res = await api.sendBookingStatusSms(appointment.id, { requestId: requestId.current, previewToken: preview.previewToken }); setState(res.state); setReason(res.reason || ""); }
-    catch (e) { if (denied(e)) { setPrivateDenied(true); setPreview(null); setLoadError("This appointment is unavailable. Private details are hidden."); setState(""); } else { setState("failed"); setReason("The result could not be confirmed. It may have been sent. Check before trying the same request again."); } }
+    try { const res = await api.sendBookingStatusSms(appointment.id, { requestId: requestId.current, previewToken: preview.previewToken }); setState(res.state); setReason(isFriendlyText(res.reason)?res.reason:""); }
+    catch (e) { limit.record(e);if (denied(e)) { setPrivateDenied(true); setPreview(null);setLoadCause(e); setLoadError("This appointment is unavailable. Private details are hidden."); setState(""); } else { setState("failed"); setReason("We couldn’t confirm whether it was sent. Check for the SMS before checking the same request again."); } }
     finally { lock.current = false; onBusy(false); }
   }
   const sending = state === "sending";
   const final = state === "provider_accepted" || state === "provider_rejected" || state === "blocked";
   return <div data-testid="dialog-sms-link">
-    {!privateDenied && <p className="muted">{appointment.patientName} · {appointment.reference}. The clinic server checks the recipient, approved template and access again when you send.</p>}
+    {!privateDenied && <p className="muted">{appointment.patientName} · {appointment.reference}. Check the recipient below before sending. Sending is available only when this visit meets the clinic’s requirements.</p>}
     {!preview && !loadError ? <div className="appt-detail-skeleton" role="status" aria-label="Loading SMS preview"><span /><span /></div>
-      : loadError ? <p role="alert">Could not prepare the SMS: {loadError} <button type="button" onClick={() => setAttempt(n => n + 1)}>Retry Preview</button></p>
-      : !preview!.eligible ? <p role="alert" className="notice" data-testid="text-sms-blocked">SMS not available: {preview!.reason || "A requirement for sending is missing."}</p>
+      : loadError ? <div role="alert">{loadError}<RecoveryActions error={loadCause} onRetry={()=>setAttempt(n=>n+1)} label="Check recipient again"/></div>
+      : !preview!.eligible ? <p role="alert" className="notice" data-testid="text-sms-blocked">SMS not available: {isFriendlyText(preview!.reason)?preview!.reason:"This visit can’t receive an SMS. Ask your clinic administrator for help."}</p>
       : <div data-testid="preview-sms"><p>To <code data-testid="text-sms-recipient">{preview!.recipient}</code></p><blockquote className="sms-preview" data-testid="text-sms-message">{preview!.message}</blockquote></div>}
     {sending && <p role="status">Sending…</p>}
-    {state === "provider_accepted" && <p role="status" className="ok" data-testid="status-sms-result">Accepted by the SMS provider. This does not confirm delivery to the handset.</p>}
-    {state === "provider_rejected" && <p role="alert" data-testid="status-sms-result">The SMS provider rejected this message.{reason && ` ${reason}`}</p>}
+    {state === "provider_accepted" && <p role="status" className="ok" data-testid="status-sms-result">SMS submitted. It may take a few minutes to arrive; delivery to the phone isn’t confirmed.</p>}
+    {state === "provider_rejected" && <p role="alert" data-testid="status-sms-result">The SMS could not be sent. Ask the system administrator to check the SMS settings.{reason && ` ${reason}`}</p>}
     {state === "blocked" && <p role="alert" data-testid="status-sms-result">Not sent: {reason || "Blocked by policy."}</p>}
-    {state === "pre_dispatch_failed" && <p role="alert" data-testid="status-sms-result">Not sent: the clinic server could not dispatch it.{reason && ` ${reason}`} Nothing reached the provider. Close and review a new preview before another attempt.</p>}
-    {state === "delivery_unknown" && <p role="alert" data-testid="status-sms-result">Outcome unknown. It may still arrive. Check before sending again; a resend reuses the same request and will not duplicate.</p>}
+    {state === "pre_dispatch_failed" && <p role="alert" data-testid="status-sms-result">The SMS was not sent.{reason && ` ${reason}`} Close and review the recipient and settings before another attempt.</p>}
+    {state === "delivery_unknown" && <p role="alert" data-testid="status-sms-result">We couldn’t confirm whether the SMS was sent. It may still arrive. Check for it before checking the same request; this will not start a new send.</p>}
     {state === "failed" && <p role="alert" data-testid="status-sms-result">Failed: {reason}</p>}
-    <FormActions wide={false} onCancel={onClose} cancelLabel={final ? "Close" : "Cancel"} busy={sending} busyLabel="Sending…" disabled={!preview?.eligible || final} onSubmit={() => void send()} submitTestId="button-sms-confirm" submitLabel={state === "delivery_unknown" || state === "failed" || state === "pre_dispatch_failed" ? "Send Same Request" : "Send SMS"} />
+    {state==="provider_accepted"?<button type="button" className="button" onClick={onClose}>Done</button>:<FormActions wide={false} onCancel={onClose} cancelLabel={final ? "Close" : "Cancel"} busy={sending} busyLabel="Sending…" disabled={!preview?.eligible || final||limit.wait>0} onSubmit={() => void send()} submitTestId="button-sms-confirm" submitLabel={limit.wait>0?`Try again in ${limit.wait}s`:state === "delivery_unknown" || state === "failed" || state === "pre_dispatch_failed" ? "Check same request" : "Send SMS"} />}
   </div>;
 }

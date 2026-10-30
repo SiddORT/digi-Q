@@ -79,13 +79,13 @@ export function DoctorScheduleContext({doctor: listed, fixedClinicId, fixedBranc
         {showPicker&&<SearchableSelect labelScope={JSON.stringify([actor,doctor.id])} retainSelectionLabel={false} label="Location" value={location} disabled={busy} onChange={changeLocation} options={inGroup.map(b=>({value:b.id,label:b.name}))}/>}
     </ScheduleContextHeader>
     {fresh.isLoading||(!savedDoctor&&!fresh.error)||locations.isLoading||(!!ids.length&&savedLocations===null&&!locations.error)?<div className="skeleton" role="status">Loading saved locations…</div>:
-      fresh.error?<><ErrorNotice error={fresh.error}/><button type="button" onClick={()=>void fresh.refetch()}>Retry</button></>:
-      locations.error?<><ErrorNotice error={locations.error}/><button type="button" onClick={()=>void locations.refetch()}>Retry Assigned Locations</button></>:
+      fresh.error?<ErrorNotice error={fresh.error} onRetry={()=>fresh.refetch()} busy={fresh.isFetching}/>:
+      locations.error?<ErrorNotice error={locations.error} onRetry={()=>locations.refetch()} busy={locations.isFetching}/>:
       !ids.length?<p className="notice">This doctor has no saved location assignments. Edit the doctor and save assignments first.</p>:
       !valid.length?<p className="notice">No active, authorised locations for this doctor{fixedClinicId?" in this clinic group":""}.</p>:
       !branch?<p className="notice">{activeGroup?"Choose a location":"Choose a clinic group"} to view the schedule.</p>:null}
     {branch&&<DateTimePreferencesProvider value={clinic.data}>
-      <ErrorNotice error={clinic.error}/>{clinic.error&&<button type="button" onClick={()=>void clinic.refetch()}>Retry Date/Time Preferences</button>}
+      <ErrorNotice error={clinic.error} onRetry={()=>clinic.refetch()} busy={clinic.isFetching}/>
       {!branch.timezone&&<p className="field-error" role="alert">This location has no timezone. Set it in clinic settings before saving schedules.</p>}
       <WeeklyScheduleEditor key={`${doctor.id}:${branch.id}`} doctorId={doctor.id} branchId={branch.id} onDirtyChange={setWeeklyDirty} onBusyChange={setWeeklyBusy} onSaved={onSaved} canDelete={canDelete} doctorName={doctor.fullName} showContext={false} contextual/>
     </DateTimePreferencesProvider>}

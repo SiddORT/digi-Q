@@ -1,4 +1,6 @@
 import { PageDescription } from "./PageDescription";
+import { RecoveryActions } from "./RecoveryActions";
+import { friendlyError } from "../lib/friendly-error";
 import { useEffect, useState } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
@@ -43,7 +45,7 @@ export function GuestClinicFinder() {
       <h1>Guest Booking</h1>
       <PageDescription text="Browse clinics and choose a location to book a visit." help="You review the doctor and session before booking." label="About guest booking"/>
       <SearchInput value={search} onChange={setSearch} placeholder="Search clinics…" label="Search Clinics"/>
-      {clinics.error && <div className="error-box" role="alert">Clinics could not be loaded. <button type="button" onClick={() => void clinics.refetch()} data-testid="button-retry-guest-clinics">Try Again</button></div>}
+      {clinics.error && <div className="error-box" role="alert">{friendlyError(clinics.error,"load","We couldn’t load clinics. Your search is kept.")}<RecoveryActions error={clinics.error} busy={clinics.isFetching} onRetry={()=>clinics.refetch()}/></div>}
       {clinics.isLoading ? <div className="gf-grid" aria-busy="true" role="status">{Array.from({ length: 4 }, (_, i) => <div key={i} className="gf-card gf-skeleton"/>)}</div>
         : !items.length && !clinics.error ? <div className="empty" role="status" data-testid="text-guest-no-clinics"><span className="empty-icon"><Building2 size={22} aria-hidden/></span><h3>No clinics found</h3><p>{applied ? "Try a different search." : "No clinics are accepting online bookings yet."}</p></div>
         : <div className="gf-grid">{items.map(c => <ClinicCard key={c.id} clinic={c}/>)}</div>}
@@ -72,7 +74,7 @@ function ClinicCard({ clinic }: { clinic: PublicClinic }) {
     </div>
     {open && <div className="gf-locations">
       {branches.isLoading ? <p role="status" className="muted">Loading locations…</p>
-        : branches.error ? <p role="alert" className="error-box">Locations could not be loaded. <button type="button" onClick={() => void branches.refetch()}>Retry</button></p>
+        : branches.error ? <div role="alert" className="error-box">{friendlyError(branches.error,"load","We couldn’t load locations.")}<RecoveryActions error={branches.error} busy={branches.isFetching} onRetry={()=>branches.refetch()}/></div>
         : !rows.length ? <p className="muted">No locations are available.</p>
         : <ul>{rows.map(b => { const href = clinic.slug && b.slug ? `/${encodeURIComponent(clinic.slug)}/${encodeURIComponent(b.slug)}?book=1` : null; return <li key={b.id} data-testid={`row-guest-location-${b.id}`}>
             <MapPin size={15} aria-hidden/><div><strong>{b.name}</strong>{(b.address || b.city) && <small>{b.address || b.city}</small>}</div>

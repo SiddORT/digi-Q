@@ -10,6 +10,10 @@ import { useConfirm } from "./ConfirmDialog";
 import { EmailDiagnostics } from "./EmailDiagnostics";
 import { SmtpTestReceipt } from "./SmtpTestReceipt";
 import { getGetSmtpTestReceiptQueryKey } from "@workspace/api-client-react";
+import { deliverySummary } from "../lib/delivery-summary";
+import { useServerWait } from "../lib/use-server-wait";
+import { canRetryLoad } from "../lib/friendly-error";
+import { RecoveryActions } from "./RecoveryActions";
 
 const pub = (r: IntegrationReadiness) => ({ smtpHost: r.smtpHost ?? "", smtpPort: r.smtpPort ?? 587, fromEmail: r.fromEmail ?? "", fromName: r.fromName ?? "", useTls: r.useTls ?? true, useSsl: r.useSsl ?? false, notificationsEnabled: r.notificationsEnabled ?? true });
 
@@ -53,6 +57,8 @@ function EmailForm({ r, editable, onDirty, onBusy }: { r: IntegrationReadiness; 
   const [mode, setMode] = useState<"database" | "environment">("database"); const [envOk, setEnvOk] = useState(false);
   const [to, setTo] = useState("");
   const save = useUpdateIntegrationSettings(); const test = useSendSmtpTestEmail();
+  const limit=useServerWait();
+  const lastTest=useRef<{key:string;id:string}|null>(null);
   const confirm = useConfirm(); const qc = useQueryClient();
   const baseKey = JSON.stringify(base);
   const last = useRef(base);
@@ -92,21 +98,25 @@ function EmailForm({ r, editable, onDirty, onBusy }: { r: IntegrationReadiness; 
       const nb = pub(next.smtp);
       last.current = nb;
       setF({ enabled: nb.notificationsEnabled, host: nb.smtpHost, port: String(nb.smtpPort), from: nb.fromEmail, name: nb.fromName, tls: nb.useTls, ssl: nb.useSsl });
-      setUser(""); setPass(""); setPw(""); setMode("database"); setEnvOk(false); setAskPw(false); setMsg("Email settings saved. No message was sent.");
+      setUser(""); setPass(""); setPw(""); setMode("database"); setEnvOk(false); setAskPw(false); setMsg("Settings saved. Delivery hasn’t been tested. No message was sent.");
       void qc.invalidateQueries({ queryKey: getGetIntegrationSettingsQueryKey() });
       void qc.invalidateQueries({ queryKey: getGetSmtpTestReceiptQueryKey() });
     },
     onError: () => setPw(""),
   });
-  const canTest = ready && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim()) && !busy;
+  const testKey=JSON.stringify([to.trim(),r.revision]);
+  const sameTest=lastTest.current?.key===testKey;
+  const reconcile=sameTest&&(test.isError||test.data?.status==="delivery_unknown");
+  const canTest = ready && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim()) && !busy && limit.wait<=0 && !(sameTest&&test.data?.status==="provider_accepted") && !(sameTest&&test.isError&&!canRetryLoad(test.error));
   const testing = useRef(false);
   const runTest = async () => {
     if (!canTest) return;
     if (testing.current) return;
     testing.current = true;
     try {
-    if (!await confirm.ask({ title: "Send a real test email?", description: `One fixed DigiQ test message will be sent to ${to} using saved SMTP settings.`, confirmLabel: "Send test email", tone: "danger" })) return;
-    await test.mutateAsync({ data: { recipient: to.trim(), confirmed: true, requestId: crypto.randomUUID() } }).catch(() => {});
+    if (!reconcile&&!await confirm.ask({ title: "Send a real test email?", description: `One fixed DigiQ test message will be sent to ${to} using saved SMTP settings.`, confirmLabel: "Send test email", tone: "danger" })) return;
+    if(!reconcile)lastTest.current={key:testKey,id:crypto.randomUUID()};
+    await test.mutateAsync({ data: { recipient: to.trim(), confirmed: true, requestId:lastTest.current!.id } }).catch(e => {limit.record(e);});
     } finally {
       testing.current = false;
       void qc.invalidateQueries({ queryKey: getGetSmtpTestReceiptQueryKey() });
@@ -142,14 +152,14 @@ function EmailForm({ r, editable, onDirty, onBusy }: { r: IntegrationReadiness; 
         {mode === "environment" && <label className="check-label"><input type="checkbox" checked={envOk} onChange={e => setEnvOk(e.target.checked)} data-testid="checkbox-smtp-env-confirm" /> This removes saved website settings. Email stops if the server environment is incomplete. I understand.</label>}
       </details>
     </fieldset>
-    {test.data && <p role="status" className="notice" data-testid="status-smtp-test-success">{test.data.message} Provider acceptance does not confirm inbox delivery.</p>}
-    {test.isError && <p role="alert" className="error-box" data-testid="status-smtp-test-error">Test email failed. Check the recipient and configuration, or wait 15 minutes if the attempt limit was reached.</p>}
+    {test.data && <p role="status" className="notice" data-testid="status-smtp-test-success">{deliverySummary(test.data.status,"email")}</p>}
+    {test.isError && <div role="alert" className="error-box" data-testid="status-smtp-test-error">We couldn’t confirm the test email result. Check the recipient’s inbox and spam folder before starting another test. Check the email settings if it doesn’t arrive.<RecoveryActions error={test.error}/></div>}
     {save.isError && !askPw && <p role="alert" className="error-box" data-testid="error-smtp-save">Settings were not saved. Check your password and fields, or refresh if another administrator made changes.</p>}
     <div className="sms-ref-footer">
       <button type="button" className="button em-btn" disabled={blocked || busy} onClick={() => { setMsg(null); save.reset(); setAskPw(true); }} data-testid="button-save-smtp-settings"><Save size={16} aria-hidden /> {save.isPending ? "Saving…" : "Save Email Settings"}</button>
       <div className="sms-ref-testbar">
         <EmailInput aria-label="Test email address" aria-invalid={!!to && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim())} aria-describedby={to && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim()) ? "smtp-test-email-error" : undefined} placeholder="test@example.com" value={to} onChange={e => { test.reset(); setTo(e.target.value); }} data-testid="input-smtp-test-recipient" />
-        <button type="button" className="button secondary em-btn" disabled={!canTest} onClick={() => void runTest()} data-testid="button-send-smtp-test"><Send size={16} aria-hidden /> {test.isPending ? "Sending…" : "Test Email"}</button>
+        <button type="button" className="button secondary em-btn" disabled={!canTest} onClick={() => void runTest()} data-testid="button-send-smtp-test"><Send size={16} aria-hidden /> {test.isPending ? "Checking…" : limit.wait>0?`Try again in ${limit.wait}s`:reconcile?"Check same request":sameTest&&test.data?.status==="provider_accepted"?"Test submitted":"Test Email"}</button>
       </div>
     </div>
     {to && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim()) && <p id="smtp-test-email-error" className="field-error" role="alert">Enter a valid Test Email address.</p>}

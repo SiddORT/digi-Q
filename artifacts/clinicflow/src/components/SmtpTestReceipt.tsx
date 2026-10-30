@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetSmtpTestReceiptQueryKey, useGetSmtpTestReceipt, useConfirmSmtpTestReceipt } from "@workspace/api-client-react";
+import { RecoveryActions } from "./RecoveryActions";
 
 /** A staff assertion, never an SMTP/provider delivery status. */
 export function SmtpTestReceipt({ disabled = false }: { disabled?: boolean }) {
@@ -13,7 +14,7 @@ export function SmtpTestReceipt({ disabled = false }: { disabled?: boolean }) {
     <h3>Test email receipt</h3>
     <p className="muted">Your confirmation only. This does not automatically verify inbox delivery or guarantee future emails.</p>
     {query.isLoading && <p role="status">Loading receipt status…</p>}
-    {query.isError && <p role="alert">Receipt status is unavailable. <button type="button" className="button secondary" onClick={() => void query.refetch()}>Retry</button></p>}
+    {query.isError && <div role="alert">We couldn’t check the email receipt.<RecoveryActions error={query.error} busy={query.isFetching} onRetry={()=>query.refetch()} label="Refresh status"/></div>}
     {!query.isLoading && !query.isError && !test && <p>No tracked test email yet. After sending a test and checking your mailbox, you can confirm receipt here.</p>}
     {test && <>
       <p>Latest tracked test: <time dateTime={test.sentAt}>{new Date(test.sentAt).toLocaleString()}</time>.</p>
@@ -29,8 +30,9 @@ export function SmtpTestReceipt({ disabled = false }: { disabled?: boolean }) {
               onSuccess: result => { qc.setQueryData(getGetSmtpTestReceiptQueryKey(), result); },
               onSettled: () => { void qc.invalidateQueries({ queryKey: getGetSmtpTestReceiptQueryKey() }); },
             })}>{confirmation.isPending ? "Saving confirmation…" : "I received the test email"}</button>}
-      {test.status === "sending" ? <p>Test dispatch has not finished. Refresh the status before confirming receipt.</p>
-        : !["provider_accepted", "delivery_unknown"].includes(test.status) && <p>This test was not accepted for dispatch; receipt cannot be confirmed.</p>}
+      {test.status === "sending" ? <p>Sending hasn’t finished. Refresh the status before confirming receipt.</p>
+        : !["provider_accepted", "delivery_unknown"].includes(test.status) && <p>This test wasn’t submitted for sending; receipt cannot be confirmed.</p>}
+      <button type="button" className="button secondary small" disabled={query.isFetching||confirmation.isPending} onClick={()=>void query.refetch()}>Refresh status</button>
     </>}
     {confirmation.isError && <p role="alert">Receipt could not be saved. Refresh the status and check whether the saved SMTP settings changed.</p>}
   </section>;

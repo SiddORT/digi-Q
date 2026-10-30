@@ -24,7 +24,7 @@ function StoragePanel() {
   return <div data-testid="panel-storage">
     {storage.isLoading && <p role="status">Loading storage status…</p>}
     {storage.isError && <p role="alert">Storage status is unavailable. <button type="button" className="button secondary" onClick={() => storage.refetch()}>Retry</button></p>}
-    {storage.data && <p data-testid="status-storage">{storage.data.configured ? "Configured" : "Not configured"} — provider: {storage.data.provider}, source: {storage.data.source}{storage.data.publicPath ? `, public path ${storage.data.publicPath}` : ""}</p>}
+    {storage.data && <><p data-testid="status-storage">{storage.data.configured ? "Storage settings are complete. Uploads haven’t been tested." : "Storage settings are incomplete. Ask your server operator to update them."}</p><details><summary>Technical details</summary><p>Storage: {storage.data.provider}, source: {storage.data.source}{storage.data.publicPath ? `, public path ${storage.data.publicPath}` : ""}</p></details></>}
     <p role="note">Server environment only; not editable here. <HelpTip text="MEDIA_STORAGE: storage backend for uploaded media. MEDIA_ROOT: writable server directory where files are written. MEDIA_URL: public URL path files are served from."/></p>
     <ConnectionCheck provider="storage" />
   </div>;
@@ -53,12 +53,12 @@ export function IntegrationSettings() {
     {data && !data.editable && <p role="note" className="notice">Website editing is locked. Your server operator must configure INTEGRATIONS_ENCRYPTION_KEY (64 hexadecimal characters from 32 random bytes). Existing server-configured integrations remain available.</p>}
 
     {service === "smtp" ? <p>Email configuration, diagnostics and test email are in <Link href="/admin/communication?tab=email" className="text-link" data-testid="link-integration-email-settings">Communication → Email Settings</Link>.</p> : service === "storage" ? <StoragePanel /> : <>
-      {saved && <p role="status" className="notice">Configuration saved. New sends use the selected source. No test message was sent.</p>}
-      {query.isLoading && <p role="status" data-testid="status-integrations-loading">Loading readiness…</p>}
-      {query.isError && <p role="alert" className="error-box" data-testid="status-integrations-error">Integration readiness is unavailable. <button type="button" className="button secondary" onClick={() => query.refetch()}>Retry</button></p>}
+      {saved && <p role="status" className="notice">Settings saved. Delivery hasn’t been tested. No message was sent.</p>}
+      {query.isLoading && <p role="status" data-testid="status-integrations-loading">Checking settings…</p>}
+      {query.isError && <p role="alert" className="error-box" data-testid="status-integrations-error">We couldn’t check the SMS settings. <button type="button" className="button secondary" disabled={query.isFetching} onClick={() => query.refetch()}>Check again</button></p>}
       {data && !query.isError && <div className="int-status">
         <div className="int-status-row">
-          <p data-testid={`status-integration-${service}`}><span className={`badge ${data[service].ready ? "" : "muted"}`}>{data[service].ready ? "Configuration ready" : "Configuration required"}</span> <span className="muted">Source: {data[service].source === "database" ? "encrypted website settings" : "server environment"}</span></p>
+          <p data-testid={`status-integration-${service}`}><span className={`badge ${data[service].ready ? "" : "muted"}`}>{data[service].ready ? "SMS settings are complete" : "SMS settings are incomplete"}</span> <span className="muted">Delivery hasn’t been tested.</span></p>
           <div className="row-actions">
             <button type="button" className="button secondary" data-testid="button-refresh-integrations" disabled={query.isFetching} onClick={() => query.refetch()}>Refresh</button>
             <button type="button" className="button small" aria-haspopup="dialog" disabled={!data.editable} onClick={() => { setSaved(false); setEditorDirty(false); setEditing(true); }} data-testid={`button-configure-${service}`}>Configure Twilio</button>

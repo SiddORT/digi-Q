@@ -53,7 +53,7 @@ export function SchedulingWorkspace({identity,page,clinicId:fixedClinicId}:{iden
    </div>
   </div>
    {clinicId&&(admin?settings.isLoading:clinic.isLoading)?<p role="status">Verifying clinic context…</p>:
-    clinicId&&(admin?settings.error:clinic.error)?<><ErrorNotice error={admin?settings.error:clinic.error}/><button type="button" onClick={()=>void (admin?settings:clinic).refetch()}>Retry Clinic Context</button></>:
+    clinicId&&(admin?settings.error:clinic.error)?<ErrorNotice error={admin?settings.error:clinic.error} onRetry={()=>(admin?settings:clinic).refetch()} busy={(admin?settings:clinic).isFetching}/>:
     <ResourcePage key={`${selectedPage}-${clinicId}`} resource={selectedPage} identity={identity} embedded={!!fixedClinicId} fixedClinicId={requestedClinicId||undefined} defaults={{clinicId,verifiedClinicContext:!!requestedClinicId,branchId:schedulePin?.branchId||params.get("branchId")||"",doctorId:params.get("doctorId")||doctorId||"",isOpen:true}}/>}
  </section></DateTimePreferencesProvider>;
 }

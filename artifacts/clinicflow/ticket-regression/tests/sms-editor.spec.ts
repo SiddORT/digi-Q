@@ -51,7 +51,7 @@ test("empty samples, missing recipient, consent and readiness block sends; previ
   f.enable();await page.getByTestId("button-test-recheck").click();
   await expect(page.getByTestId("button-send-test")).toBeEnabled();
   await page.getByTestId("button-send-test").click();
-  await expect(page.getByTestId("status-test-result")).toContainText("unknown");
+  await expect(page.getByTestId("status-test-result")).toContainText("We couldn’t confirm whether the message was sent");
   await expect(page.getByTestId("button-send-test")).toBeDisabled();
   await expect(page.getByTestId("button-start-new-test")).toHaveCount(0);
   expect(f.requests.filter(r=>r.path.endsWith("/templates/test"))).toHaveLength(1);

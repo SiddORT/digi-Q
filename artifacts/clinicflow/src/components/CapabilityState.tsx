@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { AlertTriangle, Inbox, Lock, PlugZap, RotateCw } from "lucide-react";
 import { SkeletonRows } from "./EmptyState";
+import { friendlyError, errorStatus } from "../lib/friendly-error";
+import { RecoveryActions } from "./RecoveryActions";
 import "./workspace-surfaces.css";
 
 /**
@@ -12,7 +14,7 @@ export type Capability<T> =
   | { state: "loading" }
   | { state: "loaded"; data: T }
   | { state: "empty"; message?: string }
-  | { state: "error"; message: string; onRetry?: () => void }
+  | { state: "error"; message: string; error?:unknown; onRetry?: () => unknown }
   | { state: "forbidden"; reason: string }
   | { state: "unavailable"; reason: string };
 
@@ -22,9 +24,9 @@ export const unavailable = (reason: string): Capability<never> => ({ state: "una
 export function fromQuery<T>(q: { isLoading: boolean; error: unknown; data: T | undefined; refetch?: () => unknown }, opts: { isEmpty: (d: T) => boolean; emptyMessage?: string; errorMessage: string; forbiddenReason?: string }): Capability<T> {
   if (q.isLoading) return { state: "loading" };
   if (q.error) {
-    const status = (q.error as { status?: number })?.status;
-    if ((status === 401 || status === 403) && opts.forbiddenReason) return { state: "forbidden", reason: opts.forbiddenReason };
-    return { state: "error", message: opts.errorMessage, onRetry: q.refetch ? () => void q.refetch!() : undefined };
+    const status = errorStatus(q.error);
+    if (status === 403 && opts.forbiddenReason) return { state: "forbidden", reason: opts.forbiddenReason };
+    return { state: "error", error:q.error, message: friendlyError(q.error,"load",opts.errorMessage), onRetry: q.refetch };
   }
   if (q.data === undefined || opts.isEmpty(q.data)) return { state: "empty", message: opts.emptyMessage };
   return { state: "loaded", data: q.data };
@@ -41,7 +43,7 @@ export function CapabilityView<T>({ value, title, children, testId, loadingLabel
     case "loaded": return <>{children(value.data)}</>;
     case "empty": return box("empty", <Inbox size={18} />, `No ${title} Yet`, value.message || "Nothing has been recorded here yet.");
     case "error": return box("error", <AlertTriangle size={18} />, `${title} Could Not Load`, value.message,
-      value.onRetry && <button type="button" className="button secondary small" onClick={value.onRetry}><RotateCw size={15} aria-hidden />Retry</button>);
+      <RecoveryActions error={value.error} onRetry={value.onRetry}/>);
     case "forbidden": return box("forbidden", <Lock size={18} />, "Not Available for Your Role", value.reason);
     case "unavailable": return box("unavailable", <PlugZap size={18} />, `${title} Not Connected`, value.reason);
   }

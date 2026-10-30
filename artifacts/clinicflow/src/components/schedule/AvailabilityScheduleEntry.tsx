@@ -20,7 +20,7 @@ export function AvailabilityScheduleEntry({ doctorId, fixedClinicId, canDelete,o
   useEffect(()=>onBusyChange?.(busy),[busy,onBusyChange]);
   useRegisterUnsaved(dirty, busy);
   if (!savedDoctor||savedDoctor.id!==doctorId) {
-    if(doctor.error)return <><ErrorNotice error={doctor.error}/><button type="button" onClick={() => void doctor.refetch()}>Retry</button></>;
+    if(doctor.error)return <ErrorNotice error={doctor.error} onRetry={()=>doctor.refetch()} busy={doctor.isFetching}/>;
     return <div className="skeleton" role="status">Loading doctor schedule…</div>;
   }
   return <section className="panel padded" data-testid="panel-weekly-editor-entry">

@@ -5,6 +5,8 @@ import { Link, Redirect, useLocation } from "wouter";
 import { AuthCard, AuthShell } from "./AuthShell";
 import { csrfFetch } from "../lib/csrf";
 import { useNativeAuth } from "./native-auth";
+import { friendlyError } from "../lib/friendly-error";
+import { useServerWait } from "../lib/use-server-wait";
 
 export function DemoLogin() {
   const { isLoaded, isSignedIn, refresh } = useNativeAuth();
@@ -12,12 +14,13 @@ export function DemoLogin() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const limit=useServerWait();
   if (!isLoaded) return <div className="page-loading">Preparing demo sign-in…</div>;
   if (isSignedIn) return <Redirect to="/onboarding"/>;
 
   async function signIn(event: React.FormEvent) {
     event.preventDefault();
-    if (busy || !password) return;
+    if (busy || limit.wait>0 || !password) return;
     setBusy(true); setError("");
     try {
       const response = await csrfFetch("/api/demo/login", {
@@ -26,13 +29,14 @@ export function DemoLogin() {
         body: JSON.stringify({ password }),
       });
       const result = await response.json() as { authenticated?: boolean; error?: string; message?: string };
-      if (!response.ok || !result.authenticated) throw new Error(result.message || result.error || "Demo login is unavailable.");
+      if (!response.ok || !result.authenticated) throw { status: response.status, data: result,headers:response.headers };
       setPassword("");
       await refresh();
       navigate("/onboarding", { replace: true });
     } catch (caught) {
+      limit.record(caught);
       setPassword("");
-      setError(caught instanceof Error ? caught.message : "Demo sign-in failed. Please try again.");
+      setError(friendlyError(caught, "auth", "Demo sign-in failed. Check the demo password and try again."));
     } finally { setBusy(false); }
   }
   return <AuthShell eyebrow="Demo Staff Access"><AuthCard title="Demo Clinic Login" description="Explore the fictional clinic with its dedicated demo account.">
@@ -41,7 +45,7 @@ export function DemoLogin() {
     <form onSubmit={signIn}>
       <FormField id="demo-password" label="Demo Password" required><PasswordInput autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required data-testid="input-demo-password"/></FormField>
       {error && <div className="error-box" role="alert">{error}</div>}
-      <button className="button" type="submit" disabled={busy || !password} data-testid="button-demo-login">{busy ? "Signing in…" : "Enter demo workspace"}</button>
+      <button className="button" type="submit" disabled={busy || limit.wait>0 || !password} data-testid="button-demo-login">{busy ? "Signing in…" : limit.wait>0?`Try again in ${limit.wait}s`:"Enter demo workspace"}</button>
     </form>
     <p className="registration-note">This login is for the designated demo account only. <Link href="/sign-in">Regular Staff Login</Link></p>
   </AuthCard></AuthShell>;

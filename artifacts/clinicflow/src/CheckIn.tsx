@@ -26,7 +26,7 @@ export function CheckInScanner() {
     return <Redirect to={`/sign-in?redirect=${encoded}`} />;
   }
   if (me.error || !me.data?.user) {
-    return <main className="public-book"><div className="error-box" role="alert"><h2>Unable to Verify Staff Access</h2><p>Please retry before scanning an appointment.</p><button className="button secondary" onClick={() => me.refetch()}>Retry</button></div></main>;
+    return <main className="public-book"><h2>We couldn’t check your access</h2><ErrorNotice error={me.error} onRetry={()=>me.refetch()} busy={me.isFetching}/></main>;
   }
   
   if (me.data?.user?.role === "patient") {

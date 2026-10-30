@@ -9,6 +9,7 @@ import { PASSWORD_RULE, validateEmail, validatePassword } from "../lib/validator
 import { AuthCard, AuthShell } from "./AuthShell";
 import { authRequest, useNativeAuth } from "./native-auth";
 import { SecurityChannelNotice, type SecurityChannels } from "./SecurityChannelNotice";
+import { useServerWait } from "../lib/use-server-wait";
 
 export function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -16,9 +17,10 @@ export function ForgotPassword() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [emailError, setEmailError] = useState<string | undefined>();
+  const limit=useServerWait();
   async function send(event: React.FormEvent) {
     event.preventDefault();
-    if (busy) return;
+    if (busy||limit.wait>0) return;
     const invalid = email.trim() ? validateEmail(email) : "This field is required";
     setEmailError(invalid);
     if (invalid) { document.querySelector<HTMLElement>('[name="reset-email"]')?.focus(); return; }
@@ -26,7 +28,7 @@ export function ForgotPassword() {
     try {
       await authRequest("forgot-password", { email: email.trim().toLowerCase() });
       setSent(true);
-    } catch (caught) { setError(authErrorMessage(caught, "Unable to request password recovery. Please retry.")); }
+    } catch (caught) { limit.record(caught);setError(authErrorMessage(caught, "Unable to request password recovery. Please retry.")); }
     finally { setBusy(false); }
   }
   return <AuthShell eyebrow="Staff Password Recovery">
@@ -36,7 +38,7 @@ export function ForgotPassword() {
           <EmailInput trimOnBlur={false} data-testid="input-reset-email" name="reset-email" autoComplete="username" disabled={busy} value={email} onChange={event => { setEmail(event.target.value); if (emailError) setEmailError(undefined); }} />
         </FormField>
         {error && <div className="error-box" role="alert">{error}</div>}
-        <LoadingButton className="button auth-submit" data-testid="button-send-reset-code" type="submit" loading={busy} loadingText="Requesting…">Send password reset link</LoadingButton>
+        <LoadingButton className="button auth-submit" data-testid="button-send-reset-code" type="submit" disabled={limit.wait>0} loading={busy} loadingText="Requesting…">{limit.wait>0?`Try again in ${limit.wait}s`:"Send password reset link"}</LoadingButton>
       </form>}
       <div className="auth-links"><Link href="/sign-in" data-testid="link-return-staff-login">Return to Staff Login</Link></div>
     </AuthCard>
@@ -51,13 +53,14 @@ export function SetPassword() {
   const [error, setError] = useState("");
   const [fieldError, setFieldError] = useState<string | undefined>();
   const [completion,setCompletion] = useState<{channels?:SecurityChannels;authenticated?:boolean}>();
+  const limit=useServerWait();
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
   const reset = params.get("flow") === "reset";
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
-    if (busy || !token) return;
+    if (busy || limit.wait>0 || !token) return;
     const invalid = password ? validatePassword(password) : "This field is required";
     setFieldError(invalid);
     if (invalid) { document.querySelector<HTMLElement>('[name="new-password"]')?.focus(); return; }
@@ -68,20 +71,21 @@ export function SetPassword() {
       if (result.authenticated) { setCompletion(result); }
       else navigate(`/sign-in?${reset ? "passwordReset" : "passwordSet"}=1`, { replace: true });
     } catch (caught) {
+      limit.record(caught);
       setPassword("");
-      setError(authErrorMessage(caught, "This link is invalid or expired. Request a new one."));
+      setError(authErrorMessage(caught, reset?"We couldn’t update your password. Try Set password again. If the link has expired, choose Request a new reset link.":"We couldn’t set your password. Try Set password again. If the invitation has expired, ask your clinic administrator for a new one."));
     } finally { setBusy(false); }
   }
   return <AuthShell eyebrow={reset ? "Staff Password Recovery" : "Staff Invitation"}>
     <AuthCard title={reset ? "Reset your staff password" : "Set your staff password"} description="Choose a secure password, then sign in from the staff login page.">
-      {!token && <div className="error-box" role="alert" data-testid="status-invitation-error">This password setup link is incomplete. Request a new one.</div>}
+      {!token && <div className="error-box" role="alert" data-testid="status-invitation-error">{reset?"This password reset link is incomplete. Choose Request a new reset link below.":"This password setup link is incomplete. Ask your clinic administrator for a new invitation."}</div>}
       {error && <div className="error-box" role="alert" data-testid="status-invitation-error">{error}</div>}
-      {completion && <><p role="status">Your password is saved. Notification failure does not undo setup.</p><SecurityChannelNotice channels={completion.channels}/><button className="button" type="button" onClick={async()=>{await refresh();navigate("/onboarding",{replace:true});}}>Continue to workspace</button></>}
+      {completion && <><p role="status">Your password is saved. You can continue even if the confirmation message doesn’t arrive.</p><SecurityChannelNotice channels={completion.channels}/><button className="button" type="button" disabled={busy} onClick={async()=>{if(busy)return;setBusy(true);setError("");try{await refresh();navigate("/onboarding",{replace:true});}catch{setError("Your password is saved, but we couldn’t open your workspace. Try Continue to workspace again, or sign in below.");}finally{setBusy(false);}}}>{busy?"Opening workspace…":"Continue to workspace"}</button></>}
       {token && !completion && <form onSubmit={save} noValidate>
         <FormField label="New Password" required helper={PASSWORD_RULE} error={fieldError}>
           <PasswordInput data-testid="input-invitation-password" name="new-password" autoComplete="new-password" showChecklist disabled={busy} value={password} onChange={event => { setPassword(event.target.value); if (fieldError) setFieldError(validatePassword(event.target.value)); }} />
         </FormField>
-        <LoadingButton className="button auth-submit" data-testid="button-set-invitation-password" type="submit" loading={busy} loadingText="Setting password…">Set password</LoadingButton>
+        <LoadingButton className="button auth-submit" data-testid="button-set-invitation-password" type="submit" disabled={limit.wait>0} loading={busy} loadingText="Setting password…">{limit.wait>0?`Try again in ${limit.wait}s`:"Set password"}</LoadingButton>
       </form>}
       <div className="auth-links">{reset && <Link href="/forgot-password" data-testid="link-request-new-reset">Request a new reset link</Link>}<Link href="/sign-in" data-testid="link-invitation-staff-login">Staff Login</Link></div>
     </AuthCard>

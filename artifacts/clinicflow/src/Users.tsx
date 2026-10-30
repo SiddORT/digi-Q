@@ -175,7 +175,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
     onMutate:()=>setInvitationFeedback(null),
     onSuccess:(result,variables)=>{
       const sent=result.invitationStatus==="sent";
-      const message=securityChannelSummary(result.setupNotificationOutcomes) || (sent?"Set-password invitation accepted by the email service. Inbox delivery is not confirmed; check spam as well.":"The staff record is saved, but the invitation outcome is unavailable. Use Resend Invitation after checking the provider; do not add this account again.");
+      const message=securityChannelSummary(result.setupNotificationOutcomes) || (sent?"Invitation submitted. Ask the recipient to check their inbox and spam folder; delivery isn’t confirmed.":"The staff record is saved. We couldn’t confirm whether the invitation was sent. Ask the recipient to check for it before using Resend Invitation; do not add this account again.");
       setInvitationFeedback({rowId:variables.row.id,message});
       if(sent)notifySuccess(message);else notifyWarning(message);
     },
@@ -307,7 +307,7 @@ function UserEditor({ roleField, tab, initial: opened, carry, onClose, isSuperAd
     mutationFn:()=>api.resendUserInvitation(tab==="doctors"?initial.userId:initial.id),
     onSuccess:(result)=>{
       setSaved((record:any)=>({...record,invitationStatus:result.invitationStatus,passwordEnabled:result.passwordEnabled}));
-      setSavedMessage(securityChannelSummary(result.setupNotificationOutcomes) || (result.invitationStatus==="sent"?"Invitation accepted by the email service. Inbox delivery is not confirmed.":"The staff record is saved, but the invitation outcome is unavailable. Check the provider before retrying; do not add this account again."));
+      setSavedMessage(securityChannelSummary(result.setupNotificationOutcomes) || (result.invitationStatus==="sent"?"Invitation submitted. Ask the recipient to check their inbox and spam folder; delivery isn’t confirmed.":"The staff record is saved. We couldn’t confirm whether the invitation was sent. Ask the recipient to check for it before requesting another link; do not add this account again."));
     },
     onSettled:()=>{void client.invalidateQueries();},
   });
@@ -341,8 +341,8 @@ function UserEditor({ roleField, tab, initial: opened, carry, onClose, isSuperAd
       void client.invalidateQueries();
       if(tab!=="doctors"&&result.invitationStatus!=="failed"){onClose(result);return;}
       setSaved(result); form.reset(doctorValues(result));
-      setSavedMessage(securityChannelSummary(result.setupNotificationOutcomes) || (result.invitationStatus==="failed"?"The staff record and assignments are saved, but the invitation outcome is unavailable. Check the provider before retrying; do not add this account again.": "Doctor details and assignments saved. Use Manage schedule to edit weekly sessions."));
-      if(!initial.id&&tab==="doctors"){if(result.invitationStatus==="failed")notifyWarning(securityChannelSummary(result.setupNotificationOutcomes)||"Doctor saved; invitation outcome is unavailable.");else{onCreated(result);onClose(result);}}
+      setSavedMessage(securityChannelSummary(result.setupNotificationOutcomes) || (result.invitationStatus==="failed"?"The staff record and assignments are saved. We couldn’t confirm whether the invitation was sent. Ask the recipient to check for it before requesting another link; do not add this account again.": "Doctor details and assignments saved. Use Manage schedule to edit weekly sessions."));
+      if(!initial.id&&tab==="doctors"){if(result.invitationStatus==="failed")notifyWarning(securityChannelSummary(result.setupNotificationOutcomes)||"Doctor saved. We couldn’t confirm whether the invitation was sent.");else{onCreated(result);onClose(result);}}
     },
     onSettled: () => { locked.current = false; },
   });

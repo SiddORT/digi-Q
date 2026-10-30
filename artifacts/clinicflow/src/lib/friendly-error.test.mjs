@@ -9,7 +9,7 @@ test("rate limit preserves safe actionable retry duration", () => {
 });
 test("auth email failures give safe actionable guidance rather than generic service errors", () => {
   assert.match(friendlyError({status:503,data:{code:"EMAIL_UNCONFIGURED"}}, "auth"), /clinic administrator/);
-  assert.match(friendlyError({status:503,data:{code:"PUBLIC_ORIGIN_UNCONFIGURED"}}, "auth"), /not configured/);
+  assert.match(friendlyError({status:503,data:{code:"PUBLIC_ORIGIN_UNCONFIGURED"}}, "auth"), /unavailable/);
   assert.match(friendlyError({status:503,data:{code:"EMAIL_DELIVERY_FAILED"}}, "auth"), /could not confirm email delivery/);
 });
 import { friendlyError, FRIENDLY, isFriendlyText, fieldErrorsFrom } from "./friendly-error.ts";

@@ -9,9 +9,9 @@ export function IntegrationConnectionCheck({ provider }: { provider: "smtp" | "s
   const [resultsOpen, setResultsOpen] = useState(false);
   return <div className="int-check">
     <button type="button" className="button secondary" data-testid={`button-check-${provider}`} disabled={check.isPending}
-      onClick={() => check.mutate({ provider }, { onSuccess: () => setResultsOpen(true) })}>{check.isPending ? "Checking…" : "Check connection"}</button>
+      onClick={() => check.mutate({ provider }, { onSuccess: () => setResultsOpen(true) })}>{check.isPending ? "Checking settings…" : "Check connection"}</button>
     <HelpTip text="Verifies saved settings and reachability only. No message or file is sent."/>
-    {check.isError && <p role="alert" data-testid={`status-check-${provider}-error`}>The check could not run. Try again shortly.</p>}
+    {check.isError && <p role="alert" data-testid={`status-check-${provider}-error`}>We couldn’t check the {provider==="smtp"?"email":provider==="sms"?"SMS":"storage"} settings. Use Check connection to try again.</p>}
     {check.data && resultsOpen && <AppDialog open variant="drawer" onClose={() => setResultsOpen(false)} title="Connection Check Results"><ul aria-label="Connection check results" data-testid={`list-check-${provider}`}>
       {check.data.checks.map(c => <li key={c.name} data-status={c.status}>
         <strong>{c.status === "passed" ? "Passed" : c.status === "failed" ? "Failed" : "Not verified"}</strong> {c.name}: {c.message}

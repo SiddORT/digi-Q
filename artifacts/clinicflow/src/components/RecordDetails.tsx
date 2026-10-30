@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppDialog } from "./AppDialog";
+import { friendlyError } from "../lib/friendly-error";
+import { RecoveryActions } from "./RecoveryActions";
 
 export type RecordFact = [label: string, value: ReactNode];
 
@@ -18,16 +20,16 @@ export function useExactRecord<T>(key: unknown[], id: string, load: ((signal: Ab
 /** Drawer for an exact record opened by link (e.g. from workspace search), whether or not it is on the current page. */
 export function ExactRecordDrawer<T>({ title, query, onClose, children, actions }: {
   title: string;
-  query: { data?: T; error: unknown; isLoading: boolean; refetch: () => unknown };
+  query: { data?: T; error: unknown; isLoading: boolean; isFetching?: boolean; refetch: () => unknown };
   onClose: () => void;
   children: (record: T) => ReactNode;
   actions?: (record: T) => ReactNode;
 }) {
-  const message = query.error instanceof Error ? query.error.message : query.error ? "This record could not be loaded." : "";
+  const message = query.error ? friendlyError(query.error,"load","This record could not be loaded.") : "";
   return <AppDialog open variant="drawer" onClose={onClose} title={title}>
     <div className="exact-record" data-testid="drawer-exact-record">
       {query.isLoading ? <div className="appt-detail-skeleton" role="status" aria-label="Loading record"><span/><span/><span/></div>
-        : message ? <div role="alert" className="error-box" data-testid="exact-record-error"><p>{message}</p><p className="muted">You may not have access to this record, or it no longer exists.</p><button type="button" className="button secondary" onClick={() => void query.refetch()}>Retry</button></div>
+        : message ? <div role="alert" className="error-box" data-testid="exact-record-error"><p>{message}</p><RecoveryActions error={query.error} onRetry={()=>query.refetch()} busy={query.isFetching} onClose={onClose}/></div>
         : query.data ? <>{children(query.data)}{actions && <div className="exact-record-actions">{actions(query.data)}</div>}</> : null}
     </div>
   </AppDialog>;
@@ -41,6 +43,6 @@ export async function scanScopedPages<T extends { id: string }>(id: string, fetc
     const result = await fetchPage(page, signal);
     const hit = result.items.find(item => item.id === id);
     if (hit) return hit;
-    if (!result.items.length || page * pageSize >= result.total) throw new Error(notFound);
+    if (!result.items.length || page * pageSize >= result.total) throw Object.assign(new Error(notFound),{status:404});
   }
 }

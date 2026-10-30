@@ -198,8 +198,8 @@ export function ReportsDashboard({ role, initialReportType, initialViewId, layou
       <button type="button" className="button small" disabled={!!customError} onClick={() => { patch({ ...customDraft, preset: detectPreset(customDraft.from, customDraft.to, todayIso) }); setCustomOpen(false); }} data-testid="button-apply-custom-range">Apply Range</button>{customError && <p role="alert" className="field-error">{customError}</p>}</div>}
     {single && applied.branchId && applied.doctorId && <DateTimePreferencesProvider value={preferences}><div className="sq-context"><SessionSelector selection={session} /></div></DateTimePreferencesProvider>}
     {!validRange && <p role="alert" className="error-box">Select a valid date range.</p>}
-    <ErrorNotice error={q.error || exportError} />
-    {q.error && <button onClick={() => void q.refetch()} data-testid="button-report-retry">Retry Report</button>}
+    <ErrorNotice error={exportError} />
+    <ErrorNotice error={q.error} onRetry={()=>q.refetch()} busy={q.isFetching}/>
     {viewUnavailable && <div role="alert"><p>{layout.viewsError ? "Saved report templates could not be loaded." : "This saved report template is unavailable. No substitute report has been opened."}</p><button type="button" className="secondary small" onClick={() => layout.refreshViews()}>Retry Saved Templates</button></div>}
     {q.error && data && <p className="notice" role="alert">Showing the last available report. Refresh before exporting.</p>}
     {exportDone && <p role="status" className="notice">All matching report results exported.</p>}

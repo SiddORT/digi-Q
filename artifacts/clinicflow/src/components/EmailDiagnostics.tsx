@@ -12,7 +12,7 @@ export function EmailDiagnostics({ r, refreshing, onRefresh }: { r: IntegrationR
     <PageDescription className="muted" text="Check the saved email connection without sending mail." label="About email connection checks" help="Checks run only when requested, using saved settings rather than unsaved edits. Results clear when the saved configuration changes."/>
     <p className="muted">Connection success does not confirm sender permission or inbox delivery.</p>
     <div className="int-status-row">
-      <p data-testid="status-integration-smtp"><span className={`badge ${r.ready ? "" : "muted"}`}>{r.ready ? "Configuration ready" : "Configuration required"}</span> <span className="muted">Source: {r.source === "database" ? "encrypted website settings" : "server environment"}</span></p>
+      <p data-testid="status-integration-smtp"><span className={`badge ${r.ready ? "" : "muted"}`}>{r.ready ? "Email settings are complete" : "Email settings are incomplete"}</span> <span className="muted">Source: {r.source === "database" ? "encrypted website settings" : "server environment"}</span></p>
       <button type="button" className="button secondary" disabled={refreshing} onClick={onRefresh} data-testid="button-refresh-email-diagnostics">Refresh status</button>
     </div>
     <ul className="int-keys">{r.keys.map(item => <li key={item.key} data-testid={`status-key-${item.key}`}><code>{item.key}</code>: {item.status}</li>)}</ul>

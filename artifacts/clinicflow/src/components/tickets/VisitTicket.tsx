@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { friendlyError } from "../../lib/friendly-error";
 import QRCode from "qrcode";
 import { absolutePublicUrl, usePublicWebsite, PublicWebsiteStatus } from "../../lib/public-website";
 import { Download, FileText, Printer } from "lucide-react";
@@ -114,7 +115,7 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
   useEffect(() => {
     let live = true; setQr(null); setQrError("");
     if (!site.origin) return;
-    qrImage(ticket.qrUrl).then(v => { if (live) setQr(v); }).catch(e => { if (live) setQrError(e.message); });
+    qrImage(ticket.qrUrl).then(v => { if (live) setQr(v); }).catch(e => { if (live) setQrError(friendlyError(e,"load","We couldn’t prepare the QR code. Try QR again.")); });
     return () => { live = false; };
   }, [ticket.qrUrl, qrTry, site.origin]);
   const file = `clinicflow-ticket-${(ticket.reference || ticket.waitingNumber || "visit").replace(/[^a-z0-9-]/gi, "")}.pdf`;
@@ -136,7 +137,7 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
       } else {
         await downloadTicketPdf(html, file, kind === "a4" ? "a4" : "ticket");
       }
-    } catch (e) { w?.close(); setErr(e instanceof Error ? e.message : "Ticket could not be prepared. Try again."); }
+    } catch (e) { w?.close(); setErr(friendlyError(e,"load","Ticket could not be prepared. Try the ticket action again.")); }
     finally { lock.current = false; setBusy(""); }
   }
   const disabled = !!busy || exportDisabled || !qr || !site.origin;

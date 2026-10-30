@@ -52,5 +52,5 @@ test("old settings and failed or unfinished tests cannot offer confirmation", ()
 test("empty, loading and read-error states are explicit", () => {
   assert.match(render({ data: { test: null } }), /No tracked test email yet/);
   assert.match(render({ isLoading: true }), /Loading receipt status/);
-  assert.match(render({ isError: true }), /Receipt status is unavailable/);
+  assert.match(render({ isError: true }), /We couldn’t check the email receipt/);
 });

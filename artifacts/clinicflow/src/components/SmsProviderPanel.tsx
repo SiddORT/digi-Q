@@ -10,6 +10,10 @@ import { PhoneInput } from "./PhoneInput";
 import { SecretField } from "./SecretField";
 import { useConfirm } from "./ConfirmDialog";
 import { canSendSmsTest } from "../lib/communication-routes";
+import { deliverySummary } from "../lib/delivery-summary";
+import { useServerWait } from "../lib/use-server-wait";
+import { canRetryLoad } from "../lib/friendly-error";
+import { RecoveryActions } from "./RecoveryActions";
 import { DEFAULT_MAPPING, parseStatuses, serializeMapping, validateMapping, validateUrl, type SmsMapping } from "./sms-mapping";
 const KEEP_IN_TOUCH_URL = "https://api.keepintouch.life/kitversion01/api/DripMaster/SendSMS";
 
@@ -39,6 +43,8 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
   const [msg, setMsg] = useState<string | null>(null);
   const save = useUpdateIntegrationSettings();
   const test = useSendNotificationSmsTestMessage();
+  const limit=useServerWait();
+  const lastTest=useRef<{key:string;id:string}|null>(null);
   const confirm = useConfirm();
   const qc = useQueryClient();
   const lastInit = useRef({ initKit, initUrl, initEnabled, initProvider, initFormat });
@@ -84,18 +90,22 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
     return v;
   };
   const doSave = () => save.mutate({ data: { provider: "notificationSms", mode, revision: r.revision ?? null, currentPassword: pw, values: values() } }, {
-    onSuccess: next => { qc.setQueryData(getGetIntegrationSettingsQueryKey(), next); setPw(""); setAskPw(false); setMapTouched(false); setSecrets({ key: "", bearer: "", client: "", sender: "" }); setMsg("Settings saved. No message was sent."); void qc.invalidateQueries({ queryKey: getGetIntegrationSettingsQueryKey() }); onSaved(); },
+    onSuccess: next => { qc.setQueryData(getGetIntegrationSettingsQueryKey(), next); setPw(""); setAskPw(false); setMapTouched(false); setSecrets({ key: "", bearer: "", client: "", sender: "" }); setMsg("Settings saved. Delivery hasn’t been tested. No message was sent."); void qc.invalidateQueries({ queryKey: getGetIntegrationSettingsQueryKey() }); onSaved(); },
     onError: () => setPw(""),
   });
-  const can = !dirty && (!kit || !!tplId.trim()) && canSendSmsTest({ ready: r.ready, confirmed: true, recipient: to, message: body, pending: test.isPending });
+  const testKey=JSON.stringify([to,body,tplId,r.revision]);
+  const sameTest=lastTest.current?.key===testKey;
+  const reconcile=sameTest&&(test.isError||test.data?.status==="delivery_unknown");
+  const can = !dirty && limit.wait<=0 && !(sameTest&&test.data?.status==="provider_accepted") && !(sameTest&&test.isError&&!canRetryLoad(test.error)) && (!kit || !!tplId.trim()) && canSendSmsTest({ ready: r.ready, confirmed: true, recipient: to, message: body, pending: test.isPending });
   const testing = useRef(false);
   const runTest = async () => {
     if (!can) return;
     if (testing.current) return;
     testing.current = true;
     try {
-    if (!await confirm.ask({ title: "Send a real test SMS?", description: `A real message will be sent to ${to} using saved provider settings and the template ID and body entered here. This does not enable optional notifications.`, confirmLabel: "Send test SMS", tone: "danger" })) return;
-    await test.mutateAsync({ data: { recipient: to, message: body, dltTemplateId: tplId || undefined, confirmed: true, requestId: crypto.randomUUID() } }).catch(() => {});
+    if (!reconcile&&!await confirm.ask({ title: "Send a real test SMS?", description: `A real message will be sent to ${to} using saved provider settings and the template ID and body entered here. This does not enable optional notifications.`, confirmLabel: "Send test SMS", tone: "danger" })) return;
+    if(!reconcile)lastTest.current={key:testKey,id:crypto.randomUUID()};
+    await test.mutateAsync({ data: { recipient: to, message: body, dltTemplateId: tplId || undefined, confirmed: true, requestId:lastTest.current!.id } }).catch(e => {limit.record(e);});
     } finally { testing.current = false; }
   };
   const sec = (id: string, label: string, k: "key" | "bearer" | "client" | "sender", key: string) =>
@@ -104,7 +114,7 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
     {confirm.dialog}
     <h2 id="sms-config-title" className="sms-ref-title">SMS Provider Configuration</h2>
     {!editable && <p role="note" className="notice">Editing is locked until the server encryption key is configured.</p>}
-    {!r.ready && <p role="note" className="notice">Configuration required. {r.keys.filter(k => k.status === "missing" || k.status === "invalid").map(k => `${k.key}: ${k.status}`).join("; ")}. Credentials are write-only; blank fields preserve saved values.</p>}
+    {!r.ready && <div role="note" className="notice"><p>SMS settings are incomplete. Complete the fields below. Leave saved credentials blank to keep them.</p><details><summary>Technical details</summary>{r.keys.filter(k => k.status === "missing" || k.status === "invalid").map(k => `${k.key}: ${k.status}`).join("; ")}</details></div>}
     {msg && <p role="status" className="notice" data-testid="status-sms-saved">{msg}</p>}
     <fieldset disabled={!editable || save.isPending} className="sms-ref-fields">
       <StatusSwitch label="Enable SMS Notifications" active={enabled} onChange={setEnabled} testId="checkbox-sms-enabled">Enable SMS Notifications</StatusSwitch>
@@ -119,7 +129,7 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
       {kit && <div className="notice" data-testid="help-keep-in-touch">
         <PageDescription text="Configure the Keep in Touch sender and credentials." label="About the Keep in Touch request" help="Uses POST with application/json and Bearer authorization. The body contains countryCode, mobile, senderId, message, apiKey, clientId and templateId. Entity ID is not sent. Publish each event’s DLT Template ID in Notifications. Its URL is separate from the retained Custom API URL and mapping. HTTP 200 with boolean Success:true (or lowercase success) means acceptance; Success:false is rejection. Malformed or conflicting responses remain uncertain. Requests wait up to 30 seconds."/>
         <p>Bearer Token, API Key, Client ID and Sender ID are required; token and key are separate protected values.</p>
-        <p>Provider acceptance is not proof of delivery; saving or testing does not activate notifications.</p>
+        <p>Submitting a message does not confirm delivery. Saving or testing does not turn on notifications.</p>
         <div className="form-field"><label htmlFor="sms-country-format">Country Code format (confirm with provider)</label>
           <select id="sms-country-format" value={countryFormat} onChange={e => setCountryFormat(e.target.value as typeof countryFormat)} data-testid="select-sms-country-format">
             <option value="">Choose explicitly</option><option value="digits">Digits only (91)</option><option value="plus">Plus-prefixed (+91)</option>
@@ -147,8 +157,9 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
         <div className="form-field"><label htmlFor="sms-test-msg">Test Message Body</label>
           <textarea id="sms-test-msg" rows={3} maxLength={1600} value={body} onChange={e => { test.reset(); setBody(e.target.value); }} data-testid="input-sms-test-message" />
           <small className="muted">Must match your DLT-registered test template exactly.</small></div>
-        {test.data && <p role="status" className="notice" data-testid="status-sms-test-result">{test.data.message} Provider acceptance is not proof of delivery.</p>}
-        {test.isError && <p role="alert" className="error-box" data-testid="status-sms-test-error">The test could not run. Check the saved configuration and try again.</p>}
+        {test.data && <p role="status" className="notice" data-testid="status-sms-test-result">{deliverySummary(test.data.status,"SMS")}</p>}
+        {test.isError && <p role="alert" className="error-box" data-testid="status-sms-test-error">We couldn’t confirm the test SMS result. Check the recipient’s messages and saved settings before starting another test.</p>}
+        {test.isError&&<RecoveryActions error={test.error}/>}
       </div>
     <fieldset disabled={!editable || save.isPending} className="sms-ref-fields">
       <details className="cm-advanced int-advanced" data-testid="details-sms-mapping"><summary>Advanced{mapTouched ? " (edited)" : ""}</summary>
@@ -178,7 +189,7 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
       <button type="button" className="button" disabled={blocked || save.isPending || !dirty} onClick={() => { setMsg(null); save.reset(); setAskPw(true); }} data-testid="button-save-sms-settings">{save.isPending ? "Saving…" : "Save SMS Settings"}</button>
       <div className="sms-ref-testbar">
         <PhoneInput id="sms-test-to" value={to} onChange={(v: string) => { test.reset(); setTo(v); }} data-testid="input-sms-test-number" />
-        <button type="button" className="button secondary" disabled={!can} onClick={() => void runTest()} data-testid="button-send-sms-test">{test.isPending ? "Sending…" : "Test SMS"}</button>
+        <button type="button" className="button secondary" disabled={!can} onClick={() => void runTest()} data-testid="button-send-sms-test">{test.isPending ? "Checking…" : limit.wait>0?`Try again in ${limit.wait}s`:reconcile?"Check same request":sameTest&&test.data?.status==="provider_accepted"?"Test submitted":"Test SMS"}</button>
       </div>
     </div>
     {askPw && <AppDialog open onClose={() => { if (!save.isPending) { setAskPw(false); setPw(""); } }} dirty={false} busy={save.isPending} title="Confirm your password" description="Saving does not send a message.">
