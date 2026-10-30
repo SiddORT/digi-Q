@@ -26,7 +26,7 @@ import type { DateTimePreferences } from "../lib/date-time";
 import { DateTimePreferencesProvider } from "./DateTimePreferences";
 import { notifySuccess, notifyWarning } from "../lib/notify";
 import { usePublicWebsite } from "../lib/public-website";
-import { ConfirmDialog, useConfirm } from "./ConfirmDialog";
+import { useConfirm } from "./ConfirmDialog";
 import { SearchableSelect } from "./SearchableSelect";
 import { useRegisterUnsaved, useWorkspaceBranchContext } from "./WorkspaceBranch";
 import { ClinicMetadataFacts } from "./ClinicMetadataFields";
@@ -69,14 +69,21 @@ export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;sco
  const openedBranchId=useRef<string|null>(null);
  const closeBranch=()=>{setBranch(null);setDirty(false);if(openedBranchId.current){const url=new URL(window.location.href);if(url.searchParams.get("branchId")===openedBranchId.current){url.searchParams.delete("branchId");window.history.replaceState(window.history.state,"",url);}openedBranchId.current=null;}};
  const [formats,setFormats]=useState<Partial<DateTimePreferences>|null>(null);
- const [confirmFormats,setConfirmFormats]=useState(false);
+ const formatSaveLock=useRef(false);
+ async function saveFormats() {
+  if(formatSaveLock.current||!formats)return;
+  formatSaveLock.current=true;
+  try { await save.mutateAsync({id:clinicId,data:{clinic:formats}});setFormats(null); }
+  catch { /* The mutation error and draft remain visible for retry. */ }
+  finally { formatSaveLock.current=false; }
+ }
  const save=api.useUpdateClinicSettings({mutation:{onSuccess:(saved)=>{client.setQueryData(api.getGetClinicSettingsQueryKey(clinicId),saved);setSection(null);closeBranch();setDirty(false);notifySuccess("Updated successfully");client.invalidateQueries();}}});
  const [dirty,setDirty]=useState(false);
  const data=query.data;
  const formatDirty=!!formats&&!!data&&(formats.dateFormat!==data.clinic.dateFormat||formats.timeFormat!==data.clinic.timeFormat);
  const anyDirty=dirty||formatDirty||workspaceDrafts.dirty;
  const locked=save.isPending||workspaceDrafts.busy;
- const resetDialogs=()=>{setSection(null);setBranch(null);openedBranchId.current=null;setFormats(null);setConfirmFormats(false);setDirty(false);save.reset();};
+ const resetDialogs=()=>{setSection(null);setBranch(null);openedBranchId.current=null;setFormats(null);setDirty(false);save.reset();};
  const resetRef=useRef(resetDialogs);resetRef.current=resetDialogs;
  useRegisterUnsaved(dirty||formatDirty,save.isPending);
  useWorkspaceLeaveGuard(location,anyDirty||locked,(o:any)=>locked?Promise.resolve(false):askRef.current(o),resetDialogs);
@@ -143,7 +150,7 @@ export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;sco
      <p className="cs-address"><MapPin size={14} aria-hidden/>{clinic.address||"No address configured"}</p>
      <div className="cs-actions">
       <button type="button" className="button small" disabled={locked} onClick={openClinicEdit} data-testid="button-edit-clinic"><Pencil size={14} aria-hidden/> Edit Clinic</button>
-      <button type="button" className="button secondary small" disabled={locked} onClick={()=>{setFormats({dateFormat:clinic.dateFormat,timeFormat:clinic.timeFormat});setConfirmFormats(false);save.reset();}} data-testid="button-edit-date-time"><CalendarDays size={14} aria-hidden/> Edit Date &amp; Time</button>
+      <button type="button" className="button secondary small" disabled={locked} onClick={()=>{setFormats({dateFormat:clinic.dateFormat,timeFormat:clinic.timeFormat});save.reset();}} data-testid="button-edit-date-time"><CalendarDays size={14} aria-hidden/> Edit Date &amp; Time</button>
       <span className="cs-scope" data-testid="settings-scope-badge"><Settings2 size={14} aria-hidden/> Clinic-wide management <HelpTip label="About clinic-wide management" text="Details, hours and policies here apply across every location in this Clinic Group. Day-to-day queues and appointments use the location chosen in the workspace header."/></span>
      </div>
     </div>
@@ -185,8 +192,8 @@ export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;sco
    <AppDialog open={!!section} size="medium" onClose={()=>{setSection(null);setDirty(false);}} title={section==="clinic"?"Clinic Details":"Booking Policies"} dirty={dirty} busy={save.isPending}><ErrorNotice error={save.error}/>{section&&<Editor onDirtyChange={setDirty} initial={section==="clinic"?data.clinic:data.policies} fields={section==="clinic"?clinicEditFields():[{key:"bookingHorizonDays",type:"number",required:true,label:"Booking Horizon (days)",width:"md"},{key:"cancellationCutoffMinutes",type:"number",required:true,label:"Cancellation Cutoff (minutes)",width:"md"}]} busy={save.isPending} onSave={value=>save.mutate({id:clinicId,data:section==="clinic"?{clinic:{...value,...(value.address===null?{address:""}:{})}}:{policies:value}})}/>}</AppDialog>
    <AppDialog open={!!branch} size="wide" onClose={closeBranch} title={`Edit Location · ${branch?.name||""}`} dirty={dirty} busy={save.isPending}><ErrorNotice error={save.error}/>{branch&&<BranchSettings key={branch.id} clinicId={clinicId} branch={branch} busy={save.isPending} onDirtyChange={setDirty} onSave={value=>save.mutate({id:clinicId,data:{branches:[value]}})}/>}</AppDialog>
    </div></div>
-   <AppDialog open={!!formats} onClose={()=>{setFormats(null);setConfirmFormats(false);}} title="Date and Time Format" dirty={formatDirty} busy={save.isPending}>
-    {formats&&<><DateTimeFormatFields value={formats} onChange={patch=>{setFormats(current=>({...current,...patch}));setConfirmFormats(false);}}/><ErrorNotice error={save.error}/><FormActions wide={false} cancelClosesDialog busy={save.isPending} onSubmit={()=>setConfirmFormats(true)} submitLabel="Review Display Change" submitTestId="button-review-formats"/><ConfirmDialog open={confirmFormats} title="Confirm Display Change" description="This changes only how dates and times are displayed throughout this Clinic Group. Stored dates, session times and bookings will not be rewritten." confirmLabel="Confirm Display Change" onCancel={()=>setConfirmFormats(false)} onConfirm={async()=>{await save.mutateAsync({id:clinicId,data:{clinic:formats}});setConfirmFormats(false);setFormats(null);}}/></>}
+   <AppDialog open={!!formats} onClose={()=>setFormats(null)} title="Date and Time Format" dirty={formatDirty} busy={save.isPending}>
+    {formats&&<><DateTimeFormatFields value={formats} onChange={patch=>setFormats(current=>({...current,...patch}))}/><p className="muted">Display only: stored dates, session times and bookings stay unchanged.</p><ErrorNotice error={save.error}/><FormActions wide={false} cancelClosesDialog busy={save.isPending} onSubmit={()=>void saveFormats()} submitLabel="Save Changes" submitTestId="button-save-formats"/></>}
    </AppDialog>
   </>}
   {confirm.dialog}

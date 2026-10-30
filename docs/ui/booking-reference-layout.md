@@ -116,6 +116,57 @@ The matched before/after pair intentionally uses the same unwrapped component
 fixture, not a real workspace login. Separate screenshots show the full real App
 route with its sidebar/header and fictional HTTP responses.
 
+## 2026-10-30 — review screen removal
+
+The current shared progression is **Visit details → Patient details → Ticket**,
+superseding the earlier four-stage screenshots above. Staff, patient and guest
+flows keep a compact current visit summary, consent and one **Book Appointment**
+action on Patient details. Continue from Visit details only records the chosen
+session and changes sections; it never creates a visit. The recorded session key
+still prevents booking after a changed range, and current availability,
+permissions, visit mobile, verified prerequisites and consent remain required.
+
+Contact drafts stay mounted across Back/Continue. Guest requests retain their
+original request identity and receipt capability for uncertain-response retry.
+Staff submission keeps its same-render guard and stable request identity.
+Success still presents a ticket independently of the email outcome.
+
+Local verification used one Chromium tester and fictional HTTP/disposable
+database fixtures. The initial combined booking/patient-registration run reached
+89 passing cases before the five-minute command limit, with one stale
+reschedule-selector assertion failing although the reference was visible.
+That assertion now targets the existing summary/reference markup; no reschedule
+behavior or confirmation was changed. Passed cases cover all six QR actors,
+staff/patient permissions, stale session ranges, required mobile drafts,
+duplicate guest submission, uncertain guest retry, tickets independent of email
+outcome, and desktop/tablet/phone containment. The remaining cases were handled
+as a continuation rather than rerunning the full passing suite. The two final
+booking cases passed, including stage-heading focus and multi-size action-footer
+containment, and retained walk-in restrictions. The requested extra title
+“reference positive session” did not exist; no substitute case is claimed.
+The nine-case patient-registration continuation produced eight passes and one
+failure in unchanged standalone pinned-location registration; see the form
+coverage record for its exact limit. The earlier reschedule assertion was
+corrected against the observed markup and was not rerun. These results do not
+represent a single uninterrupted green run of all 102 discovered cases.
+
+The configured completion checks passed queue contention, appointment movement,
+communication usage, appointment-detail compatibility, PostgreSQL migrations and
+live-ticket compatibility. Its ticket-browser run passed 164 cases and found
+one remaining test that still clicked the removed guest patient-to-review
+Continue button. That test now checks there is no confirmation section and
+books directly from Patient details; its receipt persistence/export assertions
+are unchanged. The configured check is retried through task completion.
+
+Updated stage evidence is under `generated-artifacts/booking-reference/after/`,
+including `matched-visit-1366.png`, `matched-visit-390.png`,
+`patient-patient.png`, `patient-ticket.png`, `guest-patient-390.png` and
+`guest-ticket-390.png`. Historical filenames containing “confirmation” may show
+the current final input screen; they do not imply a separate review stage.
+
+For signup/setup/display-format security and recovery checks, see the
+2026-10-30 section in [form-presentation-coverage.md](form-presentation-coverage.md).
+
 ## Hosted and access limitations
 
 **`https://uat.digi-q.in/admin/book` was not inspected or changed.**

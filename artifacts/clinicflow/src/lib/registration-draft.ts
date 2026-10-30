@@ -11,7 +11,7 @@ const branch = z.object({
 });
 // Explicit allowlists: never persist credentials, passwords, OTPs or server record IDs.
 export const setupDraftSchema = z.object({
-  step: z.number().int().min(0).max(5), requestId: z.string().uuid(),
+  step: z.number().int().min(0).max(5).transform(step => Math.min(step, 4)), requestId: z.string().uuid(),
   values: z.object({
     dateFormat: z.enum(["DD MMM YYYY", "DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"]), timeFormat: z.enum(["12h", "24h"]),
     fullName: text, email: text, mobile: text, name: text, slug: text, categoryId: text, specialityIds: z.array(text),
@@ -22,7 +22,7 @@ export const setupDraftSchema = z.object({
     ownerWeeks: z.array(z.array(day.extend({ sessions: z.array(interval.extend({ key: text })) })).length(7)).max(30).optional(),
   }),
 });
-export const accountDraftSchema = z.object({ fullName: text, email: text, step: z.enum(["details", "review", "verify"]) });
+export const accountDraftSchema = z.object({ fullName: text, email: text, step: z.enum(["details", "review", "verify"]).transform(step => step === "review" ? "details" as const : step) });
 const AGE = 24 * 60 * 60 * 1000;
 export const registrationDraftKey = (mode: string, actor: string) => `digiq:registration:v1:${mode}:${actor}`;
 export function readRegistrationDraft<T>(key: string, schema: z.ZodType<T>): { data?: T; stored: boolean } {

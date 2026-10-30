@@ -131,3 +131,62 @@ Frontend typecheck, production build, inventory freshness and all 25 staff
 unit checks passed. The build retains its existing large-JS-chunk advisory.
 The historical Vite peer-type failure recorded in earlier evidence did not
 reproduce in this environment; dependencies/configuration were not changed.
+
+## 2026-10-30 — shortened signup, setup and display-format flows
+
+The approved simplification removes pre-submit review pages only. Owner signup
+now sends from validated account details; verification shows its destination and
+Change email, clears superseded client proof state, and requires password re-entry.
+A successfully started replacement challenge retires the previous cookie-bound
+registration challenge on the server. Legacy account-review drafts return to
+details without sending; legacy setup-review drafts return to Care team.
+
+Clinic setup finishes from Care team, with required finish-time password
+security retained. Public addresses and permanent-address warnings remain at
+their inputs; generated addresses are visible there. Full-draft validation and
+actor/request-bound completion reconciliation remain intact. The administrator's
+existing single-page creation variant remains single-page.
+
+Display formats use Save Changes with a display-only explanation. Failed saves
+retain their draft and retry path; rapid duplicate saves are guarded. Discard
+dialogs, schedule-impact reviews, verification, consent, authorization, and
+consequential-action confirmations are not removed.
+
+Verification evidence:
+- Frontend and API TypeScript checks pass after rebuilding shared declarations.
+- Eight real HTTPS/disposable-PostgreSQL authentication tests pass, including
+  corrected-email challenge retirement. An obsolete disabled-delivery wording
+  assertion was updated to current safe wording; delivery policy was unchanged.
+- Eight disposable-PostgreSQL clinic-registration integration tests pass,
+  including verified ownership/password enforcement, atomic custom sessions,
+  concurrent/lost-response recovery, and permanent URL conflicts.
+- Focused draft, registration, booking-stage render, contact, session-selection,
+  continuation, generated-contract and presentation checks pass. A stale
+  presentation-source assertion was aligned with the existing refresh placement.
+- Chromium onboarding checks pass for direct sends, same-render double-clicks,
+  email correction and focus at 1366/390px, legacy drafts, hidden-field
+  validation, retained finish password, uncertain completion and contact rules.
+- All five `registration-address.render.test.mjs` Chromium tests pass, including
+  the single-page administrator variant and success-link keyboard behavior at
+  desktop, tablet and phone widths.
+- Direct display-format cases pass at 1366px and 390px, including the inline
+  display-only explanation, intercepted save failure, successful retry,
+  same-render duplicate suppression and retained discard protection.
+- The actual unsigned Preview signup was captured at 390×844. A country-code
+  wrapping issue was corrected within the signup card; the subsequent capture
+  shows the compact calling code on one line.
+
+Fixture screenshots include `screenshots/registration/*-verify.png`,
+`*-location.png`, `*-hours.png`, `finish.png`, and
+`generated-artifacts/registration-confirmation/`. These are local generated
+evidence, not tracked application assets. No live email/SMS, real-account
+verification, hosted repair, deployment, physical mobile keyboard or
+screen-reader acceptance is claimed.
+
+The broader `patient-registration.spec.ts` continuation produced **8 passes and
+1 failure**. The unchanged standalone multiple-location/pinned-location case
+did not show `notice-patient-registered` after Save, so its final persistence
+assertion was not reached. The cause was not established and this is not a claim
+of successful pinned registration. Inline booking patient-registration cases
+passed. No standalone patient-creation behavior was changed to address this
+separate failure.

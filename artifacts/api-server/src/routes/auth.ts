@@ -319,6 +319,13 @@ authRouter.post("/auth/register/start", async (req, res) => {
    const mobile = optionalRegistrationMobile(req.body?.mobile);
    const result = await mailCode(address, "register", undefined, { fullName: name, passwordHash: hash,...(mobile ? {mobile,mobileVerified:false} : {}) });
    const {challengeId} = result;
+   // A corrected email starts a new challenge in this tab. Retire its previous
+   // registration capability as well, including any optional mobile proof.
+   const previous = getCookie(req, "digiq_registration");
+   if (typeof previous === "string" && previous !== challengeId) {
+     await db.update(authChallenges).set({ consumedAt: new Date(), data: {} })
+       .where(sql`${authChallenges.id}=${previous} and ${authChallenges.purpose}='register'`);
+   }
   res.cookie("digiq_registration", challengeId, { httpOnly: true, secure: true, sameSite: "strict", path: "/api/auth", maxAge: CODE_AGE });
    res.set("Cache-Control", "no-store").json(result);
 });

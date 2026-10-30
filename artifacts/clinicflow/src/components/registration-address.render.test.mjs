@@ -234,16 +234,16 @@ for (const mode of ["self"]) test(`${mode}: blank native-valid entry advances, p
     await page.getByTestId("registration-branch-0-name").fill("Renamed Location");
     await page.reload();
     assert.equal(await locationSlug.inputValue(), "fictional-location-2");
-    for (let i = 0; i < 4; i++) await page.getByTestId("registration-next").click();
-    await page.getByRole("heading", { name: "Review", exact: true }).waitFor();
-    const review = await page.locator(".registration-review").innerText();
+    const links = await page.locator(".registration-url").allTextContents();
+    for (const slug of ["fictional-location-2", "fictional-location-3", "fictional-location"]) {
+      assert.ok(links.join(" ").includes("https://care.example.invalid/fictional-care-2/" + slug));
+    }
+    for (let i = 0; i < 3; i++) await page.getByTestId("registration-next").click();
+    await page.getByRole("heading", { name: "Care team", exact: true }).waitFor();
     if (mode === "admin") {
       const evidence = resolve(import.meta.dirname, "../../../../generated-artifacts/public-website");
       await mkdir(evidence, { recursive: true });
-      await page.screenshot({ path: resolve(evidence, "setup-review.png"), fullPage: true });
-    }
-    for (const slug of ["fictional-location-2", "fictional-location-3", "fictional-location"]) {
-      assert.ok(review.includes("https://care.example.invalid/fictional-care-2/" + slug));
+      await page.screenshot({ path: resolve(evidence, "setup-finish.png"), fullPage: true });
     }
     await page.evaluate(() => { window.conflict = true; });
     await page.getByTestId("registration-next").click();
@@ -252,10 +252,10 @@ for (const mode of ["self"]) test(`${mode}: blank native-valid entry advances, p
     await page.getByRole("heading", { name: "Clinic identity", exact: true }).waitFor();
     assert.equal(await page.evaluate(() => window.submissions.length), 1);
     await page.evaluate(() => { window.conflict = false; });
-    // A definite conflict requires an explicit pass through correction and Review.
+    // A definite conflict requires an explicit pass through correction and inputs.
     await page.getByTestId("registration-slug").fill("corrected-clinic");
-    for (let i = 0; i < 5; i++) await page.getByTestId("registration-next").click();
-    await page.getByRole("heading", { name: "Review", exact: true }).waitFor();
+    for (let i = 0; i < 4; i++) await page.getByTestId("registration-next").click();
+    await page.getByRole("heading", { name: "Care team", exact: true }).waitFor();
     assert.equal(await page.evaluate(() => window.submissions.length), 1);
     await page.getByTestId("registration-next").click();
     await page.getByRole("heading", { name: "Fictional Care is registered." }).waitFor();
@@ -313,7 +313,7 @@ for (const mode of ["self"]) test(`${mode}: whitespace resolves, invalid custom 
       draft.data.step = 5; sessionStorage.setItem(key, JSON.stringify(draft));
     }, mode);
     await page.reload();
-    await page.getByRole("heading", { name: "Review", exact: true }).waitFor();
+    await page.getByRole("heading", { name: "Care team", exact: true }).waitFor();
     await page.getByTestId("registration-next").click();
     await page.getByRole("heading", { name: "Locations", exact: true }).waitFor();
     assert.match(await page.getByTestId("registration-error").innerText(), /generate each Location URL name/);

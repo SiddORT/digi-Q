@@ -42,7 +42,8 @@ function RegistrationAccount() {
   const draftKey = registrationDraftKey("account", "anonymous");
   const [draft] = useState(() => readRegistrationDraft(draftKey, accountDraftSchema));
   const [stored, setStored] = useState(draft.stored);
-  const [step, setStep] = useState<"details" | "review" | "verify">(draft.data?.step || "details");
+   const [step, setStep] = useState<"details" | "verify">(draft.data?.step === "verify" ? "verify" : "details");
+   const submitLock = useRef(false);
   const stepHeading = useRef<HTMLHeadingElement>(null);
   const initialStep = useRef(true);
   useEffect(() => { if (initialStep.current) initialStep.current = false; else stepHeading.current?.focus(); }, [step]);
@@ -79,25 +80,23 @@ function RegistrationAccount() {
       setChannels(result.channels);
       if(!result.challengeId)throw new Error("Could not resend the verification code. Please retry.");
       setChallengeId(result.challengeId);setCode("");setCooldown(60);setResendNotice("Use the code in the latest verification email. Earlier codes no longer work.");notifySuccess("Verification code resent");
-    }catch(caught){limit.record(caught);const message=caught instanceof Error?caught.message:"";setError(/invalid or expired verification/i.test(message)?"This verification session has ended. Choose Change details to restart registration.":friendlyError(caught,"auth"));if((caught as {status?:number})?.status===429||/wait before requesting another code/i.test(message))setCooldown(Math.max(60,retryWaitSeconds(caught)));}
+     }catch(caught){limit.record(caught);const message=caught instanceof Error?caught.message:"";setError(/invalid or expired verification/i.test(message)?"This verification session has ended. Choose Change email to restart registration.":friendlyError(caught,"auth"));if((caught as {status?:number})?.status===429||/wait before requesting another code/i.test(message))setCooldown(Math.max(60,retryWaitSeconds(caught)));}
     finally{setBusy(false);}
   }
   const [fieldErrors,setFieldErrors]=useState<Record<string,string|undefined>>({});
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (busy||limit.wait>0) return;
+     if (submitLock.current||busy||limit.wait>0) return;
     if(step==="details"){
       const errors={fullName:required()(fullName)||validatePersonName(fullName),email:required()(email)||validateEmail(email),password:required()(password)||validatePassword(password)};
       setFieldErrors(errors);
       const first=Object.entries(errors).find(([,message])=>message);
       if(first){document.getElementById(`registration-account-${first[0]}`)?.focus();return;}
-       setError("");
-       setStep("review");
-       return;
     }
-    setBusy(true); setError("");
+     submitLock.current = true;
+     setBusy(true); setError("");
     try {
-      if (step === "review") {
+       if (step === "details") {
         if (!password) { setStep("details"); throw new Error("Re-enter your password; passwords are never retained in temporary drafts."); }
         const result = await authRequest<{ challengeId: string;channels?:SecurityChannels }>("register/start", { email: email.trim().toLowerCase(), fullName: fullName.trim(), password,...(mobile.trim()?{mobile:mobile.trim()}:{}) });
         if (!result.challengeId) throw new Error("Could not send the verification code. Please retry.");
@@ -115,38 +114,29 @@ function RegistrationAccount() {
         await refresh();
       }
     } catch (caught) { limit.record(caught);setError(friendlyError(caught,"auth")); }
-    finally { setBusy(false); }
+     finally { submitLock.current = false; setBusy(false); }
   }
   return <AuthShell eyebrow="Register a Clinic" registration><div className="auth-card registration-account-card">
     <h1>Start with your secure account.</h1>
     <PageDescription text="Create a verified owner account for your clinic." help="After email verification, set up your clinic, locations and opening hours." label="About clinic registration"/>
     <nav aria-label="Account registration progress"><ol className="registration-account-steps">
-      {(["details", "review", "verify"] as const).map((item, index) => <li key={item} aria-current={step === item ? "step" : undefined}><span>{index + 1}.</span> {item === "details" ? "Account details" : item === "review" ? "Review" : "Verify email"}</li>)}
+       {(["details", "verify"] as const).map((item, index) => <li key={item} aria-current={step === item ? "step" : undefined}><span>{index + 1}.</span> {item === "details" ? "Account details" : "Verify email"}</li>)}
     </ol></nav>
-    <div className="registration-account-container"><h2 ref={stepHeading} tabIndex={-1} className="registration-form-title">{step === "details" ? "Create your account" : step === "review" ? "Review your account" : "Verify your email"}</h2>
+     <div className="registration-account-container"><h2 ref={stepHeading} tabIndex={-1} className="registration-form-title">{step === "details" ? "Create your account" : "Verify your email"}</h2>
       <form onSubmit={submit}>
         {step === "details" ? <>
           <FormField label="Your Name" required id="registration-account-fullName" error={fieldErrors.fullName}><input type="text" autoComplete="name" value={fullName} onChange={event => {setFullName(event.target.value);setFieldErrors(current=>({...current,fullName:undefined}));}}/></FormField>
           <FormField label="Email Address" required id="registration-account-email" error={fieldErrors.email}><EmailInput data-testid="input-registration-email" value={email} onChange={event => {setEmail(event.target.value);setFieldErrors(current=>({...current,email:undefined}));}}/></FormField>
           <FormField label="Password" required id="registration-account-password" error={fieldErrors.password}><PasswordInput autoComplete="new-password" showChecklist value={password} onChange={event => {setPassword(event.target.value);setFieldErrors(current=>({...current,password:undefined}));}}/></FormField>
-        </> : step === "review" ? <section aria-label="Account details review">
-          <p>Check your details before we send your verification code.</p>
-          <dl className="registration-account-review">
-            <dt>Your name</dt><dd>{fullName.trim()}</dd>
-            <dt>Email address</dt><dd>{email.trim().toLowerCase()}</dd>
-            <dt>Password</dt><dd>Entered securely. Not displayed in this summary.</dd>
-          </dl>
-          <button className="text-link" type="button" disabled={busy} onClick={() => { setError(""); setFieldErrors({}); setStep("details"); }}><ActionLabel>Edit Account Details</ActionLabel></button>
-        </section> : <FormField label="Required email verification code" required id="registration-account-code"><VerificationCodeInput required value={code} onChange={setCode}/></FormField>}
+         </> : <><p>Verification email destination: <strong>{email.trim().toLowerCase()}</strong></p><FormField label="Required email verification code" required id="registration-account-code"><VerificationCodeInput required value={code} onChange={setCode}/></FormField></>}
         {step === "details" && <FormField label="Optional mobile" helper="Include country code. A separate mobile code never replaces the required email code."><PhoneInput value={mobile} onChange={setMobile}/></FormField>}
-        {step === "review" && mobile && <p>Optional mobile: ***{mobile.slice(-4)}</p>}
         {step === "verify" && <><RegistrationEmailNotice channels={channels}/>{(mobile || mobilePending) && (channels?.sms?.status === "provider_accepted" || !channels && mobilePending) && <RegistrationMobileProof key={challengeId} challengeId={challengeId}/>}</>}
         {error && <div className="error-box" role="alert">{error}</div>}
         {step==="verify"&&resendNotice&&<p role="status">{resendNotice}</p>}
-        <button className="button auth-submit" type="submit" disabled={busy||limit.wait>0}><ActionLabel>{busy ? "Please wait…" : limit.wait>0?`Try again in ${limit.wait}s`:step === "details" ? "Review account details" : step === "review" ? "Send verification code" : "Verify and continue"}</ActionLabel></button>
+         <button className="button auth-submit" type="submit" disabled={busy||limit.wait>0}><ActionLabel>{busy ? "Please wait…" : limit.wait>0?`Try again in ${limit.wait}s`:step === "details" ? "Send verification code" : "Verify and continue"}</ActionLabel></button>
         <p className="registration-note" role="status">{stored ? fullName || email || step !== "details" ? "Name, email and stage are temporarily saved in this tab for up to 24 hours. Re-enter passwords and codes after reload." : "New non-secret details will be temporarily saved in this tab as you enter them." : "Browser storage is unavailable. Details remain only while this page is open."}</p>
         <button type="button" className="text-link" disabled={busy} onClick={() => { clearRegistrationDraft(draftKey); setFullName(""); setEmail(""); setPassword(""); setCode(""); setChallengeId(""); setStep("details"); setError(""); setResendNotice(""); setCooldown(0); }}><ActionLabel>Discard account draft</ActionLabel></button>
-        {step === "verify" && <><button className="text-link" type="button" disabled={busy||cooldown>0} onClick={()=>void resendCode()} data-testid="registration-resend-code"><ActionLabel>{cooldown>0?`Resend in ${cooldown}s`:"Resend code"}</ActionLabel></button><button className="text-link" type="button" disabled={busy} onClick={() => { setStep("details"); setCode(""); setChallengeId(""); setError("");setResendNotice("");setCooldown(0); }}><ActionLabel>Change Details</ActionLabel></button></>}
+         {step === "verify" && <><button className="text-link" type="button" disabled={busy||cooldown>0} onClick={()=>void resendCode()} data-testid="registration-resend-code"><ActionLabel>{cooldown>0?`Resend in ${cooldown}s`:"Resend code"}</ActionLabel></button><button className="text-link" type="button" disabled={busy} onClick={() => { setStep("details"); setPassword(""); setCode(""); setChallengeId(""); setChannels(undefined); setMobilePending(false); setError("");setResendNotice("");setCooldown(0); requestAnimationFrame(()=>document.getElementById("registration-account-email")?.focus()); }}><ActionLabel>Change email</ActionLabel></button></>}
       </form>
     </div><p className="registration-note">This journey creates a new clinic-owner account. Already have a staff account? <Link href="/sign-in">Sign in to your workspace instead.</Link> Patient accounts cannot be converted into clinic-owner accounts here.</p>
   </div></AuthShell>;

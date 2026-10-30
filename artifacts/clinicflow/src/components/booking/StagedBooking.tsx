@@ -1,19 +1,26 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import { BookingSteps } from "../BookingSteps";
 
 /**
- * Section E shared staged booking: Visit details → Patient details → Confirmation → Ticket.
+ * Shared staged booking: Visit details → Patient details → Ticket.
  * Every stage stays mounted (inactive ones are `hidden`), so Back never loses typed input.
- * No appointment is created before the Confirmation stage's explicit confirm action.
+ * Only the explicit booking action on Patient details creates an appointment.
  */
-export function StagedBooking({ step, visit, patient, confirmation, header, testId = "staged-booking" }: { step: 1 | 2 | 3; visit: ReactNode; patient: ReactNode; confirmation: ReactNode; header?: ReactNode; testId?: string }) {
-  return <div className="staged-booking" data-testid={testId} data-step={step}>
+export function StagedBooking({ step, visit, patient, finalAction, header, testId = "staged-booking" }: { step: 1 | 2; visit: ReactNode; patient: ReactNode; finalAction: ReactNode; header?: ReactNode; testId?: string }) {
+  const root = useRef<HTMLDivElement>(null);
+  const initial = useRef(true);
+  useEffect(() => {
+    if (initial.current) { initial.current = false; return; }
+    const heading = root.current?.querySelector<HTMLElement>(`[data-testid="stage-${step === 1 ? "visit" : "patient"}"] h2`);
+    heading?.setAttribute("tabindex", "-1");
+    heading?.focus();
+  }, [step]);
+  return <div ref={root} className="staged-booking" data-testid={testId} data-step={step}>
     <BookingSteps step={step}/>
     {header}
     <section hidden={step !== 1} aria-label="Visit details" data-testid="stage-visit">{visit}</section>
-    <section hidden={step !== 2} aria-label="Patient details" data-testid="stage-patient">{patient}</section>
-    <section hidden={step !== 3} aria-label="Confirmation" data-testid="stage-confirmation">{step === 3 && confirmation}</section>
+    <section hidden={step !== 2} aria-label="Patient details" data-testid="stage-patient">{patient}{step === 2 && finalAction}</section>
   </div>;
 }
 

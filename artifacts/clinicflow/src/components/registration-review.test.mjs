@@ -9,8 +9,8 @@ test("registration distinguishes group and location and uses selectable duration
   assert.match(wizard, /Use Clinic Group Name for This Location/);
   assert.match(wizard, /Controller name="consultationMinutes"/);
   assert.match(wizard, /Expected Consultation Duration/);
-  assert.match(wizard, /formatTime\(session.startTime,values\)/);
-  assert.match(wizard, /formatTime\(session.endTime,values\)/);
+   assert.doesNotMatch(wizard, /show\(5\)|"Care team", "Review"/);
+   assert.match(wizard, /show\(4\)[\s\S]*finishSecurity/);
 });
 test("copy hours synchronizes targets and announces draft-only feedback", () => {
   const hours = readFileSync(new URL("./ClinicRegistrationHours.tsx", import.meta.url), "utf8");
@@ -20,22 +20,22 @@ test("copy hours synchronizes targets and announces draft-only feedback", () => 
   assert.match(hours, /finish registration to save/);
 });
 
-test("registration details advance to review without sending a registration request", () => {
+test("validated details directly start verification without a review stage", () => {
   const details = source.slice(source.indexOf('if(step==="details"){'), source.indexOf('setBusy(true); setError("");'));
   assert.match(details, /validatePersonName/);
   assert.match(details, /validateEmail/);
   assert.match(details, /validatePassword/);
-  assert.match(details, /setStep\("review"\);\s*return;/);
+   assert.doesNotMatch(details, /setStep\("review"\)/);
   assert.doesNotMatch(details, /authRequest/);
-  assert.match(source, /if \(step === "review"\) \{[\s\S]*?const result = await authRequest/);
+   assert.match(source, /if \(step === "details"\) \{[\s\S]*?const result = await authRequest/);
+   assert.match(source, /submitLock.current = true/);
 });
 
-test("review shows normalized identity but never displays or persists the password", () => {
-  const review = source.slice(source.indexOf('<section aria-label="Account details review">'), source.indexOf('</section> : <FormField'));
-  assert.match(review, /fullName\.trim\(\)/);
-  assert.match(review, /email\.trim\(\)\.toLowerCase\(\)/);
-  assert.match(review, /Edit Account Details/);
-  assert.doesNotMatch(review, /\{password\}/);
+test("verification shows destination, safe email correction and no persisted secrets", () => {
+   assert.match(source, /Verification email destination:[\s\S]*?email\.trim\(\)\.toLowerCase\(\)/);
+   assert.match(source, /Change email/);
+   assert.match(source, /setChallengeId\(""\); setChannels\(undefined\); setMobilePending\(false\)/);
+   assert.doesNotMatch(source, /Account details review|Review your account/);
   const draft = readFileSync(new URL("../lib/registration-draft.ts", import.meta.url), "utf8");
   assert.match(draft, /accountDraftSchema = z.object\(\{ fullName: text, email: text, step:/);
   assert.doesNotMatch(draft, /(?:password|code|challengeId|token):\s*z\./);

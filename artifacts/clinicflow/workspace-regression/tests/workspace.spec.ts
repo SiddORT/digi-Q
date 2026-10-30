@@ -22,6 +22,40 @@ type Fixture = {
   patients: (typeof patient)[];
 };
 const listing = (items: unknown[]) => ({ items, total: items.length, page: 1, pageSize: 20, totalPages: 1 });
+for(const width of [1366,390])test(`display formats save directly, retain failures and discard protection at ${width}px`,async({page})=>{
+ await fixture(page);
+ let current={...clinic,dateFormat:"DD MMM YYYY",timeFormat:"12h"};
+ let fail=true;const writes:any[]=[];
+ await page.route("**/api/clinics/clinic-1/settings",async route=>{
+  if(route.request().method()==="PATCH"){
+   const input=route.request().postDataJSON();writes.push(input);
+   if(fail)return route.fulfill({status:503,json:{message:"Unavailable"}});
+   current={...current,...input.clinic};
+  }
+  return route.fulfill({json:{clinic:current,branches:[branch],policies:{bookingHorizonDays:30,cancellationCutoffMinutes:60}}});
+ });
+ await page.setViewportSize({width,height:900});
+ await page.goto("/admin/clinics/clinic-1");
+ await page.getByTestId("button-edit-date-time").click();
+ const dialog=page.getByRole("dialog",{name:"Date and Time Format",exact:true});
+ await dialog.getByRole("button",{name:/^Time Format(?::|$)/}).click();
+ await page.getByRole("option",{name:/24-hour/}).click();
+ await expect(dialog).toContainText("Display only: stored dates, session times and bookings stay unchanged.");
+ await dialog.getByTestId("button-dialog-close").click();
+ await expect(page.getByRole("button",{name:/discard/i})).toBeVisible();
+ await page.getByRole("button",{name:/keep editing/i}).click();
+ await dialog.getByTestId("button-save-formats").click();
+ await expect(dialog.getByRole("alert")).toBeVisible();
+ expect(writes).toHaveLength(1);
+ await expect(page.getByRole("dialog",{name:"Confirm Display Change"})).toHaveCount(0);
+ await page.screenshot({path:`generated-artifacts/booking-reference/after/display-formats-${width}.png`,fullPage:true});
+ fail=false;
+ await dialog.getByTestId("button-save-formats").evaluate((button:HTMLButtonElement)=>{button.click();button.click();});
+ await expect(dialog).toHaveCount(0);
+ expect(writes).toHaveLength(2);
+ expect(writes[1]).toEqual({clinic:{dateFormat:"DD MMM YYYY",timeFormat:"24h"}});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+});
 
 async function fixture(page: Page, multiClinic = false, patientPickers = false): Promise<Fixture> {
   // External fonts are not part of the behavior under test and can hold load open offline.

@@ -29,6 +29,13 @@ test("expired, malformed, wrong-version and blocked drafts fail safely", () => {
   assert.equal(m.writeRegistrationDraft("draft", m.accountDraftSchema, {fullName:"Fictional", email:"owner@example.invalid", step:"details"}), false);
   assert.equal(m.clearRegistrationDraft("draft"), false);
 });
+test("legacy review drafts restore to input stages without retaining secrets", () => {
+  const map = storage();
+  map.set("legacy", JSON.stringify({version:1,expires:Date.now()+5000,data:{fullName:"Fictional Owner",email:"owner@example.invalid",step:"review",password:"secret",code:"123456",challengeId:"old"}}));
+  assert.deepEqual(m.readRegistrationDraft("legacy",m.accountDraftSchema).data,{fullName:"Fictional Owner",email:"owner@example.invalid",step:"details"});
+  assert.equal(m.setupDraftSchema.shape.step.parse(5),4);
+  assert.equal(m.setupDraftSchema.shape.step.parse(3),3);
+});
 test("locality selection removes only its inserted segment and preserves manual/substrings and later selections", () => {
   let value = m.toggleLocality("Mulund West Avenue", [], "Mulund West|Mumbai", "Mulund West");
   assert.equal(value.address, "Mulund West Avenue, Mulund West");

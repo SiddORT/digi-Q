@@ -157,6 +157,18 @@ function mailCode() {
   assert.ok(code, "verification code captured from fake SMTP");
   return code;
 }
+test("correcting owner email retires the prior registration challenge and its mobile proof", async () => {
+  const first=await authRequest("register/start",{email:"original-owner@example.test",fullName:"Fictional Owner",password:"FictionalPass123"});
+  const second=await authRequest("register/start",{email:"corrected-owner@example.test",fullName:"Fictional Owner",password:"FictionalPass456"});
+  assert.notEqual(first.challengeId,second.challengeId);
+  const {rows}=await harness.control.query("select consumed_at,data from auth_challenges where id=$1",[first.challengeId]);
+  assert.ok(rows[0].consumed_at);
+  assert.deepEqual(rows[0].data,{});
+  const resumed=await authRequest("registration/resume",{email:"corrected-owner@example.test",fullName:"Fictional Owner"});
+  assert.equal(resumed.challengeId,second.challengeId);
+  const old=await authRequest("registration/resume",{email:"original-owner@example.test",fullName:"Fictional Owner"});
+  assert.equal(old.challengeId,null);
+});
 
 test("actual HTTPS frontend transport completes Argon2 staff login, session and logout with all SMTP settings absent", async () => {
   const smtpKeys = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"];
@@ -277,8 +289,8 @@ test("disabled verification is a distinct safe frontend error with no false sent
   await backend.changeActivation(actor,{event:"patient_email_otp",recipient:"patient",channel:"email",revision:current.local.revision,enabled:false});
   await assert.rejects(authRequest("patient/start",{email:"disabled@example.test"}),error=>{
     assert.equal(error.status,503);assert.equal(error.code,"SECURITY_DELIVERY_DISABLED");
-    assert.match(error.message,/disabled by the System Admin/);
-    assert.match(error.message,/Verification is still required; no message was sent/);
+    assert.match(error.message,/Sending is turned off\. No message was sent/);
+    assert.match(error.message,/Verification is still required/);
     return true;
   });
   assert.equal(globalThis.nativeAuthMail.length,0);

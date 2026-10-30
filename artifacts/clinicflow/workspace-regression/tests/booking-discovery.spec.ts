@@ -114,15 +114,14 @@ for(const role of ["guest","patient","doctor","clinicAdmin","receptionist","supe
         await page.getByTestId("input-guest-name").fill("Fictional Guest");
         await page.getByTestId("input-guest-mobile").fill("+14155552671");
         await page.getByTestId("input-guest-permission").check();
-        await page.getByTestId("button-guest-continue-patient").click();
       }else{
         if(role!=="patient")await selectPatient(page);
-        await page.getByTestId("button-booking-continue-patient").click();
       }
-      await page.getByTestId("button-booking-change-visit").filter({visible:true}).click();
+      await page.getByTestId("button-booking-back").filter({visible:true}).click();
       await expectPatientFacing(page);
       await page.getByTestId(role==="guest"?"button-guest-continue-visit":"button-booking-continue-visit").click();
-      await page.getByTestId(role==="guest"?"button-guest-continue-patient":"button-booking-continue-patient").click();
+      await expect(page.getByTestId("booking-steps")).toHaveText(/Visit details.*Patient details.*Ticket/);
+      await expect(page.getByTestId("stage-confirmation")).toHaveCount(0);
       assertNoWrite(s.writes);
       if(role!=="guest")await page.getByRole("checkbox",{name:/I consent/}).check();
       await page.getByTestId(role==="guest"?"button-submit-guest":"button-confirm-booking").click();
@@ -203,17 +202,34 @@ test("changing date cancels a pending search without overwriting the deliberate 
  await expect(page.getByTestId("input-booking-date")).toHaveValue("2026-10-12");
  await expect(page.getByTestId("button-use-next-date")).toHaveCount(0);
 });
-test("guest required contact flow confirms only at review and immediately displays ticket",async({page})=>{
+test("guest final patient action immediately displays ticket without an extra review",async({page})=>{
  const s=await fixture(page,"guest");
  await page.getByTestId("button-guest-continue-visit").click();
  await page.getByTestId("input-guest-name").fill("Fictional Guest");
  await page.getByTestId("input-guest-mobile").fill("+14155552671");
  await page.getByTestId("input-guest-permission").check();
- await page.getByTestId("button-guest-continue-patient").click();
  assertNoWrite(s.writes);
- await page.getByTestId("button-submit-guest").click();
+ await page.getByTestId("button-submit-guest").evaluate((button:HTMLButtonElement)=>{button.click();button.click();});
  await expect(page.getByTestId("guest-ticket")).toBeVisible();
  expect(s.writes.filter(w=>w.path==="/api/public/guest-requests")).toHaveLength(1);
+});
+test("guest uncertain completion retries the original request, not a new booking",async({page})=>{
+ await fixture(page,"guest");
+ const attempts:any[]=[];
+ await page.route("**/api/public/guest-requests",async route=>{
+   attempts.push(route.request().postDataJSON());
+   if(attempts.length===1)return route.abort("failed");
+   return route.fallback();
+ });
+ await page.getByTestId("button-guest-continue-visit").click();
+ await page.getByTestId("input-guest-name").fill("Fictional Guest");
+ await page.getByTestId("input-guest-mobile").fill("+14155552671");
+ await page.getByTestId("input-guest-permission").check();
+ await page.getByTestId("button-submit-guest").click();
+ await expect(page.getByTestId("button-retry-guest")).toBeVisible();
+ await page.getByTestId("button-retry-guest").click();
+ await expect(page.getByTestId("guest-ticket")).toBeVisible();
+ expect(attempts).toHaveLength(2);expect(attempts[1]).toEqual(attempts[0]);
 });
 test("no search result states only the searched range and respects the booking horizon",async({page})=>{
  const s=await fixture(page,"patient",{empty:true});s.noResults=true;
@@ -251,13 +267,12 @@ for(const role of ["superAdmin","clinicAdmin","doctor","receptionist","patient"]
    await expect(page.getByPlaceholder("Add information for the clinic about this visit (optional)")).toBeVisible();
    await page.getByPlaceholder("Add information for the clinic about this visit (optional)").fill("Fictional visit note");
    await page.screenshot({path:`generated-artifacts/booking-reference/after/${role}-patient.png`,fullPage:true});
-   await page.getByTestId("button-booking-continue-patient").click();
    await expect(page.getByTestId("booking-summary")).toContainText("Fictional Patient");
    await expect(page.getByTestId("booking-summary")).toContainText("09:00–12:00");
    await page.screenshot({path:`generated-artifacts/booking-reference/after/${role}-confirmation.png`,fullPage:true});
    await page.getByTestId("button-booking-back").filter({visible:true}).click();
+   await page.getByTestId("button-booking-continue-visit").click();
    await expect(page.getByPlaceholder("Add information for the clinic about this visit (optional)")).toHaveValue("Fictional visit note");
-   await page.getByTestId("button-booking-continue-patient").click();
    assertNoWrite(s.writes);
    await page.getByRole("checkbox",{name:/I consent/}).check();
    await page.getByTestId("button-confirm-booking").click();
@@ -286,7 +301,7 @@ test("stale explicit session is rejected and full sessions stay visible but unse
 test("guest inline errors are linked; mobile is required and confirmation is disabled after range changes",async({page})=>{
  const s=await fixture(page,"guest");
  await page.getByTestId("button-guest-continue-visit").click();
- await page.getByTestId("button-guest-continue-patient").click();
+ await page.getByTestId("button-submit-guest").click();
  const name=page.getByTestId("input-guest-name");
  await expect(name).toHaveAttribute("aria-invalid","true");
  const errorId=await name.getAttribute("aria-describedby");
@@ -294,21 +309,19 @@ test("guest inline errors are linked; mobile is required and confirmation is dis
  await expect(name).toHaveAttribute("placeholder","Enter the patient's full name");
  await name.fill("Fictional Guest");
  await page.getByTestId("input-guest-permission").check();
- await page.getByTestId("button-guest-continue-patient").click();
+ await page.getByTestId("button-submit-guest").click();
  await expect(page.getByTestId("input-guest-mobile")).toHaveAttribute("aria-invalid","true");
  await page.getByTestId("input-guest-mobile").fill("+14155552671");
- await page.getByTestId("button-guest-continue-patient").click();
  s.range="10:00";
- // Hidden visit controls stay mounted, so refresh without changing the review stage.
+ // Hidden visit controls stay mounted, so refresh while editing patient details.
  await page.evaluate(()=>document.querySelector<HTMLButtonElement>('[data-testid="button-refresh-booking-availability"]')?.click());
  await expect(page.getByTestId("button-submit-guest")).toBeDisabled();
- await expect(page.getByTestId("stage-confirmation")).toContainText("selected visit changed");
+ await expect(page.getByTestId("stage-patient")).toContainText("selected visit changed");
  assertNoWrite(s.writes);
 });
 test("saved booking reopens and reschedules to the same record without losing reference or notes",async({page})=>{
  const s=await fixture(page,"patient");
  await page.getByTestId("button-booking-continue-visit").click();
- await page.getByTestId("button-booking-continue-patient").click();
  await page.getByRole("checkbox",{name:/I consent/}).check();
  await page.getByTestId("button-confirm-booking").click();
  await expect(page.getByTestId("appointment-ticket")).toBeVisible();
@@ -319,9 +332,9 @@ test("saved booking reopens and reschedules to the same record without losing re
  await page.getByRole("checkbox",{name:/Replace this booking/}).check();
  await expect(page.getByTestId("button-confirm-reschedule")).toBeEnabled();
  await page.getByTestId("button-confirm-reschedule").click();
- await expect(page.getByTestId("text-detail-reference")).toContainText("FICTIONAL-TICKET");
+ await expect(page.getByTestId("section-detail-summary").locator(".appt-sum-refs")).toContainText("FICTIONAL-TICKET");
  await page.getByTestId("tab-detail-details").click();
- await expect(page.getByTestId("text-detail-date")).toContainText("2026-10-10");
+ await expect(page.getByTestId("text-detail-context")).toContainText("2026-10-10");
  expect(s.writes.filter(w=>w.path.endsWith("/reschedule"))).toHaveLength(1);
  expect(s.appointment.reference).toBe("FICTIONAL-TICKET");
 });
@@ -381,13 +394,13 @@ for(const role of ["superAdmin","clinicAdmin","receptionist","doctor"]) {
       await input.fill("");
       await selectPatient(page);
       await expect(input).toHaveValue("");
-      await expect(page.getByTestId("button-booking-continue-patient")).toBeDisabled();
+      await expect(page.getByTestId("button-confirm-booking")).toBeDisabled();
       await input.fill("123");
-      await expect(page.getByTestId("button-booking-continue-patient")).toBeDisabled();
+      await expect(page.getByTestId("button-confirm-booking")).toBeDisabled();
       await input.fill("+14155552671");
-      await page.getByTestId("button-booking-continue-patient").click();
       await expect(page.getByTestId("booking-summary")).toContainText("+14155552671");
       await page.getByTestId("button-booking-back").filter({visible:true}).click();
+      await page.getByTestId("button-booking-continue-visit").click();
       await expectLocalMobile(page,"4155552671");
       if(role==="doctor")await expect(page.getByRole("button",{name:"Register a New Patient"})).toHaveCount(0);
       else {
@@ -398,7 +411,6 @@ for(const role of ["superAdmin","clinicAdmin","receptionist","doctor"]) {
         const discard=page.getByRole("button",{name:/discard/i});
         if(await discard.isVisible())await discard.click();
       }
-      await page.getByTestId("button-booking-continue-patient").click();
       await page.getByRole("checkbox",{name:/I consent/}).check();
       await page.getByTestId("button-confirm-booking").click();
       await expect(page.getByTestId("appointment-ticket")).toBeVisible();
@@ -516,15 +528,14 @@ test("reference stage evidence: required mobile, retained draft, consent and pri
  await page.getByTestId("button-guest-continue-visit").click();
  await page.getByTestId("input-guest-name").fill("Fictional Reference Guest");
  await page.getByTestId("input-guest-permission").check();
- await page.getByTestId("button-guest-continue-patient").click();
+ await page.getByTestId("button-submit-guest").click();
  await expect(page.getByTestId("input-guest-mobile")).toHaveAttribute("aria-invalid","true");
  await page.getByTestId("input-guest-mobile").fill("+14155552671");
  await page.screenshot({path:"generated-artifacts/booking-reference/after/guest-patient-390.png",fullPage:true});
- await page.getByTestId("button-guest-continue-patient").click();
  await page.screenshot({path:"generated-artifacts/booking-reference/after/guest-confirmation-390.png",fullPage:true});
  await page.getByTestId("button-booking-back").filter({visible:true}).click();
+ await page.getByTestId("button-guest-continue-visit").click();
  await expect(page.getByTestId("input-guest-name")).toHaveValue("Fictional Reference Guest");
- await page.getByTestId("button-guest-continue-patient").click();
  assertNoWrite(state.writes);
  await page.getByTestId("button-submit-guest").click();
  await expect(page.getByTestId("guest-ticket")).toContainText("FICTIONAL-TICKET");
@@ -574,6 +585,7 @@ test.describe("reference compact-label followup",()=>{
  test("staff patient and confirmation fields remain clear of their action footer at all reference sizes",async({page})=>{
   const state=await fixture(page,"clinicAdmin",{app:true});
   await page.getByTestId("button-booking-continue-visit").click();
+  await expect(page.getByRole("heading",{name:"Who is this visit for?",exact:true})).toBeFocused();
   await selectPatient(page);
   const mobile=page.getByTestId("input-booking-mobile");
   await mobile.fill("+14155552671");
@@ -588,7 +600,6 @@ test.describe("reference compact-label followup",()=>{
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
    await page.screenshot({path:`generated-artifacts/booking-reference/after/clinicAdmin-patient-${width}.png`,fullPage:true});
   }
-  await page.getByTestId("button-booking-continue-patient").click();
   await expect(page.getByTestId("button-confirm-booking")).toBeDisabled();
   await expect(page.getByTestId("booking-summary")).toContainText("+14155552671");
   assertNoWrite(state.writes);

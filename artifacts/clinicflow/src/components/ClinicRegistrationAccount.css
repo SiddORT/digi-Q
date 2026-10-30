@@ -32,14 +32,10 @@
   font-weight: 700;
 }
 
-.registration-account-review {
-  display: grid;
-  gap:8px;
-  margin:16px 0;
-}
-
-.registration-account-review dt { font-weight: 700; }
-.registration-account-review dd { margin:0 0 8px; overflow-wrap: anywhere; }
+.registration-account-card .phone-input { grid-template-columns: 8rem minmax(0, 1fr); }
+.registration-account-card .phone-input .searchable-select-field { min-width: 0; }
+.registration-account-card .phone-input .searchable-select-field span[id$="-value"] { white-space: nowrap; flex-shrink: 0; margin-right: 0; }
+.registration-account-card .phone-input .searchable-select-field > div { padding-inline: 8px; gap: 4px; }
 
 @media (max-width: 639px) {
   .auth-layout.registration-auth-layout > aside { min-height: 0; padding:16px 24px; }

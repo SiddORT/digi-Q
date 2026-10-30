@@ -9,10 +9,10 @@ test("static context is separate from the editable group",()=>{
   const fields=clinic.slice(clinic.indexOf("booking-visit-fields"),clinic.indexOf("</div>",clinic.indexOf("booking-visit-fields")));
   assert.doesNotMatch(fields,/loc-fixed-note|text-booking-timezone/);
 });
-test("availability actions are grouped and Continue states its reason",()=>{
+test("availability refresh and search remain available and Continue states its reason",()=>{
   assert.match(disc,/booking-availability-actions/);
-  const g=disc.slice(disc.indexOf("booking-availability-actions"));
-  for(const id of["button-refresh-booking-availability","button-next-booking-date","{manage}"])assert.ok(g.includes(id),id);
+  for(const id of["button-refresh-booking-availability","button-next-booking-date"])assert.ok(disc.includes(id),id);
+  assert.match(clinic,/BookingScheduleSetup/);
   assert.match(staged,/text-booking-continue-reason/);
   assert.match(clinic,/blockedReason=\{canContinue\?undefined:continueBlockReason\}/);
 });

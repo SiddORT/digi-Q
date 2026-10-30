@@ -1,7 +1,7 @@
 import { Check } from "lucide-react";
 
 /** Section E: the one booking progression shared by staff, patient and guest booking. */
-export const BOOKING_STEPS = ["Visit details", "Patient details", "Confirmation", "Ticket"] as const;
+export const BOOKING_STEPS = ["Visit details", "Patient details", "Ticket"] as const;
 
 /** `step` is 1-based; steps before it are done. */
 export function BookingSteps({ step }: { step: number }) {

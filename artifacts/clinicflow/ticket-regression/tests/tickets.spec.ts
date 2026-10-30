@@ -496,7 +496,7 @@ test("guest immediate creation commits recoverable receipt without account", asy
   await page.getByTestId("input-guest-name").fill("Walk-in Guest");
   await page.getByTestId("input-guest-mobile").fill("+14155552671");
   await page.getByTestId("input-guest-permission").check();
-  await page.getByTestId("button-guest-continue-patient").click();
+  await expect(page.getByTestId("stage-confirmation")).toHaveCount(0);
   await expect(page.getByTestId("button-submit-guest")).toBeEnabled();
   await page.getByTestId("button-submit-guest").click();
   await expect(page.getByTestId("guest-ticket")).toBeVisible();

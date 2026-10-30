@@ -3,7 +3,7 @@ import { mkdir } from "node:fs/promises";
 
 const actor = { id: "fictional-registration-owner", fullName: "Fictional Owner", email: "fictional-owner@test.invalid", mobile: "", role: "clinicAdmin", clinicIds: [], branchIds: [] };
 async function services(page: Page, signedIn = true) {
-  const state = { signedIn, failResend: false, saved: null as any, writes: [] as any[] };
+  const state = { signedIn, failResend: false, saved: null as any, writes: [] as any[], starts: [] as any[], resumes: 0, uncertain: false };
   await page.route("**/api/**", async route => {
     const req = route.request(), url = new URL(req.url()), path = url.pathname;
     const data = req.postDataJSON();
@@ -11,8 +11,8 @@ async function services(page: Page, signedIn = true) {
     if (path === "/api/auth/status") result = state.signedIn ? { authenticated: true, role: "clinicAdmin", requiresStaffPassword: true, staffPasswordVerified: true } : { authenticated: false };
     else if (path === "/api/auth/csrf") result = { csrfToken: "fictional-csrf" };
     else if (path === "/api/me") result = { user: actor, permissions: {} };
-    else if (path === "/api/auth/register/start") result = { challengeId: "fictional-challenge" };
-    else if (path === "/api/auth/registration/resume") result = { challengeId: "fictional-challenge" };
+    else if (path === "/api/auth/register/start") { state.starts.push(data); result = { challengeId: "fictional-challenge" }; }
+    else if (path === "/api/auth/registration/resume") { state.resumes++; result = { challengeId: "fictional-challenge" }; }
     else if (path === "/api/auth/registration/resend") {
       if (state.failResend) { await route.fulfill({status:503,json:{error:"Email service is temporarily unavailable."}}); return; }
       result = { challengeId: "fictional-challenge" };
@@ -25,6 +25,7 @@ async function services(page: Page, signedIn = true) {
     else if (path === "/api/clinic-registration" && req.method() === "POST") {
       state.writes.push(data);
       state.saved = { clinic: { ...data.clinic, id:"fictional-saved-clinic", adminId:actor.id }, branches:data.branches.map((b:any,i:number)=>({...b,id:`fictional-location-${i}`,clinicId:"fictional-saved-clinic",effectiveEmail:b.inheritEmail?data.clinic.email:b.email,effectivePhone:b.inheritPhone?data.clinic.phone:b.phone})), doctorId: data.ownDoctor ? "fictional-doctor" : null };
+      if(state.uncertain){await route.abort("failed");return;}
       result = state.saved;
     } else if (path.includes("/masters") || path.includes("/geography")) result = {items:[],total:0,page:1,pageSize:20};
     else { await route.fulfill({status:500,json:{error:`Unhandled fictional API ${path}`}}); return; }
@@ -58,7 +59,7 @@ async function location(page:Page) {
   await expect(page.getByTestId("registration-branch-0-address")).toHaveValue("Fictional Street");
   await next(page);
 }
-test("onboarding saves, reloads, reviews, completes and reconciles one fictional registration", async ({page}) => {
+test("onboarding saves, reloads, finishes from Care team and reconciles one fictional registration", async ({page}) => {
   const state = await services(page);
   await go(page); await identity(page);
   await mkdir("screenshots/registration",{recursive:true});
@@ -89,10 +90,13 @@ test("onboarding saves, reloads, reviews, completes and reconciles one fictional
   await next(page); // your practice
   await expect(page.getByRole("heading",{name:"Your practice"})).toBeVisible();
   await next(page); // care team
-  await next(page); // review
-  await expect(page.getByText("Monday: 9:00 AM–12:00 PM, 1:00 PM–6:00 PM")).toBeVisible();
-  await expect(page.getByText(/front@test.invalid · \+919876543210/).first()).toBeVisible();
-  await page.screenshot({path:"screenshots/registration/review.png",fullPage:true});
+  await expect(page.getByRole("heading",{name:"Care team",exact:true})).toBeVisible();
+  await expect(page.getByRole("heading",{name:"Review",exact:true})).toHaveCount(0);
+  await expect(page.getByRole("textbox",{name:"Confirm Your Account Password"})).toBeVisible();
+  await page.getByRole("button",{name:"Finish registration",exact:true}).click();
+  expect(state.writes).toHaveLength(0);
+  state.uncertain=true; // A committed result must reconcile, never create twice.
+  await page.screenshot({path:"screenshots/registration/finish.png",fullPage:true});
   await page.getByRole("textbox",{name:"Confirm Your Account Password"}).fill("FictionalPass123");
   await page.getByRole("button",{name:"Finish registration",exact:true}).click();
   await expect(page.getByRole("heading",{name:/registered|setup.*complete|clinic.*ready|registration complete/i}).first()).toBeVisible();
@@ -100,6 +104,52 @@ test("onboarding saves, reloads, reviews, completes and reconciles one fictional
   expect(state.writes[0].branches[0].openingHours).toEqual([{dayOfWeek:1,startTime:"09:00",endTime:"12:00"},{dayOfWeek:1,startTime:"13:00",endTime:"18:00"}]);
   expect(state.saved.branches[0].address).toBe("Fictional Street");
   expect(await page.evaluate(()=>Object.keys(sessionStorage).filter(k=>k.startsWith("digiq:registration:")))).toEqual([]);
+});
+for(const width of [1366,390])test(`owner direct send, email correction, legacy draft and focus at ${width}px`,async({page})=>{
+  const state=await services(page,false);
+  await page.setViewportSize({width,height:900});
+  await page.addInitScript(({email})=>{
+    sessionStorage.setItem("digiq:registration:v1:account:anonymous",JSON.stringify({version:1,expires:Date.now()+86400000,data:{fullName:"Fictional Owner",email,step:"review",password:"must-not-restore",code:"987654"}}));
+  },{email:actor.email});
+  await go(page);
+  await expect(page.getByRole("heading",{name:"Create your account",exact:true})).toBeVisible();
+  await expect(page.locator('input[autocomplete="new-password"]')).toHaveValue("");
+  expect(state.starts).toHaveLength(0);expect(state.resumes).toBe(0);
+  await page.getByRole("button",{name:"Send verification code",exact:true}).click();
+  expect(state.starts).toHaveLength(0);
+  await page.locator('input[autocomplete="new-password"]').fill("FictionalPass123");
+  await page.getByRole("button",{name:"Send verification code",exact:true}).evaluate((button:HTMLButtonElement)=>{button.click();button.click();});
+  await expect(page.getByRole("heading",{name:"Verify your email",exact:true})).toBeFocused();
+  expect(state.starts).toHaveLength(1);
+  await expect(page.getByText("Verification email destination:",{exact:false})).toContainText(actor.email);
+  await page.screenshot({path:`screenshots/registration/${width}-verify.png`,fullPage:true});
+  await page.getByRole("button",{name:"Change email",exact:true}).click();
+  await expect(page.getByTestId("input-registration-email")).toBeFocused();
+  await expect(page.locator('input[autocomplete="new-password"]')).toHaveValue("");
+  await page.getByTestId("input-registration-email").fill("corrected-owner@test.invalid");
+  await page.locator('input[autocomplete="new-password"]').fill("FictionalPass456");
+  await page.getByRole("button",{name:"Send verification code",exact:true}).click();
+  await expect(page.getByRole("heading",{name:"Verify your email",exact:true})).toBeVisible();
+  expect(state.starts.map(input=>input.email)).toEqual([actor.email,"corrected-owner@test.invalid"]);
+  expect(await page.evaluate(()=>JSON.stringify(Object.values(sessionStorage)))).not.toMatch(/FictionalPass|987654|fictional-challenge/);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+});
+test("legacy final setup draft revalidates hidden fields and retains finish security",async({page})=>{
+  const state=await services(page);
+  await go(page);await identity(page);await location(page);
+  await page.evaluate(()=>{
+    const key="digiq:registration:v1:self:fictional-registration-owner";
+    const draft=JSON.parse(sessionStorage.getItem(key)!);
+    draft.data.step=5;draft.data.values.clinicEmail="invalid-email";
+    sessionStorage.setItem(key,JSON.stringify(draft));
+  });
+  await page.reload();
+  await expect(page.getByRole("heading",{name:"Care team",exact:true})).toBeVisible();
+  await expect(page.getByRole("textbox",{name:"Confirm Your Account Password"})).toHaveValue("");
+  await page.getByRole("textbox",{name:"Confirm Your Account Password"}).fill("FictionalPass123");
+  await page.getByRole("button",{name:"Finish registration",exact:true}).click();
+  await expect(page.getByRole("heading",{name:"Clinic identity",exact:true})).toBeVisible();
+  expect(state.writes).toHaveLength(0);
 });
 test("onboarding account secrets are not restored and latest-code success differs from resend failure", async ({page}) => {
   await page.addInitScript(() => {
@@ -112,13 +162,12 @@ test("onboarding account secrets are not restored and latest-code success differ
   await page.getByLabel("Your Name",{exact:false}).fill("Fictional Owner");
   await page.getByLabel("Email Address",{exact:false}).fill(actor.email);
   await page.locator('input[autocomplete="new-password"]').fill("FictionalPass123");
-  await page.getByRole("button",{name:"Review account details",exact:true}).click();
   await expect(page.getByText("Patient accounts cannot",{exact:false})).toBeVisible();
   await page.getByRole("button",{name:"Send verification code",exact:true}).click();
-  await page.getByLabel(/Code Emailed/).fill("123456");
+  await page.getByLabel("Required email verification code",{exact:false}).fill("123456");
   const raw = await page.evaluate(()=>JSON.stringify(Object.values(sessionStorage)));
   expect(raw).not.toMatch(/FictionalPass123|123456|fictional-challenge/);
-  await page.reload(); await expect(page.getByLabel(/Code Emailed/)).toHaveValue("");
+  await page.reload(); await expect(page.getByLabel("Required email verification code",{exact:false})).toHaveValue("");
   await expect(page.getByTestId("registration-resend-code")).toBeEnabled({timeout:15000});
   await page.getByTestId("registration-resend-code").click();
   await expect(page.getByText("Use the code in the latest verification email. Earlier codes no longer work.",{exact:true}).first()).toBeVisible();

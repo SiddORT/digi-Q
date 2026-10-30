@@ -98,12 +98,11 @@ async function fillOwnerWizard(
   await page.getByRole("button", { name: "Expected Consultation Duration" }).click();
   await page.getByRole("option", { name: "20 minutes", exact: true }).click();
   await page.getByTestId("registration-next").click();
-  await page.getByTestId("registration-next").click();
 
   if (options.password && (await page.getByTestId("registration-confirm-password").count())) {
     await page.getByTestId("registration-confirm-password").fill(options.password);
   }
-  await expect(page.getByText("Clinic Admin and doctor in the same account, with a doctor profile at your clinic's locations.", {exact:false})).toBeVisible();
+  await expect(page.getByText("Finish saves the clinic, locations and any chosen doctor sessions together.", {exact:false})).toBeVisible();
   const submitted = page.waitForRequest(request =>
     request.method() === "POST" &&
     new URL(request.url()).pathname === (options.superAdmin ? "/api/clinic-admin-onboarding" : "/api/clinic-registration"));
@@ -248,7 +247,6 @@ async function createBooking(
   await page.getByRole("option", { name: "Active", exact: true }).click();
   await page.getByTestId("button-save").click();
   await expect(page.getByText("Patient registered and selected.", { exact: true })).toBeVisible();
-  await page.getByTestId("button-booking-continue-patient").click();
   await expect(page.getByTestId("booking-summary")).toContainText(options.ownerName);
   await expect(page.getByTestId("booking-summary")).toContainText(options.patientName);
   await page.getByRole("checkbox", {
@@ -398,7 +396,7 @@ test("real self-owner and invited Super Admin owner registration, scoped booking
 
   if (!process.env.OWNER_BOOKING_CONTINUE_AFTER_SUPER) {
   // Self-registration is verified with the fake-mail code, then completed in
-  // the same tab through the actual six-step wizard.
+  // the same tab through the actual five-section wizard.
   if(process.env.OWNER_BOOKING_EXISTING_SELF_EMAIL) {
     await signIn(page,self.email,PASSWORD,self.owner);
   } else {
@@ -406,7 +404,6 @@ test("real self-owner and invited Super Admin owner registration, scoped booking
   await page.getByRole("textbox", { name: "Your Name" }).fill(self.owner);
   await page.getByTestId("input-registration-email").fill(self.email);
   await page.getByRole("textbox", { name: "Password" }).fill(PASSWORD);
-  await page.getByRole("button", { name: "Review account details" }).click();
   await page.getByRole("button", { name: "Send verification code" }).click();
   const selfMail = await latestMail(page,self.email,"registration");
   expect(selfMail).toBeTruthy();
