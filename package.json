@@ -11,6 +11,7 @@
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
     "test:frontend": "pnpm --filter @workspace/scripts run test:frontend",
     "test:appointment-detail-compatibility": "node --test artifacts/api-server/src/test-support/postgres-tools.test.mjs && node scripts/test-appointment-detail-compatibility.mjs",
+    "test:migrations": "node --test artifacts/api-server/src/test-support/postgres-tools.test.mjs && node scripts/test-postgres-migrations.mjs",
     "test:tickets": "playwright test --config artifacts/clinicflow/ticket-regression/playwright.config.ts",
     "test:live-tickets": "node --test --test-concurrency=1 artifacts/api-server/src/arrival-estimate.test.mjs artifacts/api-server/src/live-ticket.integration.test.mjs",
     "test:clinic-metadata": "node --test --test-concurrency=1 artifacts/api-server/src/clinic-metadata.integration.test.mjs artifacts/api-server/src/registration-onboarding.integration.test.mjs artifacts/clinicflow/src/components/clinic-metadata.test.mjs artifacts/clinicflow/src/components/clinic-navigation.test.mjs artifacts/clinicflow/src/components/scope-completion.test.mjs",
