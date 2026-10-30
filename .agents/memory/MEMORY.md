@@ -72,3 +72,4 @@
 - [Live-ticket authority](live-ticket-authority.md) — read-only sharing is separate from existing guest receipt management; signing in does not claim a guest booking.
 - [Rows-per-page preference scope](rows-per-page-preference.md) — opt-in uses account-scoped browser storage; explicit contexts win and unsupported surfaces stay unchanged.
 - [Embedded visit history paging](embedded-visit-history-paging.md) — use normalized time plus JSON ordinal for stable private pages; do not confuse display events with operational audit history.
+- [Controlled draft updates](controlled-draft-updates.md) — paired time value/validity callbacks must compose against the latest form draft, not captured props.

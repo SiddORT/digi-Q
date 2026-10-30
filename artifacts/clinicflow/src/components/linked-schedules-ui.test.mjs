@@ -110,7 +110,7 @@ test("copy-once and follow controls live inside the one weekly editor, no separa
   assert.doesNotMatch(scheduling, /ClinicSessionSetup|AppDialog|button-copy-opening-hours/);
   const editor=source("schedule/WeeklyScheduleEditor.tsx");
   assert.match(editor, /onClick=\{copyLocationHours\} data-testid="button-copy-opening-hours"/);
-  assert.match(editor, /setWeek\(w => prefillFromHours\(w, opening\)\)/); // draft only, saved via the shared plan
+  assert.match(editor, /setWeek\(w => prefillFromHours\(w, opening\)\.map/); // draft only, linked receptionist days kept
   assert.match(editor, /<FollowLocationHours branch=\{branch.data\}/);
   const follow=source("schedule/FollowLocationHours.tsx");
   assert.match(follow, /data-testid="radio-follow-location-hours"/);
@@ -126,7 +126,7 @@ test("onboarding and registration share one owner schedule mapping: linked defau
   assert.match(wizard, /ownerCustomSchedule: \{ \.\.\.capacity, sessions \}/);
   assert.match(wizard, /<OwnerWeeklySessions /);
   const owner = source("schedule/OwnerWeeklySessions.tsx");
-  assert.match(owner, /<WeeklyDraftDays /);
+  assert.match(owner, /<CompactDayEditor /);
   assert.match(owner, /button-copy-opening-hours/);
   assert.match(owner, /applyWeekTo\(/);
   assert.match(source("schedule/WeeklyScheduleEditor.tsx"), /<CompactDayEditor /);

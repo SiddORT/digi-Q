@@ -2,13 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { EDITOR_TABS, editorTabIndex } from "./form-tabs.ts";
 import { queueModeLabel, scheduleAdditionalKeys } from "./schedule-facts.ts";
-import { scheduleFormErrors, scheduleTimeError } from "./schedule-validation.ts";
+import { dayErrors } from "../components/schedule/week-plan.ts";
 
 const visible = ["doctorName", "branchName", "dayOfWeek", "session", "break", "capacity", "isOpen"];
 const row = { doctorName:"Doctor", branchName:"Clinic", dayOfWeek:1, isOpen:true, startTime:"09:00", endTime:"12:00", breakStart:"10:00", breakEnd:"10:15", tokenPrefix:"A", maxTokens:10, consultationMinutes:20, bufferMinutes:5 };
-test("weekly availability has four stable tabs; other tab mappings are unchanged", () => {
-  assert.deepEqual(EDITOR_TABS.availability.map(([label])=>label),["Schedule","Timing & Break","Capacity","Queue Settings"]);
-  EDITOR_TABS.availability.forEach(([,groups],index)=>groups.forEach(group=>assert.equal(editorTabIndex("availability",group),index)));
+test("weekly availability no longer uses scalar generic tabs; unrelated mappings are unchanged", () => {
+  assert.equal(EDITOR_TABS.availability,undefined);
+  assert.equal(editorTabIndex("patients","Patient information"),0);
   assert.equal(EDITOR_TABS.exceptions,undefined);
   assert.equal(EDITOR_TABS.doctors,undefined);
 });
@@ -39,17 +39,18 @@ test("page-fixed scope stays omitted while unfixed hidden scope remains accessib
   assert.deepEqual(scheduleAdditionalKeys(scoped,visible),["clinicName"]);
 });
 test("break and queue errors are caught even when their tabs are hidden", () => {
-  assert.equal(scheduleTimeError("endTime","08:00",row),"Closing time must follow opening time.");
-  assert.equal(scheduleTimeError("breakEnd","",{...row,breakEnd:""}),"Both break times are required.");
-  assert.equal(scheduleTimeError("breakStart","08:00",{...row,breakStart:"08:00"}),"Break must lie within the session.");
-  assert.equal(scheduleTimeError("queueOpenTime","12:00",row),"Queue opening must precede session end.");
-  assert.notEqual(scheduleTimeError("queueCloseTime","08:00",row),true);
-  assert.equal(scheduleTimeError("queueCloseTime","12:00",row),true);
-  assert.equal(scheduleTimeError("breakStart","",{...row,isOpen:false,breakEnd:""}),true);
+  const errors=(patch)=>dayErrors({dayOfWeek:1,isOpen:true,sessions:[{key:"s",startTime:row.startTime,endTime:row.endTime,settings:{...row,...patch}}]});
+  assert.match(errors({breakEnd:""}).join(" "),/break must have valid start and end/);
+  assert.match(errors({breakStart:"08:00"}).join(" "),/break must have valid start and end/);
+  assert.match(errors({queueOpenTime:"12:00"}).join(" "),/queue opening must precede/);
+  assert.match(errors({queueCloseTime:"08:00"}).join(" "),/queue closing time must follow/);
+  assert.deepEqual(errors({queueCloseTime:"12:00"}),[]);
 });
 test("whole-record check validates hidden controls independently of mounted field validation", () => {
-  const fields=[{key:"doctorId",required:true},{key:"maxTokens",type:"number",required:true},{key:"bufferMinutes",type:"number"},{key:"queueCloseTime",type:"time"}];
-  const errors=scheduleFormErrors({...row,maxTokens:0,bufferMinutes:1441,queueCloseTime:"13:00"},fields);
-  assert.deepEqual(Object.keys(errors),["doctorId","maxTokens","bufferMinutes","queueCloseTime"]);
-  assert.deepEqual(scheduleFormErrors({...row,doctorId:"d"},fields),{});
+  const day={dayOfWeek:1,isOpen:true,sessions:[{key:"s",startTime:row.startTime,endTime:row.endTime,settings:{...row,maxTokens:0,bufferMinutes:1441,queueCloseTime:"13:00"}}]};
+  const errors=dayErrors(day);
+  assert.equal(errors.length,3);
+  for(const text of ["capacity","buffer","queue closing"])assert.match(errors.join(" "),new RegExp(text));
+  day.sessions[0].settings={...row};
+  assert.deepEqual(dayErrors(day),[]);
 });

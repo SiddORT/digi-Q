@@ -186,6 +186,35 @@ test("custom consulting-owner sessions are saved atomically and a retry cannot d
   assert.equal(saved.length, 1);
   assert.equal(saved[0].data.startTime, "09:00");
 });
+test("custom multi-day owner sessions preserve per-session settings and invalid hidden settings roll back the entire registration", async () => {
+  const input = body("custom-settings", crypto.randomUUID());
+  delete input.ownerSchedule;
+  const settings={timezone:"Asia/Kolkata",maxTokens:13,consultationMinutes:30,tokenPrefix:"OWN",bufferMinutes:5,queueMode:"appointmentsOnly",breakStart:"10:00",breakEnd:"10:20",queueOpenTime:"08:30",queueCloseTime:"11:30"};
+  input.branches[0].openingHours=[1,3,5].map(dayOfWeek=>({dayOfWeek,startTime:"08:00",endTime:"20:00"}));
+  input.ownerCustomSchedule={maxTokens:5,consultationMinutes:20,tokenPrefix:"A",queueMode:"mixed",sessions:[
+    {branchIndex:0,dayOfWeek:1,startTime:"09:00",endTime:"12:00",...settings},
+    {branchIndex:0,dayOfWeek:1,startTime:"14:00",endTime:"16:00"},
+    {branchIndex:0,dayOfWeek:3,startTime:"09:30",endTime:"12:30"},
+    {branchIndex:0,dayOfWeek:5,startTime:"15:00",endTime:"18:00"},
+  ]};
+  for(const patch of [{maxTokens:1001},{queueOpenTime:"18:00"},{breakStart:"15:30",breakEnd:null},{timezone:"invalid/zone"}]){
+    const invalid=structuredClone(input);Object.assign(invalid.ownerCustomSchedule.sessions[3],patch);
+    const denied=await h.call("sa","POST","/clinic-admin-onboarding",invalid);
+    assert.equal(denied.status,400,JSON.stringify(denied.data));
+    assert.equal((await h.pg.query("select id from clinics where data->>'slug'=$1",[input.clinic.slug])).rows.length,0);
+    const receipt=await h.call("sa","GET",`/clinic-admin-onboarding/completion?requestId=${input.requestId}`);
+    assert.equal(receipt.data.result,null);
+  }
+  const made=await h.call("sa","POST","/clinic-admin-onboarding",input);
+  assert.equal(made.status,201,JSON.stringify(made.data));
+  const read=async()=>(await h.pg.query("select id,day_of_week,data from schedules where clinic_id=$1 order by day_of_week,data->>'startTime'",[made.data.clinic.id])).rows;
+  const saved=await read();assert.equal(saved.length,4);
+  assert.deepEqual(saved.map(r=>[r.day_of_week,r.data.startTime,r.data.endTime]),[[1,"09:00","12:00"],[1,"14:00","16:00"],[3,"09:30","12:30"],[5,"15:00","18:00"]]);
+  for(const [key,value] of Object.entries(settings))assert.equal(saved[0].data[key],value,key);
+  assert.equal(saved[1].data.maxTokens,5);assert.equal(saved[1].data.consultationMinutes,20);
+  assert.equal((await h.call("sa","POST","/clinic-admin-onboarding",input)).data.clinic.id,made.data.clinic.id);
+  assert.deepEqual(await read(),saved);
+});
 
 test("location conflicts roll back creation, preserve request identity and require explicitly corrected values", async () => {
   const input = body("location-conflict", crypto.randomUUID());

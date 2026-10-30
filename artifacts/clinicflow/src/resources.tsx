@@ -3,7 +3,6 @@ import { usePreferredPageSize } from "./lib/page-size-preference";
 import { clinicDetailsHref, clinicWorkspaceHref } from "./lib/clinic-navigation";
 import { EDITOR_TABS, editorTabIndex } from "./lib/form-tabs";
 import { queueModeLabel, scheduleAdditionalKeys } from "./lib/schedule-facts";
-import { scheduleFormErrors, scheduleTimeError } from "./lib/schedule-validation";
 import { FormTabs } from "./components/FormTabs";
 import { RowMenu, type RowMenuItem } from "./components/RowMenu";
 import { IconAction } from "./components/IconAction";
@@ -46,6 +45,7 @@ import { ExactRecordDrawer, RecordFacts, scanScopedPages, useExactRecord, type R
 import { AvailabilityScheduleEntry } from "./components/schedule/AvailabilityScheduleEntry";
 import type { ScheduleDisplayContext } from "./components/schedule/DoctorScheduleContext";
 import { ScheduleDayDialog } from "./components/schedule/ScheduleDayDialog";
+import { AddScheduleDialog } from "./components/schedule/AddScheduleDialog";
 import { scheduleSnapshot } from "./components/schedule/week-plan";
 import { ExceptionImpactPreview } from "./components/schedule/ExceptionImpactPreview";
 import { friendlyError } from "./lib/friendly-error";
@@ -63,7 +63,6 @@ import { notifySuccess } from "./lib/notify";
 import { PhoneInput } from "./components/PhoneInput";
 import { StatusSwitch } from "./components/StatusSwitch";
 import { useDateTimePreferences } from "./components/DateTimePreferences";
-import { TimeRangeSlider } from "./components/ClinicRegistrationHours";
 import { useWorkspaceBranch, useRegisterUnsaved } from "./components/WorkspaceBranch";
 import { ResourceRecord } from "./components/ResourceRecord";
 import { ClinicMetadataFields } from "./components/ClinicMetadataFields";
@@ -103,7 +102,7 @@ export const resources:Record<string,Resource>={
  patients:{name:"patients",list:api.listPatients,create:api.createPatient,update:api.updatePatient,remove:api.deletePatient,fields:[...person.map(field=>field.key==="mobile"?{...field,required:false,label:"Mobile"}:field.key==="email"?{...field,width:"lg" as const}:field),f("age","number"),...addressFields(),{...f("emergencyContactName"),width:"lg" as const},f("emergencyContactPhone","tel"),{...relation("clinicId","clinics"),width:"md" as const},{...relation("branchId","branches"),width:"md" as const},{...status,width:"sm" as const}],columns:["fullName","code","mobile","gender"]},
  users:{name:"users",list:api.listUsers,create:api.createUser,update:api.updateUser,remove:api.deleteUser,fields:[f("fullName","text",true),f("email","email",true),f("mobile","tel"),f("role","select",true,["receptionist","clinicAdmin","patient"]),...addressFields(),relation("clinicIds","clinics"),relation("branchIds","branches"),status],columns:["fullName","email","role","clinicNames","branchNames","status"]},
  masters:{name:"master values",list:api.listMasters,create:api.createMaster,update:api.updateMaster,remove:api.deleteMaster,fields:[f("category","select",true,Object.values(api.MasterInputCategory)),f("name","text",true),f("code","text",true),relation("parentId","masters"),f("sortOrder","number"),status],columns:["name","category","code","status"]},
- availability:{name:"weekly schedules",list:api.listSchedules,create:api.createSchedule,update:api.updateSchedule,remove:api.deleteSchedule,fields:[relation("doctorId","doctors",true),relation("clinicId","clinics",true),relation("branchId","branches",true),{...f("dayOfWeek","select",true,["0","1","2","3","4","5","6"]),width:"md" as const},{...f("isOpen","checkbox"),label:"Session Open",width:"md" as const},f("startTime","time",true),f("endTime","time",true),...scheduleBreakFields,{...f("timezone"),width:"lg" as const},{...f("tokenPrefix","text",true),width:"sm" as const},{...f("maxTokens","number",true),label:"Max Tokens",width:"sm" as const},{...f("consultationMinutes","duration",true),label:"Consultation Duration",width:"sm" as const},{...f("bufferMinutes","number"),label:"Buffer (min)",width:"sm" as const},{...f("queueMode","select",false,["mixed","appointmentsOnly","walkInsOnly"]),width:"md" as const},f("queueOpenTime","time"),f("queueCloseTime","time")],columns:["doctorName","branchName","dayOfWeek","session","break","capacity","isOpen"]},
+  availability:{name:"weekly schedules",list:api.listSchedules,create:api.createSchedule,update:api.updateSchedule,remove:api.deleteSchedule,fields:[],columns:["doctorName","branchName","dayOfWeek","session","break","capacity","isOpen"]},
  exceptions:{name:"date exceptions",list:api.listAvailabilityExceptions,create:api.createAvailabilityException,update:api.updateAvailabilityException,remove:api.deleteAvailabilityException,fields:[relation("doctorId","doctors",true),relation("branchId","branches",true),f("date","date",true),{...f("sessionId","session"),label:"Session (Optional; Blank Applies to All)"},{...f("isClosed","checkbox"),label:"Day Off (Closed)",width:"md" as const},{...f("isExtra","checkbox"),label:"Extra Interval (Adds a Session)",width:"md" as const},{...f("reason","text",true),width:"lg" as const},{...f("startTime","time"),nullable:true},{...f("endTime","time"),nullable:true},...scheduleBreakFields,{...f("maxTokens","number"),nullable:true}],columns:["date","careScope","reason","isClosed","session","break","maxTokens"]},
   qrs:{name:"booking QR codes",list:api.listQrs,create:api.createQr,update:api.updateQr,remove:api.deleteQr,fields:[f("name","text",true),relation("clinicId","clinics",true),{...relation("branchId","branches"),nullable:true},{...relation("doctorId","doctors"),nullable:true},status],columns:["name","reference","status"]},
  audit:{name:"audit events",list:api.listAuditLogs,fields:[],columns:["createdAt","actorName","action","summary"]},
@@ -149,7 +148,7 @@ function RelationInput({field,form,fields,resourceName,label,initial}:any){
  const clinicIds=values.clinicIds || (values.clinicId?[values.clinicId]:[]);
  const hasClinic=fields.some((f:Field)=>["clinicId","clinicIds"].includes(f.key));
  const assignment=((resourceName==="doctors"||resourceName==="users")&&["clinics","branches"].includes(field.resource))||(resourceName==="branches"&&field.resource==="clinics"&&me.data?.user?.role==="doctor");
-  const operational=["patients","availability","exceptions","qrs"].includes(resourceName);
+  const operational=["patients","exceptions","qrs"].includes(resourceName);
   const immutablePatient=resourceName==="patients"&&!!initial?.id&&me.data?.user?.role!=="superAdmin"&&["clinicId","branchId"].includes(field.key);
   const contextual=operational&&!initial?.id&&["clinicId","branchId"].includes(field.key)&&(initial?.verifiedBookingContext || initial?.verifiedClinicContext&&field.key==="clinicId" || pin&&initial?.branchId===pin.branchId&&initial?.clinicId===pin.clinicId);
   const selfDoctor=operational&&field.key==="doctorId"&&me.data?.user?.role==="doctor"&&values.doctorId===me.data?.doctorId;
@@ -162,7 +161,7 @@ function RelationInput({field,form,fields,resourceName,label,initial}:any){
    if(values.doctorId)params.doctorId=values.doctorId;
  }
  if(field.resource==="doctors"){
-   if(["availability","exceptions","qrs"].includes(resourceName))params.status="active";
+   if(["exceptions","qrs"].includes(resourceName))params.status="active";
    if(values.clinicId)params.clinicId=values.clinicId;
    if(values.branchId)params.branchId=values.branchId;
  }
@@ -194,7 +193,7 @@ function RelationInput({field,form,fields,resourceName,label,initial}:any){
      }
   };
    const props={id:`input-${field.key}`,error:form.formState.errors[field.key]?.message,resource:assignment?`assignment:${field.resource}`:field.resource,params,label,placeholder:`Search ${label.toLowerCase()}…`,disabled:!immutablePatient&&!contextual&&["branches","doctors"].includes(field.resource)&&hasClinic&&!clinicIds.length,required:field.required,onChange:change,onSelectedRecords:validateSelected,fixed:immutablePatient||!!contextual||selfDoctor,autoSole:operational&&!immutablePatient&&(field.required||resourceName==="patients")};
-  return many?<ResourceMultiLookup {...props} value={values[field.key]||[]}/>:<ResourceLookup {...props} wrapFixedLabel={resourceName==="availability"} value={values[field.key]||""}/>;
+  return many?<ResourceMultiLookup {...props} value={values[field.key]||[]}/>:<ResourceLookup {...props} value={values[field.key]||""}/>;
 }
  /** Groups long editors into consistent titled sections. Order is stable inside a group; no field is removed. */
 const EDITOR_GROUPS:[string,string[]][]=[
@@ -214,15 +213,9 @@ export const LOCATION_EDITOR_GROUPS:[string,string[]][]=[["Identity",["clinicId"
 /** Patient editor: identity first, then address, assignment and the optional emergency contact (reference layout). */
 export const PATIENT_EDITOR_GROUPS:[string,string[]][]=[["Patient information",["fullName","gender","dateOfBirth","age","mobile","email"]],["Clinic and status",["clinicId","branchId","status"]],["Address",["address","country","state","city","pincode"]],["Emergency contact",["emergencyContactName","emergencyContactPhone"]]];
 const GROUP_HINTS:Record<string,ReactNode>={"Patient information":"Identity and booking contacts.","Clinic and status":<>Where this record is managed. <HelpTip label="About patient status" text="Active patients can be chosen for new bookings. Inactive profiles stay in historical records but are excluded from active patient pickers. This profile status does not change a linked user's login credentials."/></>,"Address":"Used for communication and location.","Emergency contact":"Optional person to call about this patient.","Professional":"Shown to patients when booking.","Assignment and scope":"Which clinics and locations this applies to.","Contact":"Public contact details for this location.","Capacity":"Tokens and pacing for this session.","Timing":"Session hours and an optional break.","Queue window":"When walk-ins and check-ins are accepted."};
-const SCHEDULE_EDITOR_GROUPS:[string,string[]][]=[
- ["Schedule",["doctorId","clinicId","branchId","dayOfWeek","isOpen"]],
- ["Timing & Break",["startTime","endTime","breakStart","breakEnd","timezone"]],
- ["Capacity",["tokenPrefix","maxTokens","consultationMinutes","bufferMinutes"]],
- ["Queue Settings",["queueMode","queueOpenTime","queueCloseTime"]],
-];
-type EditorKind="location"|"patient"|"schedule"|undefined;
+type EditorKind="location"|"patient"|undefined;
 
-const groupsFor=(kind:EditorKind)=>kind==="schedule"?SCHEDULE_EDITOR_GROUPS:kind==="location"?LOCATION_EDITOR_GROUPS:kind==="patient"?PATIENT_EDITOR_GROUPS:EDITOR_GROUPS;
+const groupsFor=(kind:EditorKind)=>kind==="location"?LOCATION_EDITOR_GROUPS:kind==="patient"?PATIENT_EDITOR_GROUPS:EDITOR_GROUPS;
 export const isLocationEditor=(fields:{key:string}[])=>fields.some(field=>field.key==="inheritEmail");
 export function editorGroup(key:string,location:boolean|EditorKind=false){const kind:EditorKind=location===true?"location":location||undefined;const groups=groupsFor(kind);return (groups.find(([,keys])=>keys.includes(key))||groups[0])[0];}
 function sortEditorFields<T extends {key:string}>(fields:T[],grouped:boolean,kind:EditorKind=undefined){if(!grouped)return fields;const groups=groupsFor(kind);const rank=(k:string)=>{const g=groups.findIndex(([g])=>g===editorGroup(k,kind));const keys=groups[g]?.[1]||[];return g*100+(kind&&keys.includes(k)?keys.indexOf(k):50);};return fields.map((f,i)=>({f,i})).sort((a,b)=>rank(a.f.key)-rank(b.f.key)||a.i-b.i).map(x=>x.f);}
@@ -257,12 +250,7 @@ export function Editor({fields,initial={},onSave,onCancel,busy=false,submitLabel
  const parentClinic=api.useGetClinic(parentClinicId,{query:{queryKey:api.getGetClinicQueryKey(parentClinicId),enabled:!!parentClinicId}});
  const inherited=useDateTimePreferences();
  const preferences=parentClinic.data||inherited;
- const doctorId=form.watch("doctorId"),branchId=form.watch("branchId"),dayOfWeek=form.watch("dayOfWeek");
- const sessionClinic=api.useGetBranch(branchId||"",{query:{queryKey:api.getGetBranchQueryKey(branchId||""),enabled:resourceName==="availability"&&!!branchId}});
- const clinicHours=(sessionClinic.data?.openingHours||[]).filter(hour=>hour.dayOfWeek===Number(dayOfWeek));
- const matchingTimezone=!form.watch("timezone")||form.watch("timezone")===sessionClinic.data?.timezone;
- const peers=useQuery({queryKey:["editor-session-overlap",doctorId,branchId,dayOfWeek],enabled:resourceName==="availability"&&!!doctorId&&!!branchId&&dayOfWeek!==undefined,queryFn:()=>api.listSchedules({doctorId,branchId,dayOfWeek:Number(dayOfWeek),pageSize:100})});
- const overlaps=(peers.data?.items||[]).some(row=>row.id!==initial.id&&(row as any).status!=="inactive"&&row.startTime<endTime&&startTime<row.endTime);
+ const doctorId=form.watch("doctorId"),branchId=form.watch("branchId");
  const activeFields = useMemo(() => {
    return fields.map(f => {
      const field = { ...f };
@@ -281,35 +269,13 @@ export function Editor({fields,initial={},onSave,onCancel,busy=false,submitLabel
    }).filter(f => !f.hidden);
   }, [fields, currentRole, initial.slug, parentClinic.data?.email, parentClinic.data?.phone]);
   const locationEditor=isLocationEditor(fields);
-  const editorKind:EditorKind=locationEditor?"location":resourceName==="patients"?"patient":resourceName==="availability"?"schedule":undefined;
+  const editorKind:EditorKind=locationEditor?"location":resourceName==="patients"?"patient":undefined;
  const tabs=resourceName?EDITOR_TABS[resourceName]:undefined;
  const tabbed=!!tabs&&activeFields.length>5;
  const tabFilled=(tabs||[]).map((_,i)=>activeFields.some(field=>field.type!=="addressPart"&&editorTabIndex(resourceName,editorGroup(field.key,editorKind))===i)||(i===(tabs||[]).length-1&&!!children));
  const tabInvalid=(tabs||[]).map((_,i)=>Object.keys(form.formState.errors).some(key=>editorTabIndex(resourceName,editorGroup(key,editorKind))===i));
- const extendedHours=resourceName==="availability"&&matchingTimezone&&clinicHours.length>0&&startTime&&endTime&&!clinicHours.some(hour=>hour.startTime<=startTime&&hour.endTime>=endTime);
- const timingAttention=resourceName==="availability"&&(extendedHours||overlaps||!!peers.error||!!sessionClinic.error||!!(startTime&&endTime&&startTime>=endTime));
- const revealScheduleErrors=(errors:Record<string,any>)=>{
-  const order=sortEditorFields(activeFields,true,editorKind).map(field=>field.key);
-  const keys=Object.keys(errors).sort((a,b)=>(order.includes(a)?order.indexOf(a):Infinity)-(order.includes(b)?order.indexOf(b):Infinity));
-  const first=keys[0];
-  if(!first)return false;
-  keys.forEach(key=>form.setError(key,{type:"validate",message:typeof errors[key]==="string"?errors[key]:String(errors[key]?.message||"This field is required")}));
-  setActiveTab(editorTabIndex(resourceName,editorGroup(first,editorKind)));
-  requestAnimationFrame(()=>revealAndFocus(document.getElementById(`input-${first}`)||document.querySelector<HTMLElement>(`[name="${CSS.escape(first)}"]`)));
-  return true;
- };
- const scheduleTiming=<div className="schedule-timing">
-  <TimeRangeSlider clinicHours={matchingTimezone?clinicHours:[]} startTime={startTime||""} endTime={endTime||""} onChange={value=>{form.setValue("startTime",value.startTime,{shouldDirty:true,shouldValidate:true});form.setValue("endTime",value.endTime,{shouldDirty:true,shouldValidate:true});}}/>
-  <small className="muted field-hint">Use the slider or enter exact times. Overnight sessions are not supported.</small>
-  {sessionClinic.isFetching&&<small role="status">Checking clinic hours…</small>}
-  {sessionClinic.data&&<p>Clinic hours: {clinicHours.length?clinicHours.map(hour=>`${formatTime(hour.startTime,preferences)}–${formatTime(hour.endTime,preferences)}`).join(", "):"Closed"} · {sessionClinic.data.timezone}{!matchingTimezone&&" (different session timezone; shading is hidden)"}</p>}
-  {extendedHours&&<p className="notice" role="status">This session extends outside a clinic opening interval. Review the times; existing server rules decide whether it can be saved.</p>}
-  {startTime&&endTime&&startTime>=endTime&&<p role="alert" className="field-error">Closing time must follow opening time.</p>}
-  {overlaps&&<p role="alert" className="field-error">This session overlaps another session for this doctor and clinic.</p>}
-  <ErrorNotice error={peers.error||sessionClinic.error} busy={peers.isFetching||sessionClinic.isFetching} onRetry={()=>Promise.all([...(peers.error?[peers.refetch()]:[]),...(sessionClinic.error?[sessionClinic.refetch()]:[])])}/>
- </div>;
 
-   return <Form {...form}><div className="editor-container"><form className="form-grid field-grid" noValidate data-location-editor={locationEditor||undefined} data-testid={locationEditor?"location-editor":undefined} onSubmit={submitWithNativeChecks(form,values=>{if(resourceName==="availability"&&revealScheduleErrors(scheduleFormErrors(values,activeFields)))return;if(resourceName==="patients"){const secondary=secondaryFieldErrors(values);const keys=Object.keys(secondary);if(keys.length){keys.forEach(key=>form.setError(key,{type:"validate",message:secondary[key]}));setMoreDetails(true);setTimeout(()=>document.getElementById(`input-${keys[0]}`)?.focus()||document.querySelector<HTMLElement>(`[name="${CSS.escape(keys[0])}"]`)?.focus(),0);return;}}if(!beginEditorSubmission(submitting,busy,reviewOnly))return;const body:any={}; activeFields.forEach(field=>{
+   return <Form {...form}><div className="editor-container"><form className="form-grid field-grid" noValidate data-location-editor={locationEditor||undefined} data-testid={locationEditor?"location-editor":undefined} onSubmit={submitWithNativeChecks(form,values=>{if(resourceName==="patients"){const secondary=secondaryFieldErrors(values);const keys=Object.keys(secondary);if(keys.length){keys.forEach(key=>form.setError(key,{type:"validate",message:secondary[key]}));setMoreDetails(true);setTimeout(()=>document.getElementById(`input-${keys[0]}`)?.focus()||document.querySelector<HTMLElement>(`[name="${CSS.escape(keys[0])}"]`)?.focus(),0);return;}}if(!beginEditorSubmission(submitting,busy,reviewOnly))return;const body:any={}; activeFields.forEach(field=>{
     if(field.disabled)return;
     // Demographic edits never submit a registration move, including an empty
     // optional location. The server retains the persisted assignment exactly.
@@ -332,18 +298,17 @@ export function Editor({fields,initial={},onSave,onCancel,busy=false,submitLabel
       if (isClinicOrBranchMapping && !field.required) return;
       return;
     }
-    if(field.type==="number"||field.type==="duration"||field.key==="dayOfWeek")value=Number(value);
+    if(field.type==="number")value=Number(value);
     if(field.type==="array")value=Array.isArray(value)?value:String(value).split(",").map(s=>s.trim()).filter(Boolean);
     if(Array.isArray(value))value=value.filter(Boolean);
 
     body[field.key]=value;
-  });onSave(body);},errors=>{if(resourceName==="availability"&&revealScheduleErrors({...errors,...scheduleFormErrors(form.getValues(),activeFields)}))return;if(Object.keys(errors).some(key=>PATIENT_SECONDARY.includes(key)))setMoreDetails(true);{const first=Object.keys(errors)[0];if(first&&tabbed)setActiveTab(editorTabIndex(resourceName,editorGroup(first,editorKind)));}requestAnimationFrame(()=>{const key=Object.keys(errors)[0];const element=document.getElementById(`input-${key}`)||document.querySelector<HTMLElement>(`[name="${CSS.escape(key)}"]`)||document.querySelector<HTMLElement>('[aria-invalid="true"]');revealAndFocus(element);});})}>
+  });onSave(body);},errors=>{if(Object.keys(errors).some(key=>PATIENT_SECONDARY.includes(key)))setMoreDetails(true);{const first=Object.keys(errors)[0];if(first&&tabbed)setActiveTab(editorTabIndex(resourceName,editorGroup(first,editorKind)));}requestAnimationFrame(()=>{const key=Object.keys(errors)[0];const element=document.getElementById(`input-${key}`)||document.querySelector<HTMLElement>(`[name="${CSS.escape(key)}"]`)||document.querySelector<HTMLElement>('[aria-invalid="true"]');revealAndFocus(element);});})}>
    {resourceName==="patients"&&<p className="muted wide form-intro" data-testid="text-patient-contact-rules">{PATIENT_CONTACT_RULE}</p>}{confirmation.dialog}
         {resourceName==="branches"&&<p className="muted wide form-context">About clinics <HelpTip label="About clinics" text="A clinic is a physical care location within a Clinic Group, with its own address, timezone, opening hours and booking link. Clinics do not have a separate login. Named staff use their own accounts, assignments and invitations. Contact inheritance controls its public contact details; it does not change staff sign-in addresses or configure notification delivery."/></p>}
     {legacyBoth&&<p className="notice wide" role="status" data-testid="text-exception-legacy-both">This record was saved as both Day Off and Extra Interval. It works as an Extra Interval, so Day Off is shown cleared; saving keeps that behaviour.</p>}
      {resourceName==="exceptions"&&<ExceptionImpactPreview doctorId={doctorId} branchId={branchId} date={form.watch("date")} isClosed={!!form.watch("isClosed")} isExtra={!!form.watch("isExtra")} startTime={startTime} endTime={endTime} sessionId={form.watch("sessionId")}/>}
-   {tabbed&&tabs&&<FormTabs tabs={tabs.map(([label])=>label)} icons={resourceName==="availability"?["weekly","timing","capacity","queue"]:resourceName==="patients"?["personal","details"]:["personal","assignment"]} active={activeTab} onChange={setActiveTab} invalid={tabInvalid} attention={resourceName==="availability"?[false,!!timingAttention]:undefined} idPrefix={resourceName==="availability"?"schedule-editor":undefined} separatePanels={resourceName==="availability"} hiddenTabs={tabFilled.map(filled=>!filled)}/>}
-   {timingAttention&&activeTab!==1&&<p className="wide schedule-tab-notice" role="status"><button type="button" className="text-link" onClick={()=>setActiveTab(1)}>Review Timing &amp; Break</button> — {overlaps?"Conflicting session times.":peers.error||sessionClinic.error?"Hours or conflict check unavailable.":startTime>=endTime?"Invalid session range.":"Session extends outside clinic hours."}</p>}
+   {tabbed&&tabs&&<FormTabs tabs={tabs.map(([label])=>label)} icons={resourceName==="patients"?["personal","details"]:["personal","assignment"]} active={activeTab} onChange={setActiveTab} invalid={tabInvalid} hiddenTabs={tabFilled.map(filled=>!filled)}/>}
    {(()=>{const v=form.watch();const place=[v.address,v.city,v.state,v.pincode].filter(Boolean).join(", ");const contact=[v.emergencyContactName,v.emergencyContactPhone].filter(Boolean).join(" · ");const secondarySummary=[place&&`Address: ${place}`,contact&&`Emergency: ${contact}`].filter(Boolean).join("  |  ");const grouped=activeFields.length>5;const order:string[]=[];const cells=new Map<string,{nodes:ReactNode[];open:boolean}>();sortEditorFields(activeFields,grouped,editorKind).forEach(field=>{
     const collapsed=resourceName==="patients"&&!tabbed&&!moreDetails&&PATIENT_SECONDARY.includes(field.key)&&!form.formState.errors[field.key];const node=(()=>{
     const label=field.label||title(field.key.replace(/Ids?$/,""));
@@ -361,18 +326,12 @@ export function Editor({fields,initial={},onSave,onCancel,busy=false,submitLabel
       return <FormField key={field.key} label={label} required={field.required} optional={!field.required} error={error} info={helper}><input type={boundedSessionField?"text":"number"} inputMode={boundedSessionField?"numeric":undefined} maxLength={boundedSessionField?4:undefined} pattern={boundedSessionField?"[0-9]*":undefined} min={min} max={max} step={["consultationFee","experienceYears"].includes(field.key)?"any":1} {...form.register(field.key,{validate:value=>(field.required?required()(value):undefined)||validateNumberRange(value,{min,max,integer:!["consultationFee","experienceYears"].includes(field.key)})||true})}/></FormField>;
     }
     if(field.type==="tel")return <Controller key={field.key} name={field.key} control={form.control} rules={rules} render={({field:input})=><FormField label={label} required={field.required} optional={!field.required} error={error} info={mobileVerificationHelp&&field.key==="mobile"?"Changing a mobile number resets its verification.":undefined}><PhoneInput {...input} disabled={field.disabled} value={input.value||""}/></FormField>}/>;
-    if(field.type==="date"||field.type==="time")return <Controller key={field.key} name={field.key} control={form.control} rules={{...rules,validate:value=>rules.validate(value)!==true?rules.validate(value):resourceName==="availability"?scheduleTimeError(field.key,value,form.getValues()):field.key==="endTime"&&startTime&&value&&startTime>=value?"Closing time must follow opening time.":true}} render={({field:input})=><FormField id={`input-${field.key}`} label={label} required={field.required} optional={!field.required} error={error} helper={field.key==="dateOfBirth"&&!fields.some(item=>item.key==="age")?<output aria-label="Age (read only)">Age (read only): {ageFromDateOfBirth(input.value)??"—"}</output>:undefined}>{a11y=>field.type==="date"?<DateFormatInput {...a11y} name={field.key} preferences={preferences} value={input.value instanceof Date?input.value.toISOString().slice(0,10):input.value||""} onChange={input.onChange}/>:<TimeFormatInput {...a11y} name={field.key} preferences={preferences} value={input.value||""} onChange={input.onChange}/>}</FormField>}/>;
+    if(field.type==="date"||field.type==="time")return <Controller key={field.key} name={field.key} control={form.control} rules={{...rules,validate:value=>rules.validate(value)!==true?rules.validate(value):field.key==="endTime"&&startTime&&value&&startTime>=value?"Closing time must follow opening time.":true}} render={({field:input})=><FormField id={`input-${field.key}`} label={label} required={field.required} optional={!field.required} error={error} helper={field.key==="dateOfBirth"&&!fields.some(item=>item.key==="age")?<output aria-label="Age (read only)">Age (read only): {ageFromDateOfBirth(input.value)??"—"}</output>:undefined}>{a11y=>field.type==="date"?<DateFormatInput {...a11y} name={field.key} preferences={preferences} value={input.value instanceof Date?input.value.toISOString().slice(0,10):input.value||""} onChange={input.onChange}/>:<TimeFormatInput {...a11y} name={field.key} preferences={preferences} value={input.value||""} onChange={input.onChange}/>}</FormField>}/>;
     if(field.type==="session")return <ExceptionSessionInput key={field.key} form={form} label={label}/>;
     if(field.resource)return <div className={field.type==="textarea"||field.wide?"wide":""} key={field.key}><RelationInput field={field} form={form} fields={fields} resourceName={resourceName} label={label} initial={initial}/>{error&&<small className="field-error">{error}</small>}</div>;
     if(field.type==="addressPart")return null;
     if(field.type==="address")return <EditorAddress key={field.key} form={form} required={field.required}/>;
     if(field.type==="masterText")return <label key={field.key} className="address-compact">{label}{field.required&&<span className="required"> *</span>}<MasterTextInput field={field} control={form.control} setValue={form.setValue}/>{error&&<small className="field-error">{error}</small>}</label>;
-    if(field.type==="duration"){
-     const legacy=initial[field.key];
-     const choices=[20,30,60];
-     const opts=[...choices.map(v=>({value:String(v),label:`${v} minutes`})),...(legacy!=null&&legacy!==""&&!choices.includes(Number(legacy))?[{value:String(legacy),label:`${legacy} minutes (current, legacy value)`}]:[])];
-     return <Controller key={field.key} name={field.key} control={form.control} rules={{required:field.required}} render={({field:input})=><div><SearchableSelect id={`input-${field.key}`} label={label} required={field.required} value={input.value==null?"":String(input.value)} onChange={input.onChange} placeholder="Select duration…" error={error} options={opts}/>{legacy!=null&&!choices.includes(Number(legacy))&&<small className="muted field-hint">Legacy value <HelpTip label="About legacy duration" text={`This schedule keeps its existing ${legacy}-minute value until you choose 20, 30 or 60 minutes.`}/></small>}</div>}/>;
-    }
     if(field.key==="status"&&resourceName==="users")return <Controller key={field.key} name="status" control={form.control} render={({field:input})=><div className="wide"><StatusSwitch label="User Account Active" testId="switch-user-status-editor" active={input.value!=="inactive"} onChange={async active=>{if(!active&&!await confirmation.ask({title:"Deactivate User?",description:"They may lose access. Protected clinic owners cannot be deactivated until ownership is transferred.",confirmLabel:"Deactivate",tone:"danger"}))return;input.onChange(active?"active":"inactive");}}/><small className="muted field-hint">Ownership rules may apply <HelpTip label="About account protection" text="Some administrator accounts are protected by clinic ownership rules. Saving will explain any restriction."/></small></div>}/>;
     if(field.key==="status"&&field.options?.length===2&&field.options.includes("active")&&field.options.includes("inactive"))return <Controller key={field.key} name="status" control={form.control} render={({field:input})=><StatusSwitch label={`${label} Active`} disabled={field.disabled} active={input.value!=="inactive"} onChange={active=>input.onChange(active?"active":"inactive")} testId="switch-record-status-editor"/>}/>;
     if(field.type==="checkbox"){
@@ -390,16 +349,13 @@ export function Editor({fields,initial={},onSave,onCancel,busy=false,submitLabel
     let index=0;const secondaryAt=editorKind==="patient"?order.findIndex(group=>cells.get(group)!.nodes.length&&PATIENT_EDITOR_GROUPS.find(([name])=>name===group)?.[1].some(key=>PATIENT_SECONDARY.includes(key))):-1;
     return order.map((group,position)=>{const cell=cells.get(group)!;const id=`editor-group-${group.toLowerCase().replace(/[^a-z]+/g,"-")}`;const shown=cell.open;if(shown)index+=1;
      const toggle=!tabbed&&position===secondaryAt?<div className="editor-disclosure wide"><button type="button" className="text-link" aria-expanded={moreDetails} data-testid="button-patient-more-details" onClick={()=>setMoreDetails(value=>!value)}>{moreDetails?"Hide":"Show"} address and emergency contact (optional)</button>{!moreDetails&&<span className="editor-disclosure-summary" data-testid="text-patient-saved-details">{secondarySummary||"Nothing added yet"}</span>}</div>:null;
-     const schedule=editorKind==="schedule";const tabIndex=editorTabIndex(resourceName,group);
-     return <Fragment key={group}>{toggle}<section className={`editor-group wide${schedule?" schedule-editor-panel":""}`} id={schedule?`schedule-editor-panel-${tabIndex}`:undefined} role={schedule?"tabpanel":undefined} hidden={!shown||(tabbed&&tabIndex!==activeTab)} data-editor-tab={tabbed?tabIndex:undefined} aria-labelledby={schedule?`schedule-editor-tab-${tabIndex}`:id}>
-      {!schedule&&<header className="editor-group-head"><h3 id={id} className="editor-section wide" data-testid={`editor-section-${group.toLowerCase().replace(/[^a-z]+/g,"-")}`}>{editorKind==="patient"&&<span className="editor-group-index" aria-hidden="true">{index}</span>}{group}</h3>{GROUP_HINTS[group]&&<p className="editor-group-hint">{GROUP_HINTS[group]}</p>}</header>}
-      {schedule&&group==="Schedule"&&<p className="muted schedule-context-help">One session for this doctor, clinic and weekday.</p>}
-      {schedule&&group==="Timing & Break"&&scheduleTiming}
-      {schedule&&group==="Queue Settings"&&<p className="muted schedule-context-help">Optional queue times control when walk-ins and check-ins are accepted.</p>}
+     const tabIndex=editorTabIndex(resourceName,group);
+     return <Fragment key={group}>{toggle}<section className="editor-group wide" hidden={!shown||(tabbed&&tabIndex!==activeTab)} data-editor-tab={tabbed?tabIndex:undefined} aria-labelledby={id}>
+      <header className="editor-group-head"><h3 id={id} className="editor-section wide" data-testid={`editor-section-${group.toLowerCase().replace(/[^a-z]+/g,"-")}`}>{editorKind==="patient"&&<span className="editor-group-index" aria-hidden="true">{index}</span>}{group}</h3>{GROUP_HINTS[group]&&<p className="editor-group-hint">{GROUP_HINTS[group]}</p>}</header>
       <div className="form-grid field-grid editor-group-grid" data-location-editor={locationEditor||undefined}>{cell.nodes}</div></section></Fragment>;});})()}
   {/* Extra sections (e.g. location opening hours) follow the record's own fields; in tabbed forms they live on the last tab. */}
   {tabbed&&tabs?<div className="wide" hidden={activeTab!==tabs.length-1}>{children}</div>:children}
-  <FormActions onCancel={onCancel} cancelClosesDialog busy={busy} disabled={overlaps} submitLabel={submitLabel}/></form></div></Form>;
+  <FormActions onCancel={onCancel} cancelClosesDialog busy={busy} submitLabel={submitLabel}/></form></div></Form>;
 }
 function PatientFilteredExport({params,timezone,disabled}:{params:Record<string,unknown>;timezone?:string;disabled:boolean}){
  const preferences=useDateTimePreferences();
@@ -786,7 +742,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
   {resource==="patients"&&patientDetail&&<PatientDetailsDrawer patient={patientDetail} onClose={()=>setPatientDetail(null)}/>}
   {openId&&exactLoader&&(resource==="patients"&&exact.data?<PatientDetailsDrawer patient={exact.data} onClose={closeExact}/>:<ExactRecordDrawer title={`${title(singularName)} Details`} query={exact} onClose={closeExact} actions={(record:any)=>config.update&&!(resource==="clinics"&&portal==="admin")?<button type="button" className="button secondary" onClick={()=>{closeExact();if(onEdit)onEdit(record);else{save.reset();setDirty(false);setEditing(record);}}} data-testid="button-exact-edit">Edit {title(singularName)}</button>:resource==="clinics"&&portal==="admin"?<Link href={clinicWorkspaceHref(record.id)} className="button secondary">Configure Clinic Group</Link>:null}>{(record:any)=><><h3 className="exact-record-title">{record.fullName||record.name||record.doctorName||"Record"}</h3><RecordFacts facts={recordFacts(record)} testId={`exact-facts-${resource}`}/></>}</ExactRecordDrawer>)}{resource==="audit"&&auditDetail&&<AppDialog open variant="drawer" onClose={()=>setAuditDetail(null)} title="Audit Event"><dl className="facts audit-detail" data-testid="audit-detail">{[["Time",auditDetail.createdAt?formatConfiguredTimestamp(auditDetail.createdAt,auditDetail.timezone||settings.data?.timezone,undefined,auditDetail):"—"],["Actor",[auditDetail.actorName,auditDetail.actorRole&&title(auditDetail.actorRole)].filter(Boolean).join(" · ")||"—"],["Action",auditDetail.action],["Record type",auditDetail.entityType],["Summary",auditDetail.summary]].map(([k,v])=><div key={k}><dt>{k}</dt><dd>{v||"—"}</dd></div>)}</dl><details className="audit-technical"><summary>Technical Payload</summary><pre data-testid="audit-payload">{JSON.stringify(auditDetail,null,2)}</pre></details></AppDialog>}
   {resource==="qrs"&&qrPreview&&<AppDialog open onClose={()=>setQrPreview(null)} title={`Booking QR · ${qrPreview.name}`}><QrCard row={qrPreview} onRegenerated={()=>{setQrPreview(null);setSuccess("QR reference regenerated. Replace printed copies.");}}/></AppDialog>}
-   {editing&&(resource==="availability"&&editing.id&&["superAdmin","clinicAdmin","doctor"].includes(identity?.user?.role||"")?<ScheduleDayDialog key={editing.id} row={editing} onClose={()=>setEditing(null)}/>:<AppDialog open size="medium" onClose={()=>setEditing(null)} title={`${editing.id?"Edit":"Add"} ${title(singularName)}`} dirty={dirty} busy={save.isPending}><ErrorNotice error={save.error}/>{editing.id&&OWNER_ONLY_FIELDS[resource]&&!isClinicOwner?<div className="notice" role="note" data-testid="text-owner-only-fields"><p>{owningClinic.isLoading?"Checking clinic ownership…":owningClinic.error?"Unable to confirm clinic ownership. Editing stays locked.":"These clinic details are read only for you. Only the clinic owner or a Super Admin can change name, address, contact, timezone and hours, in Clinic settings."}</p><button type="button" className="button secondary small" onClick={()=>setEditing(null)} data-testid="button-owner-only-close">Close</button></div>:<Editor fields={effectiveFields} initial={editing} onSave={data=>{if(!save.isPending)save.mutate(data);}} onCancel={resource==="patients"||resource==="availability"?undefined:async()=>{if(!dirty||await confirmation.ask({title:"Discard Changes?",description:"Your unsaved changes will be lost.",confirmLabel:"Discard Changes",tone:"danger"}))setEditing(null);}} busy={save.isPending} submitLabel={editing.id?"Save Changes":`Add ${title(singularName)}`} resourceName={resource} onDirtyChange={setDirty}/>}</AppDialog>)}
+   {editing&&(resource==="availability"?(editing.id?<ScheduleDayDialog key={editing.id} row={editing} onClose={()=>setEditing(null)}/>:<AddScheduleDialog initial={editing} onClose={()=>setEditing(null)}/>):<AppDialog open size="medium" onClose={()=>setEditing(null)} title={`${editing.id?"Edit":"Add"} ${title(singularName)}`} dirty={dirty} busy={save.isPending}><ErrorNotice error={save.error}/>{editing.id&&OWNER_ONLY_FIELDS[resource]&&!isClinicOwner?<div className="notice" role="note" data-testid="text-owner-only-fields"><p>{owningClinic.isLoading?"Checking clinic ownership…":owningClinic.error?"Unable to confirm clinic ownership. Editing stays locked.":"These clinic details are read only for you. Only the clinic owner or a Super Admin can change name, address, contact, timezone and hours, in Clinic settings."}</p><button type="button" className="button secondary small" onClick={()=>setEditing(null)} data-testid="button-owner-only-close">Close</button></div>:<Editor fields={effectiveFields} initial={editing} onSave={data=>{if(!save.isPending)save.mutate(data);}} onCancel={resource==="patients"?undefined:async()=>{if(!dirty||await confirmation.ask({title:"Discard Changes?",description:"Your unsaved changes will be lost.",confirmLabel:"Discard Changes",tone:"danger"}))setEditing(null);}} busy={save.isPending} submitLabel={editing.id?"Save Changes":`Add ${title(singularName)}`} resourceName={resource} onDirtyChange={setDirty}/>}</AppDialog>)}
  </>;
 }
 export const profileFields = [f("fullName","text",true),f("mobile","tel"),f("photoUrl","url")];

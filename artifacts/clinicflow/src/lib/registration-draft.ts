@@ -2,6 +2,14 @@ import { z } from "zod";
 
 const text = z.string().max(2000);
 const interval = z.object({ startTime: text, endTime: text });
+// Unsaved authoring values only. Keep invalid input intent so reload cannot turn
+// an invalid hidden time into an apparently deliberate clear. Never retain IDs.
+const draftSetting = z.union([text,z.number(),z.null()]).optional();
+const sessionSettings = z.object({
+  timezone: draftSetting, tokenPrefix: draftSetting, maxTokens: draftSetting,
+  consultationMinutes: draftSetting, bufferMinutes: draftSetting, queueMode: draftSetting,
+  breakStart: draftSetting, breakEnd: draftSetting, queueOpenTime: draftSetting, queueCloseTime: draftSetting,
+});
 const day = z.object({ dayOfWeek: z.number().int().min(0).max(6), isOpen: z.boolean(), sessions: z.array(interval).max(28) });
 const locality = z.object({ key: text, segment: text, offset: z.number().int().min(0) });
 const branch = z.object({
@@ -19,7 +27,9 @@ export const setupDraftSchema = z.object({
     referralCode: text, clinicEmail: text, phone: text, branches: z.array(branch).min(1).max(30),
     alsoConsult: z.boolean(), specializationId: text, qualificationIds: z.array(text), linkConsultationHours: z.boolean(),
     sessionCapacity: text, consultationMinutes: text,
-    ownerWeeks: z.array(z.array(day.extend({ sessions: z.array(interval.extend({ key: text })) })).length(7)).max(30).optional(),
+    ownerWeeks: z.array(z.array(day.extend({ sessions: z.array(interval.extend({
+      key: text, settings: sessionSettings.optional(), invalidTimes: z.array(text).max(4).optional(),
+    })) })).length(7)).max(30).optional(),
   }),
 });
 export const accountDraftSchema = z.object({ fullName: text, email: text, step: z.enum(["details", "review", "verify"]).transform(step => step === "review" ? "details" as const : step) });

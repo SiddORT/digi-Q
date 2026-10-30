@@ -57,10 +57,10 @@ without mounting inputs, hidden dialogs, focus targets, or default callbacks.
 | `components/queue/GuestRequests.tsx` | Request status and sorting | S A O D R C where permitted | L plus owning request list E |
 | `components/queue/DurationEditor.tsx` | Expected duration / future-or-running effect dialog | S A O D R C where permitted | L; current duration value loads on dialog opening |
 | `components/schedule/DoctorScheduleContext.tsx` | Doctor editor group/location; exceptions panel | S A O D R C where permitted | E/P from freshly verified doctor assignments; saved location details not inferred from stale profile |
+| `components/schedule/AddScheduleDialog.tsx` | Add Schedule doctor selection before authorized saved-context resolution | S A O D R C where permitted | Permitted first-page doctor lookup; doctors use only their verified own identity; no arbitrary doctor or location default |
 | `components/schedule/WeeklyScheduleEditor.tsx` | Session duration and queue mode | S A O D R C where permitted | L from mounted weekly draft |
 | `components/schedule/CompactDayEditor.tsx` | Copy day/slot, consultation duration, queue mode | S A O D R C where permitted | L/P from current draft day; no full directory read |
 | `components/schedule/FollowLocationHours.tsx` | Custom/follow-hours and queue mode | S A O / permitted schedule readers | L; owner/doctor/clinic eligibility reads E; existing owner-only checks unchanged |
-| `components/schedule/WeeklyOverview.tsx` | Session/day selectors | S A O D R C where permitted | L from scoped weekly plan |
 | `components/reports/ReportsDashboard.tsx` | Period/type/group/status/metrics; clinic/location/doctor filters | S A O D R C where permitted | L/E/R/P; no new report permissions |
 | `components/reports/ReportTrendPanel.tsx` | Trend metric | Report readers | L |
 | `components/CommunicationUsage.tsx` | Channel/outcome/event/source/group/attribution/staff and Super Admin clinic filters | S A O where permitted | L from report response; resource clinic R when drawer is closed |

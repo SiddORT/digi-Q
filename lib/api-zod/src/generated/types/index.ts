@@ -307,6 +307,7 @@ export * from './ownDoctorProfileInput';
 export * from './ownerCustomSchedule';
 export * from './ownerCustomScheduleQueueMode';
 export * from './ownerCustomScheduleSessionsItem';
+export * from './ownerCustomScheduleSessionsItemQueueMode';
 export * from './ownerSchedule';
 export * from './ownerScheduleQueueMode';
 export * from './ownQueueEntry';

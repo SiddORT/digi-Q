@@ -24,3 +24,15 @@ on retry. Omitting successful create identities can duplicate sessions.
 
 **How to apply:** Keep failed changes retryable without automatically rebasing
 them. Whole-success refreshes may rebuild the displayed saved state.
+
+Shared schedule authoring does not imply shared persistence: onboarding keeps
+unsaved location/session drafts until Finish, while internal management retains
+the existing authorized per-session writes and partial-retry behavior.
+
+**Why:** The user explicitly scoped consolidation to equivalent authoring
+controls and rules, not a new atomic weekly API or a registration transaction
+split.
+
+**How to apply:** Keep context mapping and persistence in small adapters when
+extending the shared editor; do not make draft-only onboarding controls issue
+schedule writes.

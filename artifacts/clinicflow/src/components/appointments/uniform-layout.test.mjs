@@ -91,7 +91,7 @@ test("actions column is reduced", () => {
   assert.match(r("../uniformity.css"), /\.appt-table :is\(th,td\)\.col-actions\{width:200px;min-width:200px\}/);
 });
 test("remaining scope: weekly session Edit uses IconAction; report export keeps its label with icon and tooltip", () => {
-  assert.match(r("../schedule/WeeklyDraftDays.tsx"), /<IconAction label=\{`Edit details for \$\{label\}`\}/);
+  assert.match(r("../schedule/CompactDayEditor.tsx"), /<IconAction label=\{`Remove slot \$\{i \+ 1\}`\}/);
   const c = r("../../clinic.tsx");
   assert.match(c, /<HelpTip text=\{exporting\?"Export in progress\."[^]*?data-testid="button-report-export"[^]*?\{exporting\?"Exporting…":"Export CSV"\}/);
   assert.match(r("../queue/SessionQueue.tsx"), /<AppointmentRows/);

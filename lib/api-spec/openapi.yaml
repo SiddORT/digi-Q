@@ -3064,6 +3064,16 @@ components:
               dayOfWeek: { type: integer, minimum: 0, maximum: 6 }
               startTime: { type: string, pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
               endTime: { type: string, pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+              timezone: { type: string }
+              maxTokens: { type: integer, minimum: 1, maximum: 1000 }
+              consultationMinutes: { type: integer, minimum: 1, maximum: 240 }
+              tokenPrefix: { type: string, pattern: "^[A-Za-z0-9]{1,8}$" }
+              bufferMinutes: { type: integer, minimum: 0, maximum: 1440 }
+              queueMode: { type: string, enum: [mixed, appointmentsOnly, walkInsOnly] }
+              breakStart: { type: [string, "null"], pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+              breakEnd: { type: [string, "null"], pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+              queueOpenTime: { type: [string, "null"], pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+              queueCloseTime: { type: [string, "null"], pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
     LinkedSchedule:
       type: object
       required: [enabled]

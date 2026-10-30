@@ -125,3 +125,17 @@ test("applyWeekTo copies own intervals to another location, keeps its linked ses
   assert.equal(out[3].isOpen, false);
   assert.deepEqual(toOwnerSessions([source, out]).map(s => [s.branchIndex, s.dayOfWeek, s.startTime]), [[0, 1, "09:00"], [0, 1, "14:00"], [1, 1, "09:00"], [1, 1, "14:30"]]);
 });
+test("shared copies preserve hidden invalid-time intent and compatible settings, without copying server identities",async()=>{
+  const {addCopiedSlot,applyWeekTo,toOwnerSessions}=await import("./week-plan.ts");
+  const source=buildWeek([{...base,id:"saved",dayOfWeek:1,startTime:"09:00",endTime:"12:00",timezone:"Asia/Kolkata",breakStart:null,breakEnd:null}]);
+  source[1].sessions[0].invalidTimes=["queueCloseTime"];
+  for(const copied of [copyDay(source,1,[3]),addCopiedSlot(source,1,3,"saved"),applyWeekTo(buildWeek([]),source)]){
+    assert.deepEqual(copied[3]?.sessions[0]?.invalidTimes||copied[1].sessions[0].invalidTimes,["queueCloseTime"]);
+    const payload=toOwnerSessions([copied]);
+    assert(payload.every(s=>!("id" in s)&&!("key" in s)&&!("invalidTimes" in s)));
+  }
+  const target=applyWeekTo(buildWeek([]),source,{source:"Asia/Kolkata",target:"Europe/London"});
+  assert.equal(target[1].sessions[0].settings.timezone,"Europe/London");
+  source[1].sessions[0].settings.timezone="America/New_York";
+  assert.equal(applyWeekTo(buildWeek([]),source,{source:"Asia/Kolkata",target:"Europe/London"})[1].sessions[0].settings.timezone,"America/New_York");
+});

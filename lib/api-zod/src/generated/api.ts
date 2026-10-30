@@ -1763,6 +1763,18 @@ export const registerClinicBodyOwnerCustomScheduleSessionsItemDayOfWeekMax = 6;
 
 export const registerClinicBodyOwnerCustomScheduleSessionsItemStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const registerClinicBodyOwnerCustomScheduleSessionsItemEndTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const registerClinicBodyOwnerCustomScheduleSessionsItemMaxTokensMax = 1000;
+
+export const registerClinicBodyOwnerCustomScheduleSessionsItemConsultationMinutesMax = 240;
+
+export const registerClinicBodyOwnerCustomScheduleSessionsItemTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+export const registerClinicBodyOwnerCustomScheduleSessionsItemBufferMinutesMin = 0;
+export const registerClinicBodyOwnerCustomScheduleSessionsItemBufferMinutesMax = 1440;
+
+export const registerClinicBodyOwnerCustomScheduleSessionsItemBreakStartRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const registerClinicBodyOwnerCustomScheduleSessionsItemBreakEndRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const registerClinicBodyOwnerCustomScheduleSessionsItemQueueOpenTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const registerClinicBodyOwnerCustomScheduleSessionsItemQueueCloseTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const registerClinicBodyOwnerCustomScheduleSessionsMax = 500;
 
 
@@ -1834,7 +1846,17 @@ export const RegisterClinicBody = zod.object({
   "branchIndex": zod.number().int().min(registerClinicBodyOwnerCustomScheduleSessionsItemBranchIndexMin).max(registerClinicBodyOwnerCustomScheduleSessionsItemBranchIndexMax),
   "dayOfWeek": zod.number().int().min(registerClinicBodyOwnerCustomScheduleSessionsItemDayOfWeekMin).max(registerClinicBodyOwnerCustomScheduleSessionsItemDayOfWeekMax),
   "startTime": zod.string().regex(registerClinicBodyOwnerCustomScheduleSessionsItemStartTimeRegExp),
-  "endTime": zod.string().regex(registerClinicBodyOwnerCustomScheduleSessionsItemEndTimeRegExp)
+  "endTime": zod.string().regex(registerClinicBodyOwnerCustomScheduleSessionsItemEndTimeRegExp),
+  "timezone": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(registerClinicBodyOwnerCustomScheduleSessionsItemMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(registerClinicBodyOwnerCustomScheduleSessionsItemConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(registerClinicBodyOwnerCustomScheduleSessionsItemTokenPrefixRegExp).optional(),
+  "bufferMinutes": zod.number().int().min(registerClinicBodyOwnerCustomScheduleSessionsItemBufferMinutesMin).max(registerClinicBodyOwnerCustomScheduleSessionsItemBufferMinutesMax).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional(),
+  "breakStart": zod.string().regex(registerClinicBodyOwnerCustomScheduleSessionsItemBreakStartRegExp).nullish(),
+  "breakEnd": zod.string().regex(registerClinicBodyOwnerCustomScheduleSessionsItemBreakEndRegExp).nullish(),
+  "queueOpenTime": zod.string().regex(registerClinicBodyOwnerCustomScheduleSessionsItemQueueOpenTimeRegExp).nullish(),
+  "queueCloseTime": zod.string().regex(registerClinicBodyOwnerCustomScheduleSessionsItemQueueCloseTimeRegExp).nullish()
 })).min(1).max(registerClinicBodyOwnerCustomScheduleSessionsMax)
 }).optional().describe('Custom weekly consultation intervals entered once during onboarding/registration with the shared weekly editor. Saved in the same transaction after the owner\'s doctor profile is created. Mutually exclusive with ownerSchedule (linked).'),
   "specializationId": zod.string().optional(),
@@ -5543,6 +5565,18 @@ export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemDayOfWeekMax =
 
 export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemEndTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemMaxTokensMax = 1000;
+
+export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemConsultationMinutesMax = 240;
+
+export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBufferMinutesMin = 0;
+export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBufferMinutesMax = 1440;
+
+export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBreakStartRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBreakEndRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemQueueOpenTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemQueueCloseTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const onboardClinicAdminBodyOwnerCustomScheduleSessionsMax = 500;
 
 export const onboardClinicAdminBodyAdminPasswordMin = 8;
@@ -5615,7 +5649,17 @@ export const OnboardClinicAdminBody = zod.object({
   "branchIndex": zod.number().int().min(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBranchIndexMin).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBranchIndexMax),
   "dayOfWeek": zod.number().int().min(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemDayOfWeekMin).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemDayOfWeekMax),
   "startTime": zod.string().regex(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemStartTimeRegExp),
-  "endTime": zod.string().regex(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemEndTimeRegExp)
+  "endTime": zod.string().regex(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemEndTimeRegExp),
+  "timezone": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemTokenPrefixRegExp).optional(),
+  "bufferMinutes": zod.number().int().min(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBufferMinutesMin).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBufferMinutesMax).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional(),
+  "breakStart": zod.string().regex(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBreakStartRegExp).nullish(),
+  "breakEnd": zod.string().regex(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBreakEndRegExp).nullish(),
+  "queueOpenTime": zod.string().regex(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemQueueOpenTimeRegExp).nullish(),
+  "queueCloseTime": zod.string().regex(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemQueueCloseTimeRegExp).nullish()
 })).min(1).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsMax)
 }).optional().describe('Custom weekly consultation intervals entered once during onboarding/registration with the shared weekly editor. Saved in the same transaction after the owner\'s doctor profile is created. Mutually exclusive with ownerSchedule (linked).'),
   "specializationId": zod.string().optional(),

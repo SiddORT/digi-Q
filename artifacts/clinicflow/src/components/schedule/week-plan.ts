@@ -1,4 +1,4 @@
-export type SessionSettings = Partial<Record<"tokenPrefix"|"maxTokens"|"consultationMinutes"|"bufferMinutes"|"queueMode"|"breakStart"|"breakEnd"|"queueOpenTime"|"queueCloseTime", string|number|null>>;
+export type SessionSettings = Partial<Record<"timezone"|"tokenPrefix"|"maxTokens"|"consultationMinutes"|"bufferMinutes"|"queueMode"|"breakStart"|"breakEnd"|"queueOpenTime"|"queueCloseTime", string|number|null>>;
 export type DraftSession = { key: string; id?: string; startTime: string; endTime: string; locked?: boolean; settings?: SessionSettings; invalidTimes?: string[] };
 export type DraftDay = { dayOfWeek: number; isOpen: boolean; sessions: DraftSession[] };
 export type ScheduleRow = { id: string; dayOfWeek: number; startTime: string; endTime: string; isOpen?: boolean; status?: string; linkedBranchId?: string | null; [k: string]: unknown };
@@ -6,7 +6,7 @@ export type ScheduleRow = { id: string; dayOfWeek: number; startTime: string; en
 /** Fields a new session copies from a template session of the same doctor and clinic. Link metadata is never copied. */
 const TEMPLATE_KEYS = ["doctorId", "clinicId", "branchId", "breakStart", "breakEnd", "timezone", "tokenPrefix", "maxTokens", "consultationMinutes", "bufferMinutes", "queueMode", "queueOpenTime", "queueCloseTime"];
 const INPUT_KEYS = ["doctorId", "clinicId", "branchId", "dayOfWeek", "isOpen", "startTime", "endTime", "breakStart", "breakEnd", "timezone", "tokenPrefix", "maxTokens", "consultationMinutes", "bufferMinutes", "queueMode", "queueOpenTime", "queueCloseTime"];
-const SETTINGS_KEYS = ["tokenPrefix", "maxTokens", "consultationMinutes", "bufferMinutes", "queueMode", "breakStart", "breakEnd", "queueOpenTime", "queueCloseTime"] as const;
+const SETTINGS_KEYS = ["timezone", "tokenPrefix", "maxTokens", "consultationMinutes", "bufferMinutes", "queueMode", "breakStart", "breakEnd", "queueOpenTime", "queueCloseTime"] as const;
 const settingsFrom = (row: Record<string, unknown>): SessionSettings => Object.fromEntries(SETTINGS_KEYS.filter(k=>row[k]!==undefined).map(k=>[k,row[k]]));
 /** The API compares these authoring fields under its doctor lock, not presentation names. */
 export const scheduleSnapshot = (row: Record<string, unknown>) => JSON.stringify(Object.fromEntries([...INPUT_KEYS,"status","linkedBranchId","linkedIntervalKey"].sort().map(k=>[k,row[k]??null])));
@@ -28,7 +28,7 @@ export function buildWeek(rows: ScheduleRow[]): DraftDay[] {
   });
 }
 
-export function dayErrors(day: DraftDay): string[] {
+export function dayErrors(day: DraftDay, defaults: Record<string, unknown> = {}): string[] {
   if (!day.isOpen) return [];
   const errors: string[] = [];
   if (!day.sessions.length) errors.push("Add at least one session or turn the day off.");
@@ -36,19 +36,24 @@ export function dayErrors(day: DraftDay): string[] {
     if(s.invalidTimes?.length) errors.push(`Session ${i+1}: enter valid times for ${s.invalidTimes.map(k=>({breakStart:"break start",breakEnd:"break end",queueOpenTime:"queue opening",queueCloseTime:"queue closing"}[k]||k)).join(", ")}.`);
     if (!TIME.test(s.startTime) || !TIME.test(s.endTime)) errors.push(`Session ${i + 1}: enter both start and end times.`);
     else if (s.startTime >= s.endTime) errors.push(`Session ${i + 1}: end time must be after start time. Overnight sessions are not supported.`);
-    const v=s.settings;
+    const v={...defaults,breakStart:null,breakEnd:null,...s.settings};
     if(v){
+      if(v.timezone){try{new Intl.DateTimeFormat("en",{timeZone:String(v.timezone)});}catch{errors.push(`Session ${i+1}: select a valid timezone.`);}}
+      if(v.queueMode!==undefined&&!["mixed","appointmentsOnly","walkInsOnly"].includes(String(v.queueMode)))errors.push(`Session ${i+1}: select a valid queue mode.`);
       if(v.consultationMinutes!==undefined&&(!Number.isInteger(Number(v.consultationMinutes))||Number(v.consultationMinutes)<1))errors.push(`Session ${i+1}: select a valid consultation duration.`);
       if(v.maxTokens!==undefined&&(!Number.isInteger(Number(v.maxTokens))||Number(v.maxTokens)<1||Number(v.maxTokens)>1000))errors.push(`Session ${i+1}: capacity must be a whole number from 1 to 1000.`);
       if(v.tokenPrefix!==undefined&&!/^[A-Za-z0-9]{1,8}$/.test(String(v.tokenPrefix)))errors.push(`Session ${i+1}: token prefix requires 1–8 letters or numbers.`);
       if(v.bufferMinutes!==undefined&&(!Number.isInteger(Number(v.bufferMinutes))||Number(v.bufferMinutes)<0||Number(v.bufferMinutes)>1440))errors.push(`Session ${i+1}: buffer must be a whole number from 0 to 1440.`);
       if(v.breakStart||v.breakEnd){if(!TIME.test(String(v.breakStart))||!TIME.test(String(v.breakEnd))||String(v.breakStart)<s.startTime||String(v.breakEnd)>s.endTime||String(v.breakStart)>=String(v.breakEnd))errors.push(`Session ${i+1}: break must have valid start and end times inside the session.`);}
       if(v.queueOpenTime&&!TIME.test(String(v.queueOpenTime)))errors.push(`Session ${i+1}: enter a valid queue opening time.`);
+      if(v.queueOpenTime&&String(v.queueOpenTime)>=s.endTime)errors.push(`Session ${i+1}: queue opening must precede session end.`);
       if(v.queueCloseTime&&(!TIME.test(String(v.queueCloseTime))||String(v.queueCloseTime)>s.endTime||String(v.queueCloseTime)<=String(v.queueOpenTime||s.startTime)))errors.push(`Session ${i+1}: queue closing time must follow opening and not exceed session end.`);
     }
   });
-  const sorted = day.sessions.map((s, i) => ({ ...s, n: i + 1 })).filter(s => TIME.test(s.startTime) && TIME.test(s.endTime)).sort((a, b) => a.startTime.localeCompare(b.startTime));
-  for (let i = 0; i < sorted.length; i++) for(let j=i+1;j<sorted.length;j++) if(sorted[i].endTime>sorted[j].startTime)errors.push(sorted[i].startTime===sorted[j].startTime&&sorted[i].endTime===sorted[j].endTime?`Session ${sorted[j].n} duplicates session ${sorted[i].n}.`:`Session ${sorted[j].n} overlaps with session ${sorted[i].n}.`);
+  const sorted = day.sessions.map((s, i) => ({ ...s, n: i + 1, timezone:s.settings?.timezone||defaults.timezone })).filter(s => TIME.test(s.startTime) && TIME.test(s.endTime)).sort((a, b) => a.startTime.localeCompare(b.startTime));
+  // Wall-clock comparisons are meaningful only in the same timezone. The server
+  // checks actual weekly instants (including cross-day overlap) for mixed zones.
+  for (let i = 0; i < sorted.length; i++) for(let j=i+1;j<sorted.length;j++) if(sorted[i].timezone===sorted[j].timezone&&sorted[i].endTime>sorted[j].startTime)errors.push(sorted[i].startTime===sorted[j].startTime&&sorted[i].endTime===sorted[j].endTime?`Session ${sorted[j].n} duplicates session ${sorted[i].n}.`:`Session ${sorted[j].n} overlaps with session ${sorted[i].n}.`);
   return errors;
 }
 
@@ -66,7 +71,7 @@ export function copyDay(week: DraftDay[], source: number, targets: number[]): Dr
     const locked = day.sessions.filter(s => s.locked);
     if (!from.isOpen) return locked.length ? { ...day, isOpen: true, sessions: locked } : { ...day, isOpen: false, sessions: [] };
     const reusable = day.sessions.filter(s => !s.locked && s.id);
-    const copied = from.sessions.map((s, i) => ({ key: draftKey(), id: reusable[i]?.id, startTime: s.startTime, endTime: s.endTime, settings: {...s.settings} }));
+    const copied = from.sessions.map((s, i) => ({ key: draftKey(), id: reusable[i]?.id, startTime: s.startTime, endTime: s.endTime, settings: {...s.settings}, invalidTimes:s.invalidTimes ? [...s.invalidTimes] : undefined }));
     return { ...day, isOpen: true, sessions: [...locked, ...copied] };
   });
 }
@@ -76,7 +81,7 @@ export function addCopiedSlot(week: DraftDay[], source: number, destination: num
   if(source===destination)return week;
   const slot=week[source]?.sessions.find(s=>s.key===key);
   if(!slot)return week;
-  return week.map(day=>day.dayOfWeek===destination?{...day,isOpen:true,sessions:[...day.sessions,{key:draftKey(),startTime:slot.startTime,endTime:slot.endTime,settings:{...slot.settings}}]}:day);
+  return week.map(day=>day.dayOfWeek===destination?{...day,isOpen:true,sessions:[...day.sessions,{key:draftKey(),startTime:slot.startTime,endTime:slot.endTime,settings:{...slot.settings},invalidTimes:slot.invalidTimes ? [...slot.invalidTimes] : undefined}]}:day);
 }
 
 export type WeekPlan = {
@@ -206,22 +211,28 @@ export function prefillFromHours(week: DraftDay[], opening: { dayOfWeek: number;
 }
 
 /** Multi-location copy: the source location's own (unlocked) intervals replace the target's unlocked ones; target linked sessions stay. */
-export function applyWeekTo(target: DraftDay[], source: DraftDay[]): DraftDay[] {
+export function applyWeekTo(target: DraftDay[], source: DraftDay[], timezone?: {source?:string;target?:string}): DraftDay[] {
   return target.map(day => {
     const src = source.find(d => d.dayOfWeek === day.dayOfWeek);
     const locked = day.sessions.filter(s => s.locked);
     const reusable = day.sessions.filter(s => !s.locked && s.id).map(s => s.id as string);
     const copied = (src?.isOpen ? src.sessions.filter(s => !s.locked) : [])
       .filter(s => !locked.some(l => l.startTime < s.endTime && s.startTime < l.endTime))
-       .map(s => ({ key: draftKey(), id: reusable.shift(), startTime: s.startTime, endTime: s.endTime, settings:{...s.settings} }));
+        .map(s => ({ key: draftKey(), id: reusable.shift(), startTime: s.startTime, endTime: s.endTime,
+          settings:{...s.settings,...(timezone?.target&&(!s.settings?.timezone||s.settings.timezone===timezone.source)?{timezone:timezone.target}:{})},
+          invalidTimes:s.invalidTimes ? [...s.invalidTimes] : undefined }));
     const sessions = [...locked, ...copied].sort((a, b) => a.startTime.localeCompare(b.startTime));
     return { ...day, isOpen: sessions.length > 0, sessions };
   });
 }
 
 /** Onboarding payload: one entry per open interval per new location (index matches the submitted branches array). */
-export function toOwnerSessions(weeks: DraftDay[][]): { branchIndex: number; dayOfWeek: number; startTime: string; endTime: string }[] {
-  return weeks.flatMap((week, branchIndex) => week.filter(d => d.isOpen).flatMap(d => d.sessions.map(s => ({ branchIndex, dayOfWeek: d.dayOfWeek, startTime: s.startTime, endTime: s.endTime }))));
+export function toOwnerSessions(weeks: DraftDay[][]) {
+  return weeks.flatMap((week, branchIndex) => week.filter(d => d.isOpen).flatMap(d => d.sessions.map(s => ({
+    ...Object.fromEntries(Object.entries(s.settings || {}).map(([key,value])=>[key,
+      ["maxTokens","consultationMinutes","bufferMinutes"].includes(key)?Number(value):value])),
+    branchIndex, dayOfWeek: d.dayOfWeek, startTime: s.startTime, endTime: s.endTime,
+  }))));
 }
 
 /** Shared day editor rules. Enabling a day with no drafts adds ONE blank interval (never a guessed time);

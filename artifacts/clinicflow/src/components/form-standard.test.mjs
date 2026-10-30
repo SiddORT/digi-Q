@@ -20,8 +20,10 @@ test("patient editor: numbered reference groups, status folded into clinic group
   assert.match(r, /label:"Mobile"\}/);
 });
 
-test("schedule capacity row: four equal intentional widths with short labels", () => {
-  for (const re of [/tokenPrefix","text",true\),width:"sm"/, /label:"Max Tokens",width:"sm"/, /label:"Consultation Duration",width:"sm"/, /label:"Buffer \(min\)",width:"sm"/]) assert.match(r, re);
+test("schedule capacity and queue settings are in the shared weekly authoring controls, not generic fields", () => {
+  const shared=read("./schedule/CompactDayEditor.tsx");
+  for (const text of ["Token prefix","Max tokens","Consultation Duration","Buffer (min)","Queue opens","Queue closes"]) assert.ok(shared.includes(text),text);
+  assert.match(r,/availability:\{[^ \n]*.*fields:\[\]/);
 });
 
 test("dedicated forms use the shared FormSection", () => {

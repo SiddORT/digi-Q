@@ -80,7 +80,8 @@ async function setup(page:Page, role="superAdmin", extra=true, linked=false, res
         const next=[...kept,...saved];
         state.row=next[0]||{...state.row,status:"inactive"};state.extraRows=next.slice(1);
         state.customDays.add(body.dayOfWeek);state.revision++;reply=context();
-      } else {state.row={...state.row,...body};reply=state.row;}
+      } else if(req.method()==="POST"){reply={...body,id:`created-${state.extraRows.length+1}`,status:"active"};state.extraRows.push(reply);}
+      else {const id=path.split("/").pop();if(state.row.id===id){state.row={...state.row,...body};reply=state.row;}else{state.extraRows=state.extraRows.map(r=>r.id===id?{...r,...body}:r);reply=state.extraRows.find(r=>r.id===id);}}
     }
     await route.fulfill({status,contentType:"application/json",body:JSON.stringify(reply)});
   });
@@ -165,20 +166,21 @@ test("saving blocks repeated submission and all dismissal paths",async({page})=>
   await expect(page.getByRole("dialog",{name:"Edit Schedule"})).toBeVisible();
   release();await expect(schedule(page).getByTestId("status-week-save")).toContainText("Saved");
 });
-test("Add Schedule uses the same panels and one creation boundary",async({page})=>{
+test("Add Schedule loads the saved week and adds a session through the shared weekly editor",async({page})=>{
   const state=await setup(page);
   await page.getByTestId("button-add-availability").click();
   await expect(page.getByRole("dialog",{name:"Add Schedule"})).toBeVisible();
-  await expect(tab(page,"Schedule")).toHaveAttribute("aria-selected","true");
-  await page.locator("#input-dayOfWeek").click();await page.getByRole("option",{name:"Monday",exact:true}).click();
-  await page.getByTestId("input-isOpen").check();
-  await tab(page,"Timing & Break").click();await time(page,"startTime","13:00");await time(page,"endTime","15:00");
-  await tab(page,"Capacity").click();
-  await page.getByTestId("input-tokenPrefix").fill("N");await page.locator('[name="maxTokens"]').fill("10");
-  await page.locator("#input-consultationMinutes").click();await page.getByRole("option",{name:"20 minutes",exact:true}).click();
-  await tab(page,"Queue Settings").click();await page.getByTestId("button-save").click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("button",{name:"Doctor",exact:true}).click();
+  await page.getByRole("option",{name:doctor.fullName,exact:true}).click();
+  const editor=page.getByTestId("panel-weekly-editor");
+  await expect(editor.getByLabel("Slot 1 start time",{exact:true})).toHaveValue("09:00");
+  await editor.getByTestId("button-add-time-slot").click();
+  await editor.getByLabel("Slot 2 start time",{exact:true}).fill("13:00");await editor.getByLabel("Slot 2 start time",{exact:true}).blur();
+  await editor.getByLabel("Slot 2 end time",{exact:true}).fill("15:00");await editor.getByLabel("Slot 2 end time",{exact:true}).blur();
+  await editor.getByTestId("button-save-week").click();
+  await expect(editor.getByTestId("status-week-save")).toContainText("Saved 1 change");
   expect(state.writes).toHaveLength(1);expect(state.writes[0]).toMatchObject({doctorId:"d1",clinicId:"c1",branchId:"b1",startTime:"13:00",endTime:"15:00",consultationMinutes:20});
+  expect(state.row).toEqual(full);expect(state.extraRows).toHaveLength(1);
 });
 for(const role of ["superAdmin","clinicAdmin","doctor"] as const) test(`linked-day confirmation cancellation, multiple intervals, save and reload for ${role}`,async({page})=>{
   const state=await setup(page,role,true,true);

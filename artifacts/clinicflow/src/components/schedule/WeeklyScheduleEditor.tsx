@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import "../weekly-day-rows.css";
 import { CompactDayEditor } from "./CompactDayEditor";
-import { SHORT } from "./WeeklyDraftDays";
+import { SHORT } from "./week-days";
 import { FollowLocationHours } from "./FollowLocationHours";
 import { SearchableSelect } from "../SearchableSelect";
 import { AppDialog, AppDialogActions, useAppDialogClose } from "../AppDialog";
@@ -74,9 +74,9 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onDirtyChange, onBusy
   useRegisterUnsaved(dirty);
 
   const template = rows[0] ? (rows[0] as Record<string, unknown>) : branch.data && defaults.tokenPrefix.trim() && Number(defaults.maxTokens) >= 1 && Number(defaults.consultationMinutes) >= 1 ? { doctorId, branchId, clinicId: branch.data.clinicId, timezone: branch.data.timezone, tokenPrefix: defaults.tokenPrefix.trim(), maxTokens: Number(defaults.maxTokens), consultationMinutes: Number(defaults.consultationMinutes), queueMode: "mixed" } : undefined;
-  const copyLocationHours = () => { if (!opening) return; setResult(""); setWeek(w => prefillFromHours(w, opening)); };
+  const copyLocationHours = () => { if (!opening) return; setResult(""); setWeek(w => prefillFromHours(w, opening).map(d=>!mayCustomize&&dayBaselines[d.dayOfWeek]?.following?w[d.dayOfWeek]:d)); };
   const readiness = scheduleReadiness(rows, branch.data ? opening : undefined);
-  const errors = week.map(dayErrors);
+  const errors = week.map(d=>dayErrors(d,template));
   const hasErrors = errors.some(e => e.length);
   const plan = planWeek(rows, week, template, SHORT);
   const needsTemplate = !rows.length && week.some(d => d.isOpen && d.sessions.length);
@@ -96,7 +96,7 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onDirtyChange, onBusy
       const items: ScheduleRow[] = []; for (let page = 1; page < 50; page++) { const res: any = await api.listSchedules({ doctorId, branchId: target.id, page, pageSize: 100 } as any); items.push(...res.items); if (items.length >= res.total || !res.items.length) break; }
       const targetRows = items.filter(r => r.status !== "inactive");
       const tpl = { doctorId, branchId: target.id, clinicId: target.clinicId, timezone: target.timezone, tokenPrefix: base.tokenPrefix, maxTokens: base.maxTokens, consultationMinutes: base.consultationMinutes, queueMode: base.queueMode, bufferMinutes: base.bufferMinutes ?? 0, isOpen: true };
-      plans.push({ name: target.name, plan: planWeek(targetRows, applyWeekTo(buildSavedWeek(targetRows), buildSavedWeek(rows)), (targetRows.find(r => !r.linkedBranchId) as any) || tpl, SHORT) });
+      plans.push({ name: target.name, plan: planWeek(targetRows, applyWeekTo(buildSavedWeek(targetRows), buildSavedWeek(rows),{source:branch.data?.timezone,target:target.timezone}), (targetRows.find(r => !r.linkedBranchId) as any) || tpl, SHORT) });
     }
     const removals = plans.reduce((n, p) => n + p.plan.deactivations.length, 0);
     if (!await confirmation.ask({ title: "Apply to Selected Locations?", description: `This week's own sessions replace the custom sessions at ${plans.map(p => p.name).join(", ")}. Linked sessions there are kept.${removals ? ` ${removals} session${removals > 1 ? "s" : ""} will be deactivated, not deleted.` : ""} Each change is checked by the server.`, confirmLabel: "Apply to Locations" })) return;
@@ -251,7 +251,7 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onDirtyChange, onBusy
       <label>Max tokens<span className="required"> *</span><input type="number" min={1} step={1} value={defaults.maxTokens} onChange={e => setDefaults(v => ({ ...v, maxTokens: e.target.value }))} data-testid="input-default-max-tokens"/></label>
       <SearchableSelect label="Expected Consultation Duration" required value={defaults.consultationMinutes} onChange={value => setDefaults(v => ({ ...v, consultationMinutes: value }))} placeholder="Select duration…" options={[20, 30, 60].map(v => ({ value: String(v), label: `${v} minutes` }))}/>
     </div></fieldset>}
-    <CompactDayEditor week={week} setWeek={setWeek} opening={opening} preferences={preferences} busy={busy||linkedBusy} rows={rows} template={template} selected={selectedDay} onSelect={setSelectedDay} focus={focus} onChange={() => setResult("")} dayStatus={<div className="cde-day-status muted" data-testid="text-day-source">
+    <CompactDayEditor week={week} setWeek={setWeek} opening={opening} preferences={preferences} busy={busy||linkedBusy} rows={rows} template={template} selected={selectedDay} onSelect={setSelectedDay} focus={focus} protectedDays={mayCustomize?[]:dayBaselines.filter(d=>d.following).map(d=>d.dayOfWeek)} onChange={() => setResult("")} dayStatus={<div className="cde-day-status muted" data-testid="text-day-source">
       <span>{dayBaselines[selectedDay]?.following ? "Following clinic hours" : "Custom schedule"}</span>
       <HelpTip label="About custom day schedules" text="Edits to days following clinic hours become custom only after confirmation. Only this doctor's selected weekdays at this location change; clinic hours and other days are unchanged."/>
       <span>Clinic: {opening===null?"Hours not configured":hoursFor(selectedDay).map(h=>`${fmt(h.startTime)}–${fmt(h.endTime)}`).join(", ")||"Closed"}</span>

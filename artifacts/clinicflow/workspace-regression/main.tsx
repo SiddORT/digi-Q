@@ -27,6 +27,7 @@ import { BookingFixture } from "./BookingFixture";
 import { FormControlFixture } from "./FormControlFixture";
 import { TabPresentationFixture } from "./TabPresentationFixture";
 import { HeaderPaginationFixture } from "./HeaderPaginationFixture";
+import { SchedulePersistenceFixture } from "./SchedulePersistenceFixture";
 
 // No Clerk provider, real account, live API, test bypass or production data is used.
 // Browser tests intercept *all* /api/ requests before opening this page.
@@ -41,6 +42,7 @@ const [location]=useLocation();
 const search=useSearch();
 const params = new URLSearchParams(search);
 if (params.get("mode") === "compact-ui") return <CompactUiFixture/>;
+if (params.get("mode") === "schedule-persistence") return <SchedulePersistenceFixture/>;
 if (params.get("mode") === "form-controls") return <FormControlFixture/>;
 if (params.get("mode") === "tabs") return <TabPresentationFixture/>;
 const [dropdownWorkspace] = useState(() => params.get("mode") === "dropdown-workspace");

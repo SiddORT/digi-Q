@@ -5,21 +5,23 @@ import { FormTabs } from "../FormTabs";
 import { IconAction } from "../IconAction";
 import { TimeFormatInput } from "../DateFormatInput";
 import { SearchableSelect } from "../SearchableSelect";
+import { TimezoneSelect } from "../TimezoneSelect";
 import { useConfirm } from "../ConfirmDialog";
 import { formatTime } from "../../lib/date-time";
 import { queueModeLabel } from "../../lib/schedule-facts";
-import { DAYS, SHORT, ORDER, type OpeningHour } from "./WeeklyDraftDays";
+import { DAYS, SHORT, ORDER, type OpeningHour } from "./week-days";
 import { addCopiedSlot, copyDay, dayErrors, dayWarnings, draftKey, outsideHours, type DraftDay, type DraftSession, type ScheduleRow, type SessionSettings } from "./week-plan";
 
 const DURATIONS = [20, 30, 60];
 const QUEUE_MODES = [["mixed", "Appointments and walk-ins"], ["appointmentsOnly", "Appointments only"], ["walkInsOnly", "Walk-ins only"]];
 
 /** One-panel Mon-Sun editor. Pure draft; never saves. */
-export function CompactDayEditor({ week, setWeek, opening, preferences, busy = false, rows = [], template, onChange, selected, onSelect, focus, dayStatus }: {
+export function CompactDayEditor({ week, setWeek, opening, preferences, busy = false, rows = [], template, onChange, selected, onSelect, focus, dayStatus, protectedDays = [] }: {
   week: DraftDay[]; setWeek: (update: (week: DraftDay[]) => DraftDay[]) => void; opening: OpeningHour[] | null; preferences: any;
   busy?: boolean; rows?: ScheduleRow[]; template?: Record<string, unknown>; onChange?: () => void; selected: number; onSelect: (day: number) => void;
   focus?: { day: number; index: number; nonce: number } | null;
   dayStatus?: ReactNode;
+  protectedDays?: number[];
 }) {
   const confirm = useConfirm();
   const copyLabelId=useId();
@@ -28,7 +30,8 @@ export function CompactDayEditor({ week, setWeek, opening, preferences, busy = f
   const [mode, setMode] = useState<"day" | "slot">("day");
   const [slotKey, setSlotKey] = useState("");
   const day = week[selected];
-  const errors = week.map(dayErrors);
+  const dayLocked = protectedDays.includes(selected) || day.sessions.some(s => s.locked);
+  const errors = week.map(d=>dayErrors(d,template));
   const fmt = (t: string) => formatTime(t, preferences);
   const set = (next: DraftDay) => { onChange?.(); setWeek(w => w.map(d => d.dayOfWeek === next.dayOfWeek ? next : d)); };
   const hours = (opening || []).filter(h => h.dayOfWeek === selected);
@@ -77,18 +80,18 @@ export function CompactDayEditor({ week, setWeek, opening, preferences, busy = f
     <div className="cde-controls" role="tabpanel" id="cde-panel" aria-labelledby={`cde-tab-${ORDER.indexOf(selected)}`}>
       <div className="cde-day-controls">
       <strong className="cde-day">{DAYS[selected]}</strong>
-      <label className="registration-check"><input type="checkbox" role="switch" checked={day.isOpen} disabled={busy || day.sessions.some(s => s.locked)} aria-describedby={day.sessions.some(s=>s.locked)?"cde-locked-reason":undefined} onChange={e => set({ ...day, isOpen: e.target.checked })} data-testid="toggle-working-day"/>Working day</label>
+      <label className="registration-check"><input type="checkbox" role="switch" checked={day.isOpen} disabled={busy || dayLocked} aria-describedby={dayLocked?"cde-locked-reason":undefined} onChange={e => set({ ...day, isOpen: e.target.checked })} data-testid="toggle-working-day"/>Working day</label>
       </div>
       <div className="cde-day-actions">
-      <div className="cde-copy-from"><span id={copyLabelId}>Copy from</span><SearchableSelect aria-labelledby={copyLabelId} value={source} disabled={busy} placeholder="Choose day…" testId="select-copy-from" onChange={v => { setSource(v); setSlotKey(""); }} options={ORDER.filter(d => d !== selected).map(d => ({ value: String(d), label: DAYS[d] }))}/></div>
-      <button type="button" className="button secondary field-action" disabled={busy} onClick={() => { set({ ...day, isOpen: true, sessions: [...day.sessions, { key: draftKey(), startTime: "", endTime: "" }] }); }} data-testid="button-add-time-slot"><Plus size={14} aria-hidden/> Add Time Slot</button>
+      <div className="cde-copy-from"><span id={copyLabelId}>Copy from</span><SearchableSelect aria-labelledby={copyLabelId} value={source} disabled={busy || dayLocked} placeholder="Choose day…" testId="select-copy-from" onChange={v => { setSource(v); setSlotKey(""); }} options={ORDER.filter(d => d !== selected).map(d => ({ value: String(d), label: DAYS[d] }))}/></div>
+      <button type="button" className="button secondary field-action" disabled={busy || dayLocked} onClick={() => { set({ ...day, isOpen: true, sessions: [...day.sessions, { key: draftKey(), startTime: "", endTime: "" }] }); }} data-testid="button-add-time-slot"><Plus size={14} aria-hidden/> Add Time Slot</button>
       </div>
     </div>
-    {day.sessions.some(s=>s.locked)&&<p className="muted" id="cde-locked-reason">These sessions follow clinic hours. Ask an authorized doctor or administrator to customize this day.</p>}
+    {dayLocked&&<p className="muted" id="cde-locked-reason">These sessions follow clinic hours. Ask an authorized doctor or administrator to customize this day.</p>}
     {src && <div className="cde-controls cde-copy" role="group" aria-label="Copy options" data-testid="copy-from-panel">
       <SearchableSelect label="Copy" value={mode} onChange={v => setMode(v === "slot" ? "slot" : "day")} options={[{ value: "day", label: "Entire day" }, { value: "slot", label: "One time slot" }]}/>
       {mode === "slot" && <SearchableSelect label="Source slot" value={slotKey} onChange={setSlotKey} placeholder={slotSources.length ? "Choose slot…" : "No slots on that day"} options={slotSources.map(s => ({ value: s.key, label: `${fmt(s.startTime)} – ${fmt(s.endTime)}` }))}/>}
-      <button type="button" className="button secondary small" disabled={busy || (mode === "slot" && !slotKey)} onClick={() => void copy()} data-testid="button-copy-from-apply">Copy</button>
+      <button type="button" className="button secondary small" disabled={busy || dayLocked || (mode === "slot" && !slotKey)} onClick={() => void copy()} data-testid="button-copy-from-apply">Copy</button>
       <button type="button" className="button secondary small" onClick={() => { setSource(""); setSlotKey(""); }}>Cancel Copy</button>
     </div>}
     {!day.isOpen ? <p className="muted" data-testid="text-day-off">Not a working day. Draft slots return if you turn it back on.</p> :
@@ -107,6 +110,10 @@ export function CompactDayEditor({ week, setWeek, opening, preferences, busy = f
             <label>Max tokens<input type="number" min={1} max={1000} step={1} disabled={busy || s.locked} value={String(s.settings?.maxTokens ?? "")} placeholder={template?.maxTokens ? String(template.maxTokens) : ""} onChange={e => setting(s, "maxTokens", e.target.value === "" ? "" : Number(e.target.value))}/></label>
             <label>Token prefix<input maxLength={8} disabled={busy || s.locked} value={String(s.settings?.tokenPrefix ?? "")} placeholder={template?.tokenPrefix ? String(template.tokenPrefix) : ""} onChange={e => setting(s, "tokenPrefix", e.target.value.replace(/[^A-Za-z0-9]/g, ""))}/></label>
             <label>Buffer (min)<input type="number" min={0} max={1440} step={1} disabled={busy || s.locked} value={String(s.settings?.bufferMinutes ?? "")} onChange={e => setting(s, "bufferMinutes", e.target.value === "" ? 0 : Number(e.target.value))}/></label>
+             <fieldset disabled={busy || s.locked}><legend>Session timezone</legend>
+               <label><input type="checkbox" checked={!s.settings?.timezone || s.settings.timezone === preferences.timezone} onChange={e=>setting(s,"timezone",e.target.checked ? preferences.timezone : "UTC")}/>Use location timezone ({preferences.timezone || "not configured"})</label>
+               <TimezoneSelect value={String(s.settings?.timezone || preferences.timezone || "")} onChange={v=>setting(s,"timezone",v)}/>
+             </fieldset>
              <SearchableSelect label="Queue mode" value={String(s.settings?.queueMode ?? "")} disabled={busy || s.locked} placeholder={queueModeLabel(template?.queueMode)} onChange={v => setting(s, "queueMode", v)} options={QUEUE_MODES.map(([value, label]) => ({ value, label }))}/>
             {(["breakStart", "breakEnd", "queueOpenTime", "queueCloseTime"] as const).map(k => <label key={k}>{{ breakStart: "Break start", breakEnd: "Break end", queueOpenTime: "Queue opens", queueCloseTime: "Queue closes" }[k]}<TimeFormatInput value={String(s.settings?.[k] ?? "")} preferences={preferences} disabled={busy || s.locked} onChange={value => setting(s, k, value || null)} onDraftValidityChange={valid=>patch(s.key,current=>({invalidTimes:valid?current.invalidTimes?.filter(key=>key!==k):[...new Set([...current.invalidTimes||[],k])]}))}/></label>)}
           </div></details>

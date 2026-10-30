@@ -60,12 +60,12 @@ test("registration resends by retained challenge only, with server-aligned coold
   assert.match(ui,/expiry|expir/i);
   assert.match(ui,/Change details to restart registration/);
 });
-test("doctor weekly editing keeps independent saves explicit and shades only comparable clinic times",()=>{
-  const ui=source("./schedule/WeeklyOverview.tsx");
-  assert.match(ui,/not an atomic weekly update/);
-  assert.match(ui,/Copy to Selected Days/);
-  assert.match(ui,/>Add Session</);
-  assert.match(source("../resources.tsx"),/clinicHours=\{matchingTimezone\?clinicHours:\[\]\}/);
-  assert.match(source("../resources.tsx"),/existing server rules decide whether it can be saved/);
+test("doctor weekly editing keeps independent saves and shared outside-hours warnings explicit",()=>{
+  const ui=source("./schedule/WeeklyScheduleEditor.tsx");
+  assert.match(ui,/Partly saved/);
+  assert.match(ui,/Your unsaved edits are still in the editor/);
+  assert.match(source("./schedule/CompactDayEditor.tsx"),/button-add-time-slot/);
+  assert.match(source("./schedule/CompactDayEditor.tsx"),/selected-day-outside-hours/);
+  assert.match(source("./schedule/WeeklyScheduleEditor.tsx"),/Save With Extended Hours/);
   assert.doesNotMatch(source("../resources.tsx"),/\.toLocaleString\(/);
 });

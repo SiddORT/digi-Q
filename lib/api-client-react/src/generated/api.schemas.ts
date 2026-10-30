@@ -2173,6 +2173,15 @@ export const OwnerCustomScheduleQueueMode = {
   walkInsOnly: 'walkInsOnly',
 } as const;
 
+export type OwnerCustomScheduleSessionsItemQueueMode = typeof OwnerCustomScheduleSessionsItemQueueMode[keyof typeof OwnerCustomScheduleSessionsItemQueueMode];
+
+
+export const OwnerCustomScheduleSessionsItemQueueMode = {
+  mixed: 'mixed',
+  appointmentsOnly: 'appointmentsOnly',
+  walkInsOnly: 'walkInsOnly',
+} as const;
+
 export type OwnerCustomScheduleSessionsItem = {
   /**
      * @minimum 0
@@ -2188,6 +2197,45 @@ export type OwnerCustomScheduleSessionsItem = {
   startTime: string;
   /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
   endTime: string;
+  timezone?: string;
+  /**
+     * @minimum 1
+     * @maximum 1000
+     */
+  maxTokens?: number;
+  /**
+     * @minimum 1
+     * @maximum 240
+     */
+  consultationMinutes?: number;
+  /** @pattern ^[A-Za-z0-9]{1,8}$ */
+  tokenPrefix?: string;
+  /**
+     * @minimum 0
+     * @maximum 1440
+     */
+  bufferMinutes?: number;
+  queueMode?: OwnerCustomScheduleSessionsItemQueueMode;
+  /**
+     * @nullable
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  breakStart?: string | null;
+  /**
+     * @nullable
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  breakEnd?: string | null;
+  /**
+     * @nullable
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  queueOpenTime?: string | null;
+  /**
+     * @nullable
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  queueCloseTime?: string | null;
 };
 
 /**

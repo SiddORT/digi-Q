@@ -63,8 +63,8 @@ test("remaining Editor guidance is HelpTip; validation stays inline", () => {
   // Age is derived display text (an <output>), not an editable-looking input.
   assert.match(r, /className="derived-field" data-testid="text-derived-age"/);
   assert.doesNotMatch(r, /<input readOnly[^>]*ageFromDateOfBirth/);
-  assert.match(r, /This session extends outside a clinic opening interval/);
-  assert.match(r, /role="alert" className="field-error">Closing time must follow opening time/);
+  assert.match(read("./schedule/CompactDayEditor.tsx"), /Outside usual location hours\. Allowed\./);
+  assert.match(read("./schedule/week-plan.ts"), /end time must be after start time/);
 });
 
 test("custom form surfaces use the shared action footer", () => {

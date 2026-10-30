@@ -30,13 +30,12 @@ test("registration hours: closed rows keep an enabled expand control and no sess
   assert.match(src, /day\.isOpen \? "opening hours" : "closed status"/, "closed-status copy message retained");
 });
 
-test("weekly schedule: closed rows expand to Copy without enabling sessions", () => {
-  const src = read("./schedule/WeeklyDraftDays.tsx");
-  assert.match(src, /const isExpanded = expandedDays\.includes\(dayIndex\) \|\| errs\.length > 0;/);
-  assert.match(src, /disabled=\{errs\.length > 0\} onClick/);
-  assert.doesNotMatch(src, /disabled=\{!day\.isOpen \|\| errs\.length > 0\}/);
-  assert.match(src, /\{day\.isOpen && <div className="registration-sessions">/);
-  assert.match(src, /<summary>Copy \{DAYS\[dayIndex\]\}<\/summary>/);
+test("weekly schedule: off days still expose copy controls without enabling sessions", () => {
+  const src = read("./schedule/CompactDayEditor.tsx");
+  assert.match(src, /testId="select-copy-from"/);
+  assert.match(src, /!day\.isOpen \? <p className="muted" data-testid="text-day-off"/);
+  assert.match(src, /Copy options/);
+  assert.doesNotMatch(src, /disabled=\{!day\.isOpen/);
 });
 
 test("copying a closed day closes targets and keeps clinic-linked sessions", () => {

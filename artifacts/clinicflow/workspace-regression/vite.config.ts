@@ -12,5 +12,10 @@ export default defineConfig({
   server: {
     host: "127.0.0.1", port: 43720, strictPort: true,
     fs: { allow: [path.resolve(root, "../../..")] },
+    // Only the isolated schedule runner supplies this local disposable target.
+    proxy: process.env.SCHEDULE_TEST_API ? {
+      "/api": { target: process.env.SCHEDULE_TEST_API },
+      "/__schedule-evidence": { target: "http://127.0.0.1:43722" },
+    } : undefined,
   },
 });

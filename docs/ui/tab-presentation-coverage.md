@@ -27,9 +27,9 @@ Coverage includes:
   patient/user/receptionist record-editor tabs.
 - Permission-filtered global-search categories and dynamic counts; notification
   popover and patient details drawer.
-- Multi-location consulting-owner registration tabs. Their child
-  `WeeklyDraftDays` controls remain **accordions**, not invented weekday tabs.
-  Saved `WeeklyScheduleEditor` uses the existing weekday tabs.
+- Multi-location consulting-owner registration tabs. Custom doctor sessions
+  share `CompactDayEditor` weekday tabs with saved scheduling. Location
+  opening-hours entry remains a separate control with its own policy.
 
 Queue `StatusTabs` remains a pressed **filter group**. Sidebar navigation,
 ordinary links, wizard progress, other view switches, toggles, report

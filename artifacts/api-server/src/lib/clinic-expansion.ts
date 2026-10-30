@@ -227,7 +227,8 @@ export async function createOwnerCustomSessions(actor: any, doctorId: string, cr
     const branch = created[input.branchIndex];
     assert(branch, 400, "Each custom session must belong to one of the new locations");
     const session = { doctorId, clinicId: branch.clinicId, branchId: branch.id, dayOfWeek: input.dayOfWeek, isOpen: true, startTime: input.startTime, endTime: input.endTime,
-      timezone: branch.timezone || "Asia/Kolkata", tokenPrefix: custom.tokenPrefix, maxTokens: custom.maxTokens, consultationMinutes: custom.consultationMinutes, bufferMinutes: 0, queueMode: custom.queueMode };
+      timezone: branch.timezone || "Asia/Kolkata", tokenPrefix: custom.tokenPrefix, maxTokens: custom.maxTokens, consultationMinutes: custom.consultationMinutes, bufferMinutes: 0, queueMode: custom.queueMode,
+      ...Object.fromEntries(["timezone","tokenPrefix","maxTokens","consultationMinutes","bufferMinutes","queueMode","breakStart","breakEnd","queueOpenTime","queueCloseTime"].filter(k=>input[k]!==undefined).map(k=>[k,input[k]])) };
     validateTimes(session); withinBranchHours(branch, session);
     assert(!placed.some(p => p.branchId === session.branchId && weeklySessionsOverlap(p, session)), 409, "Custom sessions on the same day and location cannot overlap");
     placed.push(session);
