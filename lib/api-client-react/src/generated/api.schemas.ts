@@ -176,6 +176,10 @@ export interface AppointmentPrivatePatient {
   /** @nullable */
   dateOfBirth?: string | null;
   /** @nullable */
+  age?: number | null;
+  /** @nullable */
+  ageReferenceDate?: string | null;
+  /** @nullable */
   mobile?: string | null;
   /** @nullable */
   email?: string | null;
@@ -2899,6 +2903,19 @@ export interface Message {
   message: string;
 }
 
+export interface ProfileFieldAccess {
+  fields: string[];
+}
+
+export type ProfileCompletionInputValues = { [key: string]: unknown };
+
+export type ProfileCompletionInputBaseline = { [key: string]: unknown };
+
+export interface ProfileCompletionInput {
+  values: ProfileCompletionInputValues;
+  baseline: ProfileCompletionInputBaseline;
+}
+
 export interface ProfileInput {
   /** @minLength 1 */
   fullName?: string;
@@ -3116,7 +3133,8 @@ export interface DoctorInput {
   mobile?: string;
   photoUrl?: string;
   gender?: string;
-  dateOfBirth?: string;
+  /** @nullable */
+  dateOfBirth?: string | null;
   specializationId?: string;
   qualificationIds?: string[];
   registrationNumber?: string;
@@ -3207,12 +3225,18 @@ export interface PatientInput {
   mobile?: string | null;
   /** @nullable */
   email?: string | null;
-  dateOfBirth?: string;
+  /** @nullable */
+  dateOfBirth?: string | null;
   /**
      * @minimum 0
      * @maximum 130
      */
   age?: number;
+  /**
+     * Date an approximate age was entered; absent on legacy estimates. Never an exact DOB.
+     * @nullable
+     */
+  readonly ageReferenceDate?: string | null;
   gender?: string;
   address?: string;
   emergencyContactName?: string;

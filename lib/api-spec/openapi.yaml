@@ -1004,6 +1004,36 @@ paths:
       responses:
         "200": { description: Authentication status, content: { application/json: { schema: { $ref: "#/components/schemas/AuthStatus" } } } }
         "401": { $ref: "#/components/responses/Error" }
+  /{profileKind}/{profileId}/profile-fields:
+    get:
+      operationId: getProfileFieldAccess
+      tags: [Profiles]
+      parameters:
+        - { name: profileKind, in: path, required: true, schema: { type: string, enum: [patients, doctors, users] } }
+        - { name: profileId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Existing profile fields this viewer may complete
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProfileFieldAccess" }
+    patch:
+      operationId: completeProfileFields
+      tags: [Profiles]
+      parameters:
+        - { name: profileKind, in: path, required: true, schema: { type: string, enum: [patients, doctors, users] } }
+        - { name: profileId, in: path, required: true, schema: { type: string } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ProfileCompletionInput" } } } }
+      responses:
+        "200":
+          description: Saved profile
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - { $ref: "#/components/schemas/Patient" }
+                  - { $ref: "#/components/schemas/Doctor" }
+                  - { $ref: "#/components/schemas/User" }
   /me:
     get:
       operationId: getMe
@@ -3387,6 +3417,17 @@ components:
         page: { type: integer }
         pageSize: { type: integer }
         totalPages: { type: integer }
+    ProfileFieldAccess:
+      type: object
+      required: [fields]
+      properties:
+        fields: { type: array, items: { type: string } }
+    ProfileCompletionInput:
+      type: object
+      required: [values, baseline]
+      properties:
+        values: { type: object, additionalProperties: true }
+        baseline: { type: object, additionalProperties: true }
     ProfileInput:
       type: object
       properties:
@@ -3665,7 +3706,7 @@ components:
         mobile: { type: string }
         photoUrl: { type: string }
         gender: { type: string }
-        dateOfBirth: { type: string, format: date }
+        dateOfBirth: { type: ["string", "null"], format: date }
         specializationId: { type: string }
         qualificationIds: { type: array, items: { type: string } }
         registrationNumber: { type: string }
@@ -3738,8 +3779,9 @@ components:
         fullName: { type: string, minLength: 1 }
         mobile: { type: ["string", "null"] }
         email: { type: ["string", "null"], format: email }
-        dateOfBirth: { type: string, format: date }
+        dateOfBirth: { type: ["string", "null"], format: date }
         age: { type: integer, minimum: 0, maximum: 130 }
+        ageReferenceDate: { type: ["string", "null"], format: date, readOnly: true, description: Date an approximate age was entered; absent on legacy estimates. Never an exact DOB. }
         gender: { type: string }
         address: { type: string }
         emergencyContactName: { type: string }
@@ -4060,6 +4102,8 @@ components:
         code: { type: ["string", "null"] }
         gender: { type: ["string", "null"] }
         dateOfBirth: { type: ["string", "null"] }
+        age: { type: ["integer", "null"] }
+        ageReferenceDate: { type: ["string", "null"] }
         mobile: { type: ["string", "null"] }
         email: { type: ["string", "null"] }
         canEdit: { type: boolean, description: "Independent existing patient demographic write authority; server rechecks on save." }

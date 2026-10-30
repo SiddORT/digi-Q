@@ -17,6 +17,7 @@ import { createOwnedClinic, validateSlugWrite, validateOpeningHours, withinBranc
 import { doctorContext, validateTimes, localNow, sessionsOverlap, weeklySessionsOverlap, datePlus, extraSession } from "../lib/availability";
 import { assertScheduleSnapshot } from "../lib/schedule-snapshot";
 import { applyDayOverride, lockScheduleDays, scheduleDayContext } from "../lib/schedule-day-overrides";
+import { profileKeys, assertProfileBaseline, validateProfileValues } from "../lib/profile-fields";
 const ADDRESS_KEYS = ["address", "country", "state", "city", "pincode"] as const;
 /** Address parts live in the JSON `data` column; merge without touching other profile data. */
 async function mergeAddress(table: any, id: string, patch: Record<string, unknown>, tx: any) {
@@ -171,12 +172,12 @@ export async function authorizeWrite(user: any, kind: string, body: any, old?: a
     if (kind === "branches" && user.role === "doctor") {
       const clinic = await one(clinics, context.clinicId, conn);
       assert(clinic.adminId === user.managingAdminId, 403, "Clinic outside your managing administrator's catalog");
-    } else assert(scope(user, context.clinicId, context.branchId), 403, "Clinic outside assigned scope");
+    } else if (!(kind === "patients" && user.role === "patient" && old?.id === user.patientId)) assert(scope(user, context.clinicId, context.branchId), 403, "Clinic outside assigned scope");
   }
   if (context.branchId) {
     const branch = await one(branches, context.branchId, conn);
     assert(!context.clinicId || branch.clinicId === context.clinicId, 400, "Branch does not belong to clinic");
-    assert(scope(user, branch.clinicId, branch.id), 403, "Branch outside assigned scope");
+    if (!(kind === "patients" && user.role === "patient" && old?.id === user.patientId)) assert(scope(user, branch.clinicId, branch.id), 403, "Branch outside assigned scope");
   }
   if (context.doctorId) {
     if (["schedules","availability-exceptions"].includes(kind) && user.role==="doctor") assert(context.doctorId===user.doctorId,403,"Doctors may manage only their own schedule.");
@@ -285,6 +286,7 @@ export async function createClinicAdminOnboarding(actor: any, body: any, redirec
   };
 }
 async function save(kind: string, table: any, user: any, body: any, old?: any, redirectUrl?: string, refreshActor?:()=>Promise<any>, connection: any = db) {
+  if (["patients", "doctors"].includes(kind)) validateProfileValues(body, old);
   await authorizeWrite(user, kind, body, old, connection);
   const direct = ["users", "doctors"].includes(kind) ? await takeStaffCredentials(body, !!old) : { body, credentials: undefined };
   body = direct.body;
@@ -515,14 +517,14 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
     if (kind === "branches") fields.data.code ||= `BR-${id.slice(0,8)}`;
     if (kind === "masters") fields.code = body.code;
     if (kind === "patients") {
-      if (user.role === "patient" || old?.userId || user.role === "doctor") assert(body.mobile, 400, "Patient mobile is required");
       if (!old && body.clinicId && body.mobile) {
         await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"patient-mobile:" + body.clinicId + ":" + body.mobile}))`);
         const matches = (await all(patients, tx)).filter(p => p.clinicId === body.clinicId && p.mobile === body.mobile);
         for (const match of matches) assert(!await canRead(user, "patients", match), 409, "A patient with this mobile already exists in this clinic. Search by mobile and select the existing patient; contact your clinic administrator if this is a different household member.");
       }
-      fields.mobile = body.mobile || null; fields.mobileVerified = old && old.mobile === body.mobile ? old.mobileVerified : false;
-      fields.data.email = body.email || null;
+      fields.mobile = body.mobile === undefined ? old?.mobile ?? null : body.mobile || null;
+      fields.mobileVerified = old && old.mobile === fields.mobile ? old.mobileVerified : false;
+      if (body.email !== undefined) fields.data.email = body.email || null;
       fields.data.code ||= `PAT-${id.slice(0,8)}`;
     }
     if (kind === "qrs") {
@@ -848,6 +850,46 @@ for (const [kind, table, schema, listSchema] of definitions) {
   resourcesRouter.patch(`/${kind}/:id`, async (req, res) => {
     const user = await requireUser(req), old = await enrich(kind, await one(table, req.params.id as string));
     res.json(await projectAssignmentScope(user, kind, await save(kind, table, user, parse(schema, req.body), old,undefined,()=>requireUser(req))));
+  });
+  if (profileKeys[kind]) resourcesRouter.get(`/${kind}/:id/profile-fields`, async (req, res) => {
+    const actor = await requireUser(req), current = await enrich(kind, await one(table, req.params.id as string));
+    assert(await canRead(actor, kind, current), 403, "Record outside your scope");
+    try {
+      const { enforcePermissionPolicy } = await import("../lib/permission-policy");
+      await enforcePermissionPolicy(actor, { method: "PATCH", path: `/${kind}/${current.id}` });
+      if (kind === "users" && actor.id === current.id) return res.json({ fields: ["mobile", "photoUrl"] });
+      await authorizeWrite(actor, kind, {}, current);
+      return res.json({ fields: profileKeys[kind] });
+    } catch (error) {
+      if (error instanceof HttpError && [403, 404].includes(error.status)) return res.json({ fields: [] });
+      throw error;
+    }
+  });
+  if (profileKeys[kind]) resourcesRouter.patch(`/${kind}/:id/profile-fields`, async (req, res) => {
+    const input = parse(z.CompleteProfileFieldsBody, req.body);
+    const actor = await requireUser(req);
+    const keys = Object.keys(input.values);
+    assert(keys.length > 0 && keys.every(key => profileKeys[kind].includes(key)), 400, "Unsupported profile field");
+    const saved = await db.transaction(async tx => {
+      const id = req.params.id as string;
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${kind + ":" + id}))`);
+      const current = await enrich(kind, await one(table, id, tx), tx);
+      assert(await canRead(actor, kind, current, tx), 403, "Record outside your scope");
+      assertProfileBaseline(current, input.values, input.baseline, kind === "patients");
+      const values = parse((kind === "users" && actor.id === id ? z.UpdateMeBody : schema).partial(), input.values) as Record<string, any>;
+      assert(Object.keys(values).length === keys.length, 400, "Unsupported profile field");
+      validateProfileValues(values, current);
+      if (kind === "users" && actor.id === id) {
+        // Self-account fields use the same proof invalidation as PATCH /me.
+        assert(keys.every(key => ["mobile", "photoUrl"].includes(key)), 403, "This field is not available in your self-profile");
+        const { saveOwnProfile } = await import("./identity");
+        await saveOwnProfile(actor, values, tx);
+        return enrich("users", await one(users, id, tx), tx);
+      }
+      const required = { fullName: current.fullName, ...(kind !== "patients" ? { email: current.email } : {}), ...(kind === "users" ? { role: current.role } : {}) };
+      return save(kind, table, actor, { ...required, ...values }, current, undefined, undefined, tx);
+    });
+    res.json(await projectAssignmentScope(actor, kind, saved));
   });
   resourcesRouter.delete(`/${kind}/:id`, async (req, res) => {
     const user = await requireUser(req), old = await enrich(kind, await one(table, req.params.id as string));

@@ -28,6 +28,7 @@ import { FormControlFixture } from "./FormControlFixture";
 import { TabPresentationFixture } from "./TabPresentationFixture";
 import { HeaderPaginationFixture } from "./HeaderPaginationFixture";
 import { SchedulePersistenceFixture } from "./SchedulePersistenceFixture";
+import { ProfileCompletionFixture } from "./ProfileCompletionFixture";
 
 // No Clerk provider, real account, live API, test bypass or production data is used.
 // Browser tests intercept *all* /api/ requests before opening this page.
@@ -41,6 +42,7 @@ const titleOwner=useRef<string|null>(null);
 const [location]=useLocation();
 const search=useSearch();
 const params = new URLSearchParams(search);
+if (params.get("mode") === "profile-completion") return <ProfileCompletionFixture/>;
 if (params.get("mode") === "compact-ui") return <CompactUiFixture/>;
 if (params.get("mode") === "schedule-persistence") return <SchedulePersistenceFixture/>;
 if (params.get("mode") === "form-controls") return <FormControlFixture/>;

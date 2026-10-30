@@ -31,6 +31,10 @@ export interface AppointmentPrivatePatient {
   /** @nullable */
   dateOfBirth?: string | null;
   /** @nullable */
+  age?: number | null;
+  /** @nullable */
+  ageReferenceDate?: string | null;
+  /** @nullable */
   mobile?: string | null;
   /** @nullable */
   email?: string | null;

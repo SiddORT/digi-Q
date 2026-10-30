@@ -18,6 +18,7 @@ export async function privateAppointmentDetail(row: any, user: any, conn: any = 
   const privatePatient = permitted ? {
     fullName: text(patient.fullName), code: text(patient.code), gender: text(patient.gender),
     dateOfBirth: text(patient.dateOfBirth), mobile: text(patient.mobile), email: text(patient.email), canEdit,
+    age: typeof patient.age === "number" ? patient.age : null, ageReferenceDate: text(patient.ageReferenceDate),
   } : null;
 
   // Fetch only actors actually referenced by this history, and only fields needed for permission/name projection.

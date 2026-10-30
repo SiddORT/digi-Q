@@ -13,7 +13,7 @@ const root = resolve(import.meta.dirname, "../../../..");
 const migrations = resolve(root, "lib/db/drizzle");
 let harnessSequence = 0;
 
-export async function createFeatureHarness({administration=false, simulatedMail=false, bookingLookups=false, postgres=false, fakeBookingMail=false, registration=false, deletion=false, notificationSettings=false, communicationUsage=false, staffAccounts=false}={}) {
+export async function createFeatureHarness({administration=false, simulatedMail=false, bookingLookups=false, postgres=false, fakeBookingMail=false, registration=false, deletion=false, notificationSettings=false, communicationUsage=false, staffAccounts=false, appointmentDetails=false}={}) {
   const cluster=postgres?await createQueueHarness({empty:true}):null;
   const {Pool}=postgres?createRequire(resolve(root,"lib/db/package.json"))("pg"):{};
   const pool=postgres?new Pool({host:cluster.temp,port:5432,user:"queue_test",database:"postgres",password:"",ssl:false,max:8,statement_timeout:10000}):null;
@@ -97,6 +97,7 @@ export async function createFeatureHarness({administration=false, simulatedMail=
          process: (id, referenced, remove) => processDeletionReceipt(deletionDb, id, referenced, remove),
          get: (id) => getDeletionReceipt(deletionDb, id),
        };` : ""}
+      ${appointmentDetails && !bookingLookups ? `import { appointmentsRouter } from "./routes/appointments";` : ""}
       ${bookingLookups ? `import { publicRouter } from "./routes/public";
       import { db } from "@workspace/db";
       import { processNotifications } from "./lib/notification-outbox";
@@ -131,6 +132,7 @@ export async function createFeatureHarness({administration=false, simulatedMail=
         app.use("/api", notificationTemplatesRouter);` : ""}
         ${administration ? `app.use("/api", resourcesRouter, identityRouter, systemUsersRouter, permissionPolicyRouter);` : ""}
         ${registration ? `app.use("/api", clinicExpansionRouter);` : ""}
+        ${appointmentDetails && !bookingLookups ? `app.use("/api", appointmentsRouter);` : ""}
         ${bookingLookups ? `app.use("/api", publicRouter, appointmentsRouter, guestRequestsRouter, appointmentQrRouter, lookupResourcesRouter, queueRouter);` : ""}
         ${simulatedMail ? `app.use("/api", authRouter);` : ""}
          // Fixture-only diagnostics capture the underlying error before the
@@ -141,7 +143,7 @@ export async function createFeatureHarness({administration=false, simulatedMail=
       }` },
     outfile: bundle, bundle: true, platform: "node", format: "esm", logLevel: "error",
     external: ["argon2", "pg", "pg-native", "@electric-sql/pglite", "@google-cloud/storage", "express", "pino", "pino-http", "libphonenumber-js/max",
-      ...((bookingLookups || registration) ? ["qrcode", "jspdf", "sharp", "express-rate-limit"] : []),
+      ...((bookingLookups || registration || appointmentDetails) ? ["qrcode", "jspdf", "sharp", "express-rate-limit"] : []),
       ...(bookingLookups && !simulatedMail ? ["nodemailer"] : [])],
     plugins: [{ name: "feature-fixtures", setup(b) {
       if (staffAccounts) {

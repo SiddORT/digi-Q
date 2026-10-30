@@ -15,6 +15,7 @@ function validateDates(value: any) {
   for (const key of ["date", "from", "to", "dateOfBirth"]) {
     if (value?.[key] !== undefined) {
       const v = value[key];
+      if (key === "dateOfBirth" && v === null) continue; // Explicit removal of an optional DOB; the mutation schema must also allow null.
       assert(typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString().slice(0, 10) === v, 400, `Invalid ${key}; expected YYYY-MM-DD`);
     }
   }

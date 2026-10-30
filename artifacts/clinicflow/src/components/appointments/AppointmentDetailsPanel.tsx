@@ -13,6 +13,8 @@ import { refreshAppointmentObservers } from "./refresh";
 import { errorStatus } from "../../lib/friendly-error";
 import { privatePatientOf } from "./detail-history";
 import "./details-tab.css";
+import { ProfileValue } from "../ProfileCompletion";
+import { patientAgeLabel } from "../../lib/profile-values";
 
 const NR = <span className="appt-detail-empty">Not recorded</span>;
 const val = (v?: string | null) => v?.trim() ? v.trim() : NR;
@@ -21,7 +23,7 @@ export function AppointmentDetailsPanel({ appointment: a, supplementaryDetails, 
   const live = api.useGetAppointment(a.id, { query: { queryKey: api.getGetAppointmentQueryKey(a.id), retry: false, refetchInterval: 30000 } });
   const fresh = useFreshWorkspace(live.dataUpdatedAt, !!live.error);
   const blocked = fresh.stale || !fresh.online || !!live.error;
-  const p = privatePatientOf(a);
+   const p = privatePatientOf(live.data || a);
   const ts = (v: string) => formatConfiguredTimestamp(v, a.timezone || undefined, {}, a);
   const age = p?.dateOfBirth ? ageFromDateOfBirth(p.dateOfBirth) : undefined;
   const session = `${a.startTime ? formatTime(a.startTime, a) : "—"}–${a.endTime ? formatTime(a.endTime, a) : "—"}`;
@@ -38,10 +40,10 @@ export function AppointmentDetailsPanel({ appointment: a, supplementaryDetails, 
           : <dl className="appt-detail-grid appt-details-grid">
             <div><dt>Name</dt><dd data-testid="text-detail-patient-name">{val(p.fullName || a.patientName)}</dd></div>
             <div><dt>Patient ID</dt><dd className="mono" data-testid="text-detail-patient-code">{val(p.code || a.patientCode)}</dd></div>
-            <div><dt>Gender</dt><dd data-testid="text-detail-gender">{p.gender ? title(p.gender) : NR}</dd></div>
-            <div><dt>Date of birth / age</dt><dd data-testid="text-detail-dob">{p.dateOfBirth ? <>{formatDate(p.dateOfBirth, a)}{age !== undefined && <small>{age} {age === 1 ? "year" : "years"}</small>}</> : NR}</dd></div>
-            <div><dt>Profile mobile</dt><dd data-testid="text-detail-profile-mobile">{val(p.mobile)}</dd></div>
-            <div><dt>Email</dt><dd className="appt-wrap" data-testid="text-detail-email">{val(p.email)}</dd></div>
+            <div><dt>Gender</dt><dd data-testid="text-detail-gender"><ProfileValue kind="patients" record={{...p,id:a.patientId}} field="gender" editable={!!p.canEdit} blocked={blocked}>{p.gender ? title(p.gender) : "Not entered"}</ProfileValue></dd></div>
+            <div><dt>Date of birth / age</dt><dd data-testid="text-detail-dob"><ProfileValue kind="patients" record={{...p,id:a.patientId}} field="dateOfBirth" editable={!!p.canEdit} blocked={blocked}>{p.dateOfBirth ? <>{formatDate(p.dateOfBirth, a)}{age !== undefined && <small>{age} {age === 1 ? "year" : "years"}</small>}</> : "Not entered"}</ProfileValue>{!p.dateOfBirth && p.age!=null && <small>{patientAgeLabel(p)}</small>}</dd></div>
+            <div><dt>Profile mobile</dt><dd data-testid="text-detail-profile-mobile"><ProfileValue kind="patients" record={{...p,id:a.patientId}} field="mobile" editable={!!p.canEdit} blocked={blocked}>{val(p.mobile)}</ProfileValue></dd></div>
+            <div><dt>Email</dt><dd className="appt-wrap" data-testid="text-detail-email"><ProfileValue kind="patients" record={{...p,id:a.patientId}} field="email" editable={!!p.canEdit} blocked={blocked}>{val(p.email)}</ProfileValue></dd></div>
           </dl>}
       </section>
       <section className="appt-detail-block appt-details-card" data-testid="section-detail-visit" aria-labelledby={`vs-h-${a.id}`}>

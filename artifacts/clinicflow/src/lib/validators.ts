@@ -1,4 +1,5 @@
 import { phoneValidityMessage } from "./phone.ts";
+import { isCanonicalDate } from "./date-time.ts";
 /**
  * Shared validators (spec §7.4). Each returns an error message or undefined.
  * All string inputs are trimmed so whitespace-only counts as empty (finding 30).
@@ -69,9 +70,7 @@ const isoToday = (now: Date) => `${now.getFullYear()}-${pad(now.getMonth() + 1)}
 export function validateDateOfBirth(value: unknown, now = new Date()): string | undefined {
   const v = String(trimValue(value) ?? "");
   if (!v) return undefined;
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
-  const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
-  if (!m || !d || d.getMonth() !== Number(m[2]) - 1 || d.getDate() !== Number(m[3])) return "Enter a valid date of birth.";
+  if (!isCanonicalDate(v)) return "Enter a valid date of birth.";
   if (v > isoToday(now)) return "Date of birth cannot be in the future.";
   return undefined;
 }

@@ -42,7 +42,10 @@ identityRouter.post("/onboarding", async (req, res) => {
 });
 identityRouter.patch("/me", async (req, res) => {
   const user = await requireUser(req), body = parse(z.UpdateMeBody, req.body);
-  await db.transaction(async tx => {
+  await db.transaction(async tx => saveOwnProfile(user, body, tx));
+  res.json(await findUser(user.id));
+});
+export async function saveOwnProfile(user: any, body: any, tx: any) {
     const [account] = await tx.select().from(users).where(eq(users.id,user.id)).for("update");
     const mobileChanged = body.mobile !== undefined && body.mobile !== account.mobile;
     if (mobileChanged) await tx.execute(sql`update auth_challenges set consumed_at=now(),data='{}'::jsonb where user_id=${user.id} and purpose='staff-contact:sms'`);
@@ -56,6 +59,4 @@ identityRouter.patch("/me", async (req, res) => {
       await change(doctors, d.id, { data: { ...d.data, ...body } }, tx);
     }
     await audit(user, "updateProfile", "users", user, tx);
-  });
-  res.json(await findUser(user.id));
-});
+}

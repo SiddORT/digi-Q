@@ -103,6 +103,7 @@ export { WorkspaceTabs } from "./components/WorkspaceTabs";
 import "./components/booking/booking-visit.css";
 import { useBookingContact } from "./components/booking/use-booking-contact";
 import { bookingContinueReason } from "./components/booking/continue-reason";
+import { ProfileRecordSummary } from "./components/ProfileCompletion";
 
 function useConfiguredTimezone(identity?:api.Identity) {
  const identityTimezone=(identity as (api.Identity&{settings?:{timezone?:string}})|undefined)?.settings?.timezone;
@@ -546,7 +547,7 @@ function Queue({identity,initial}:{identity:api.Identity;initial?:api.Appointmen
 }
 function Profile({identity}:{identity:api.Identity}){
  const [recordsOpen,setRecordsOpen]=useState(false);
- return <div className="profile-stack"><ProfileEditor identity={identity}/><PageSizePreferenceControl/>{identity.user?.role==="clinicAdmin"&&<OwnedClinicInformation key={identity.user.id} adminId={identity.user.id}/>} {identity.user?.role==="patient"&&identity.patientId&&<section className="panel padded" aria-label="Your Visit Records">
+ return <div className="profile-stack"><section className="panel padded" aria-label="Profile details"><ProfileRecordSummary kind={identity.doctorId?"doctors":identity.patientId?"patients":"users"} id={identity.doctorId||identity.patientId||identity.user!.id} identity={identity} self/></section><ProfileEditor identity={identity}/><PageSizePreferenceControl/>{identity.user?.role==="clinicAdmin"&&<OwnedClinicInformation key={identity.user.id} adminId={identity.user.id}/>} {identity.user?.role==="patient"&&identity.patientId&&<section className="panel padded" aria-label="Your Visit Records">
    <h2>Your Visit Records</h2><p className="muted">View your appointment history, status changes and documents shared by your clinic.</p>
    <button type="button" className="button secondary" onClick={()=>setRecordsOpen(true)} data-testid="button-my-patient-records">View My Records</button>
    {recordsOpen&&<PatientDetailsDrawer patient={{id:identity.patientId,fullName:identity.user.fullName,email:identity.user.email}} onClose={()=>setRecordsOpen(false)}/>}

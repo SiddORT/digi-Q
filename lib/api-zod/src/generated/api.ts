@@ -121,6 +121,8 @@ export const ReadLiveTicketResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
+  "age": zod.number().int().nullish(),
+  "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
   "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
@@ -2726,7 +2728,7 @@ export const AttachOwnDoctorProfileResponse = zod.object({
   "mobile": zod.string().optional(),
   "photoUrl": zod.string().optional(),
   "gender": zod.string().optional(),
-  "dateOfBirth": zod.coerce.date().optional(),
+  "dateOfBirth": zod.coerce.date().nullish(),
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "registrationNumber": zod.string().optional(),
@@ -3677,6 +3679,194 @@ export const GetAuthStatusResponse = zod.object({
   "staffDirectoryRevision": zod.string().optional().describe('Opaque staff-removal revision for invalidating signed-in directory and historical attribution caches.'),
   "requiresStaffPassword": zod.boolean()
 })
+
+
+export const GetProfileFieldAccessParams = zod.object({
+  "profileKind": zod.enum(['patients', 'doctors', 'users']),
+  "profileId": zod.coerce.string()
+})
+
+export const GetProfileFieldAccessResponse = zod.object({
+  "fields": zod.array(zod.string())
+})
+
+
+export const CompleteProfileFieldsParams = zod.object({
+  "profileKind": zod.enum(['patients', 'doctors', 'users']),
+  "profileId": zod.coerce.string()
+})
+
+export const CompleteProfileFieldsBody = zod.object({
+  "values": zod.record(zod.string(), zod.unknown()),
+  "baseline": zod.record(zod.string(), zod.unknown())
+})
+
+export const completeProfileFieldsResponseOneOneCountryMax = 100;
+
+export const completeProfileFieldsResponseOneOneStateMax = 100;
+
+export const completeProfileFieldsResponseOneOneCityMax = 100;
+
+export const completeProfileFieldsResponseOneOnePincodeMax = 12;
+
+
+export const completeProfileFieldsResponseOneOneAgeMin = 0;
+export const completeProfileFieldsResponseOneOneAgeMax = 130;
+
+export const completeProfileFieldsResponseTwoOnePasswordMin = 8;
+export const completeProfileFieldsResponseTwoOnePasswordMax = 1024;
+
+export const completeProfileFieldsResponseTwoOneConfirmPasswordMax = 1024;
+
+export const completeProfileFieldsResponseTwoOneCountryMax = 100;
+
+export const completeProfileFieldsResponseTwoOneStateMax = 100;
+
+export const completeProfileFieldsResponseTwoOneCityMax = 100;
+
+export const completeProfileFieldsResponseTwoOnePincodeMax = 12;
+
+export const completeProfileFieldsResponseTwoOneAddressMax = 500;
+
+
+export const completeProfileFieldsResponseTwoOneExperienceYearsMin = 0;
+
+export const completeProfileFieldsResponseTwoOneConsultationFeeMin = 0;
+
+
+export const completeProfileFieldsResponseThreeOnePasswordMin = 8;
+export const completeProfileFieldsResponseThreeOnePasswordMax = 1024;
+
+export const completeProfileFieldsResponseThreeOneConfirmPasswordMax = 1024;
+
+export const completeProfileFieldsResponseThreeOneCountryMax = 100;
+
+export const completeProfileFieldsResponseThreeOneStateMax = 100;
+
+export const completeProfileFieldsResponseThreeOneCityMax = 100;
+
+export const completeProfileFieldsResponseThreeOnePincodeMax = 12;
+
+export const completeProfileFieldsResponseThreeOneAddressMax = 500;
+
+
+
+
+
+export const CompleteProfileFieldsResponse = zod.union([zod.object({
+  "country": zod.string().max(completeProfileFieldsResponseOneOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(completeProfileFieldsResponseOneOneStateMax).optional(),
+  "city": zod.string().max(completeProfileFieldsResponseOneOneCityMax).optional(),
+  "pincode": zod.string().max(completeProfileFieldsResponseOneOnePincodeMax).optional(),
+  "fullName": zod.string().min(1),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().email().nullish(),
+  "dateOfBirth": zod.coerce.date().nullish(),
+  "age": zod.number().int().min(completeProfileFieldsResponseOneOneAgeMin).max(completeProfileFieldsResponseOneOneAgeMax).optional(),
+  "ageReferenceDate": zod.coerce.date().nullish().describe('Date an approximate age was entered; absent on legacy estimates. Never an exact DOB.'),
+  "gender": zod.string().optional(),
+  "address": zod.string().optional(),
+  "emergencyContactName": zod.string().optional(),
+  "emergencyContactPhone": zod.string().optional(),
+  "clinicId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "status": zod.enum(['active', 'inactive']).optional()
+}).and(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "userId": zod.string().nullish(),
+  "mobileVerified": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})),zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(completeProfileFieldsResponseTwoOnePasswordMin).max(completeProfileFieldsResponseTwoOnePasswordMax).optional(),
+  "confirmPassword": zod.string().max(completeProfileFieldsResponseTwoOneConfirmPasswordMax).optional(),
+  "country": zod.string().max(completeProfileFieldsResponseTwoOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(completeProfileFieldsResponseTwoOneStateMax).optional(),
+  "city": zod.string().max(completeProfileFieldsResponseTwoOneCityMax).optional(),
+  "pincode": zod.string().max(completeProfileFieldsResponseTwoOnePincodeMax).optional(),
+  "address": zod.string().max(completeProfileFieldsResponseTwoOneAddressMax).optional(),
+  "ownerAdminId": zod.string().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
+  "fullName": zod.string().min(1),
+  "email": zod.string().email(),
+  "mobile": zod.string().optional(),
+  "photoUrl": zod.string().optional(),
+  "gender": zod.string().optional(),
+  "dateOfBirth": zod.coerce.date().nullish(),
+  "specializationId": zod.string().optional(),
+  "qualificationIds": zod.array(zod.string()).optional(),
+  "registrationNumber": zod.string().optional(),
+  "experienceYears": zod.number().int().min(completeProfileFieldsResponseTwoOneExperienceYearsMin).optional(),
+  "about": zod.string().optional(),
+  "consultationFee": zod.number().min(completeProfileFieldsResponseTwoOneConsultationFeeMin).optional(),
+  "languages": zod.array(zod.string()).optional(),
+  "clinicIds": zod.array(zod.string()).min(1).optional().describe('Required by the server for doctor assignment.'),
+  "branchIds": zod.array(zod.string()).optional(),
+  "status": zod.enum(['active', 'inactive'])
+}).and(zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "code": zod.string(),
+  "staffCreationNotice": zod.object({
+  "email": zod.string().nullish(),
+  "sms": zod.string().nullish()
+}).optional(),
+  "managingAdminId": zod.string(),
+  "managingAdminName": zod.string(),
+  "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
+  "setupNotificationOutcomes": zod.object({
+  "email": zod.object({
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
+  "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
+}).optional(),
+  "sms": zod.object({
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
+  "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
+}).optional()
+}).optional(),
+  "createdAt": zod.coerce.date().nullable(),
+  "specializationName": zod.string().optional(),
+  "qualificationNames": zod.array(zod.string()).optional()
+})),zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(completeProfileFieldsResponseThreeOnePasswordMin).max(completeProfileFieldsResponseThreeOnePasswordMax).optional(),
+  "confirmPassword": zod.string().max(completeProfileFieldsResponseThreeOneConfirmPasswordMax).optional(),
+  "country": zod.string().max(completeProfileFieldsResponseThreeOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(completeProfileFieldsResponseThreeOneStateMax).optional(),
+  "city": zod.string().max(completeProfileFieldsResponseThreeOneCityMax).optional(),
+  "pincode": zod.string().max(completeProfileFieldsResponseThreeOnePincodeMax).optional(),
+  "address": zod.string().max(completeProfileFieldsResponseThreeOneAddressMax).optional(),
+  "fullName": zod.string().min(1),
+  "email": zod.string().email(),
+  "mobile": zod.string().optional(),
+  "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
+  "status": zod.enum(['active', 'inactive']),
+  "clinicIds": zod.array(zod.string()).min(1).describe('Required by the server for clinic-scoped roles.'),
+  "branchIds": zod.array(zod.string()),
+  "managingAdminId": zod.string().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.')
+}).and(zod.object({
+  "id": zod.string(),
+  "managingAdminId": zod.string().nullable(),
+  "managingAdminName": zod.string().nullable(),
+  "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
+  "setupNotificationOutcomes": zod.object({
+  "email": zod.object({
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
+  "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
+}).optional(),
+  "sms": zod.object({
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
+  "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
+}).optional()
+}).optional(),
+  "passwordEnabled": zod.boolean().optional().describe('Whether this staff record has a local password configured.'),
+  "staffCreationNotice": zod.object({
+  "email": zod.string().nullish(),
+  "sms": zod.string().nullish()
+}).optional(),
+  "createdAt": zod.coerce.date().nullable(),
+  "lastLoginAt": zod.coerce.date().nullish()
+}))])
 
 
 /**
@@ -4941,7 +5131,7 @@ export const ListDoctorsResponse = zod.object({
   "mobile": zod.string().optional(),
   "photoUrl": zod.string().optional(),
   "gender": zod.string().optional(),
-  "dateOfBirth": zod.coerce.date().optional(),
+  "dateOfBirth": zod.coerce.date().nullish(),
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "registrationNumber": zod.string().optional(),
@@ -5021,7 +5211,7 @@ export const CreateDoctorBody = zod.object({
   "mobile": zod.string().optional(),
   "photoUrl": zod.string().optional(),
   "gender": zod.string().optional(),
-  "dateOfBirth": zod.coerce.date().optional(),
+  "dateOfBirth": zod.coerce.date().nullish(),
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "registrationNumber": zod.string().optional(),
@@ -5072,7 +5262,7 @@ export const CreateDoctorResponse = zod.object({
   "mobile": zod.string().optional(),
   "photoUrl": zod.string().optional(),
   "gender": zod.string().optional(),
-  "dateOfBirth": zod.coerce.date().optional(),
+  "dateOfBirth": zod.coerce.date().nullish(),
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "registrationNumber": zod.string().optional(),
@@ -5152,7 +5342,7 @@ export const GetDoctorResponse = zod.object({
   "mobile": zod.string().optional(),
   "photoUrl": zod.string().optional(),
   "gender": zod.string().optional(),
-  "dateOfBirth": zod.coerce.date().optional(),
+  "dateOfBirth": zod.coerce.date().nullish(),
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "registrationNumber": zod.string().optional(),
@@ -5235,7 +5425,7 @@ export const UpdateDoctorBody = zod.object({
   "mobile": zod.string().optional(),
   "photoUrl": zod.string().optional(),
   "gender": zod.string().optional(),
-  "dateOfBirth": zod.coerce.date().optional(),
+  "dateOfBirth": zod.coerce.date().nullish(),
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "registrationNumber": zod.string().optional(),
@@ -5286,7 +5476,7 @@ export const UpdateDoctorResponse = zod.object({
   "mobile": zod.string().optional(),
   "photoUrl": zod.string().optional(),
   "gender": zod.string().optional(),
-  "dateOfBirth": zod.coerce.date().optional(),
+  "dateOfBirth": zod.coerce.date().nullish(),
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "registrationNumber": zod.string().optional(),
@@ -6311,8 +6501,9 @@ export const ListPatientsResponse = zod.object({
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
   "email": zod.string().email().nullish(),
-  "dateOfBirth": zod.coerce.date().optional(),
+  "dateOfBirth": zod.coerce.date().nullish(),
   "age": zod.number().int().min(listPatientsResponseTwoItemsItemOneAgeMin).max(listPatientsResponseTwoItemsItemOneAgeMax).optional(),
+  "ageReferenceDate": zod.coerce.date().nullish().describe('Date an approximate age was entered; absent on legacy estimates. Never an exact DOB.'),
   "gender": zod.string().optional(),
   "address": zod.string().optional(),
   "emergencyContactName": zod.string().optional(),
@@ -6352,7 +6543,7 @@ export const CreatePatientBody = zod.object({
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
   "email": zod.string().email().nullish(),
-  "dateOfBirth": zod.coerce.date().optional(),
+  "dateOfBirth": zod.coerce.date().nullish(),
   "age": zod.number().int().min(createPatientBodyAgeMin).max(createPatientBodyAgeMax).optional(),
   "gender": zod.string().optional(),
   "address": zod.string().optional(),
@@ -6385,8 +6576,9 @@ export const CreatePatientResponse = zod.object({
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
   "email": zod.string().email().nullish(),
-  "dateOfBirth": zod.coerce.date().optional(),
+  "dateOfBirth": zod.coerce.date().nullish(),
   "age": zod.number().int().min(createPatientResponseOneAgeMin).max(createPatientResponseOneAgeMax).optional(),
+  "ageReferenceDate": zod.coerce.date().nullish().describe('Date an approximate age was entered; absent on legacy estimates. Never an exact DOB.'),
   "gender": zod.string().optional(),
   "address": zod.string().optional(),
   "emergencyContactName": zod.string().optional(),
@@ -6429,8 +6621,9 @@ export const GetPatientResponse = zod.object({
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
   "email": zod.string().email().nullish(),
-  "dateOfBirth": zod.coerce.date().optional(),
+  "dateOfBirth": zod.coerce.date().nullish(),
   "age": zod.number().int().min(getPatientResponseOneAgeMin).max(getPatientResponseOneAgeMax).optional(),
+  "ageReferenceDate": zod.coerce.date().nullish().describe('Date an approximate age was entered; absent on legacy estimates. Never an exact DOB.'),
   "gender": zod.string().optional(),
   "address": zod.string().optional(),
   "emergencyContactName": zod.string().optional(),
@@ -6473,7 +6666,7 @@ export const UpdatePatientBody = zod.object({
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
   "email": zod.string().email().nullish(),
-  "dateOfBirth": zod.coerce.date().optional(),
+  "dateOfBirth": zod.coerce.date().nullish(),
   "age": zod.number().int().min(updatePatientBodyAgeMin).max(updatePatientBodyAgeMax).optional(),
   "gender": zod.string().optional(),
   "address": zod.string().optional(),
@@ -6506,8 +6699,9 @@ export const UpdatePatientResponse = zod.object({
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
   "email": zod.string().email().nullish(),
-  "dateOfBirth": zod.coerce.date().optional(),
+  "dateOfBirth": zod.coerce.date().nullish(),
   "age": zod.number().int().min(updatePatientResponseOneAgeMin).max(updatePatientResponseOneAgeMax).optional(),
+  "ageReferenceDate": zod.coerce.date().nullish().describe('Date an approximate age was entered; absent on legacy estimates. Never an exact DOB.'),
   "gender": zod.string().optional(),
   "address": zod.string().optional(),
   "emergencyContactName": zod.string().optional(),
@@ -7374,6 +7568,8 @@ export const ListAppointmentsResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
+  "age": zod.number().int().nullish(),
+  "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
   "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
@@ -7518,6 +7714,8 @@ export const CreateAppointmentResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
+  "age": zod.number().int().nullish(),
+  "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
   "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
@@ -7652,6 +7850,8 @@ export const UpdateAppointmentBookingResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
+  "age": zod.number().int().nullish(),
+  "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
   "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
@@ -7850,6 +8050,8 @@ export const GetAppointmentResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
+  "age": zod.number().int().nullish(),
+  "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
   "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
@@ -8040,6 +8242,8 @@ export const ResolveAppointmentQrResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
+  "age": zod.number().int().nullish(),
+  "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
   "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
@@ -8168,6 +8372,8 @@ export const CheckInAppointmentQrResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
+  "age": zod.number().int().nullish(),
+  "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
   "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
@@ -8325,6 +8531,8 @@ export const GetAppointmentMovementResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
+  "age": zod.number().int().nullish(),
+  "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
   "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
@@ -8476,6 +8684,8 @@ export const ManageGuestReceiptResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
+  "age": zod.number().int().nullish(),
+  "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
   "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
@@ -8613,6 +8823,8 @@ export const RescheduleAppointmentResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
+  "age": zod.number().int().nullish(),
+  "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
   "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
@@ -8759,6 +8971,8 @@ export const TransitionAppointmentResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
+  "age": zod.number().int().nullish(),
+  "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
   "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
@@ -8951,6 +9165,8 @@ export const GetQueueResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
+  "age": zod.number().int().nullish(),
+  "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
   "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
@@ -9087,6 +9303,8 @@ export const CallNextResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
+  "age": zod.number().int().nullish(),
+  "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
   "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')
@@ -9359,6 +9577,8 @@ export const GetDashboardResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
+  "age": zod.number().int().nullish(),
+  "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
   "canEdit": zod.boolean().describe('Independent existing patient demographic write authority; server rechecks on save.')

@@ -52,7 +52,8 @@ export interface DoctorInput {
   mobile?: string;
   photoUrl?: string;
   gender?: string;
-  dateOfBirth?: Date;
+  /** @nullable */
+  dateOfBirth?: Date | null;
   specializationId?: string;
   qualificationIds?: string[];
   registrationNumber?: string;

@@ -209,6 +209,8 @@ import type {
   PersonalNotificationInput,
   PersonalNotificationSettings,
   PincodeLookup,
+  ProfileCompletionInput,
+  ProfileFieldAccess,
   ProfileInput,
   PublicBookingContext,
   PublicClinicContext,
@@ -288,6 +290,33 @@ import type {
 
 import { customFetch } from '../custom-fetch';
 import type { ErrorType , BodyType } from '../custom-fetch';
+
+// https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
+type IfEquals<X, Y, A = X, B = never> = (<T>() => T extends X ? 1 : 2) extends <
+T,
+>() => T extends Y ? 1 : 2
+? A
+: B;
+
+type WritableKeys<T> = {
+[P in keyof T]-?: IfEquals<
+  { [Q in P]: T[P] },
+  { -readonly [Q in P]: T[P] },
+  P
+>;
+}[keyof T];
+
+type UnionToIntersection<U> =
+  (U extends any ? (k: U)=>void : never) extends ((k: infer I)=>void) ? I : never;
+type DistributeReadOnlyOverUnions<T> = T extends any ? NonReadonly<T> : never;
+
+type Writable<T> = Pick<T, WritableKeys<T>>;
+type NonReadonly<T> = [T] extends [UnionToIntersection<T>] ? {
+  [P in keyof Writable<T>]: T[P] extends object
+    ? NonReadonly<NonNullable<T[P]>>
+    : T[P];
+} : DistributeReadOnlyOverUnions<T>;
+
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -7747,6 +7776,167 @@ export function useGetAuthStatus<TData = Awaited<ReturnType<typeof getAuthStatus
 
 
 
+export const getGetProfileFieldAccessUrl = (profileKind: 'patients' | 'doctors' | 'users',
+    profileId: string,) => {
+
+
+
+
+  return `/api/${profileKind}/${profileId}/profile-fields`
+}
+
+export const getProfileFieldAccess = async (profileKind: 'patients' | 'doctors' | 'users',
+    profileId: string, options?: Parameters<typeof customFetch>[1]): Promise<ProfileFieldAccess> => {
+
+  return customFetch<ProfileFieldAccess>(getGetProfileFieldAccessUrl(profileKind,profileId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProfileFieldAccessQueryKey = (profileKind: 'patients' | 'doctors' | 'users',
+    profileId: string,) => {
+    return [
+    `/api/${profileKind}/${profileId}/profile-fields`
+    ] as const;
+    }
+
+
+export const getGetProfileFieldAccessQueryOptions = <TData = Awaited<ReturnType<typeof getProfileFieldAccess>>, TError = ErrorType<unknown>>(profileKind: 'patients' | 'doctors' | 'users',
+    profileId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProfileFieldAccess>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProfileFieldAccessQueryKey(profileKind,profileId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProfileFieldAccess>>> = ({ signal }) => getProfileFieldAccess(profileKind,profileId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: profileKind !== null && profileKind !== undefined && profileId !== null && profileId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProfileFieldAccess>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProfileFieldAccessQueryResult = NonNullable<Awaited<ReturnType<typeof getProfileFieldAccess>>>
+export type GetProfileFieldAccessQueryError = ErrorType<unknown>
+
+
+
+export function useGetProfileFieldAccess<TData = Awaited<ReturnType<typeof getProfileFieldAccess>>, TError = ErrorType<unknown>>(
+ profileKind: 'patients' | 'doctors' | 'users',
+    profileId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProfileFieldAccess>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProfileFieldAccessQueryOptions(profileKind,profileId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCompleteProfileFieldsUrl = (profileKind: 'patients' | 'doctors' | 'users',
+    profileId: string,) => {
+
+
+
+
+  return `/api/${profileKind}/${profileId}/profile-fields`
+}
+
+export const completeProfileFields = async (profileKind: 'patients' | 'doctors' | 'users',
+    profileId: string,
+    profileCompletionInput: ProfileCompletionInput, options?: Parameters<typeof customFetch>[1]): Promise<Patient | Doctor | User> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Patient | Doctor | User>(getCompleteProfileFieldsUrl(profileKind,profileId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(profileCompletionInput)
+  }
+);}
+
+
+
+
+
+export const getCompleteProfileFieldsMutationKey = () => ['completeProfileFields'] as const;
+
+export const getCompleteProfileFieldsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeProfileFields>>, TError,CompleteProfileFieldsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeProfileFields>>, TError,CompleteProfileFieldsMutationVariables, TContext> => {
+
+const mutationKey = getCompleteProfileFieldsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeProfileFields>>, CompleteProfileFieldsMutationVariables> = (props) => {
+          const {profileKind,profileId,data} = props ?? {};
+
+          return  completeProfileFields(profileKind,profileId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteProfileFieldsMutationResult = NonNullable<Awaited<ReturnType<typeof completeProfileFields>>>
+    export type CompleteProfileFieldsMutationBody = BodyType<ProfileCompletionInput>
+    export type CompleteProfileFieldsMutationError = ErrorType<unknown>
+    export type CompleteProfileFieldsMutationVariables = {profileKind: 'patients' | 'doctors' | 'users';profileId: string;data: BodyType<ProfileCompletionInput>}
+
+    export const useCompleteProfileFields = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeProfileFields>>, TError,CompleteProfileFieldsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeProfileFields>>,
+        TError,
+        CompleteProfileFieldsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCompleteProfileFieldsMutationOptions(options));
+    }
+
 export const getGetMeUrl = () => {
 
 
@@ -10543,7 +10733,7 @@ export const getCreatePatientUrl = () => {
   return `/api/patients`
 }
 
-export const createPatient = async (patientInput: PatientInput, options?: Parameters<typeof customFetch>[1]): Promise<Patient> => {
+export const createPatient = async (patientInput: NonReadonly<PatientInput>, options?: Parameters<typeof customFetch>[1]): Promise<Patient> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -10602,9 +10792,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CreatePatientMutationResult = NonNullable<Awaited<ReturnType<typeof createPatient>>>
-    export type CreatePatientMutationBody = BodyType<PatientInput>
+    export type CreatePatientMutationBody = BodyType<NonReadonly<PatientInput>>
     export type CreatePatientMutationError = ErrorType<unknown>
-    export type CreatePatientMutationVariables = {data: BodyType<PatientInput>}
+    export type CreatePatientMutationVariables = {data: BodyType<NonReadonly<PatientInput>>}
 
     export const useCreatePatient = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPatient>>, TError,CreatePatientMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -10697,7 +10887,7 @@ export const getUpdatePatientUrl = (id: string,) => {
 }
 
 export const updatePatient = async (id: string,
-    patientInput: PatientInput, options?: Parameters<typeof customFetch>[1]): Promise<Patient> => {
+    patientInput: NonReadonly<PatientInput>, options?: Parameters<typeof customFetch>[1]): Promise<Patient> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -10756,9 +10946,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type UpdatePatientMutationResult = NonNullable<Awaited<ReturnType<typeof updatePatient>>>
-    export type UpdatePatientMutationBody = BodyType<PatientInput>
+    export type UpdatePatientMutationBody = BodyType<NonReadonly<PatientInput>>
     export type UpdatePatientMutationError = ErrorType<unknown>
-    export type UpdatePatientMutationVariables = {id: string;data: BodyType<PatientInput>}
+    export type UpdatePatientMutationVariables = {id: string;data: BodyType<NonReadonly<PatientInput>>}
 
     export const useUpdatePatient = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePatient>>, TError,UpdatePatientMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}

@@ -10,6 +10,7 @@ import { PatientDocuments } from "./PatientDocuments";
 import { AppDialog } from "./AppDialog";
 import { OverflowText } from "./OverflowText";
 import { CapabilityView, fromQuery } from "./CapabilityState";
+import { ProfileFacts, canCompleteProfile } from "./ProfileCompletion";
 
 type Tab = "timeline" | "activity" | "documents";
 const TABS: { id: Tab; label: string }[] = [{ id: "timeline", label: "Timeline" }, { id: "activity", label: "Activity" }, { id: "documents", label: "Documents" }];
@@ -17,6 +18,8 @@ const TABS: { id: Tab; label: string }[] = [{ id: "timeline", label: "Timeline" 
 export function PatientDetailsDrawer({ patient, onClose }: { patient: { id: string; fullName?: string; patientCode?: string; email?: string }; onClose: () => void }) {
   const [tab, setTab] = useState<Tab>("timeline");
   const [page, setPage] = useState(1);
+  const identity = api.useGetMe();
+  const profile = api.useGetPatient(patient.id, { query: { queryKey: api.getGetPatientQueryKey(patient.id), retry: false } });
   const tabs = useTabIds<Tab>(TABS.map(t => t.id), tab, setTab);
   const params = { patientId: patient.id, sort: "-date" as const, page, pageSize: 25 };
   const q = api.useListAppointments(params as api.ListAppointmentsParams, { query: { queryKey: api.getListAppointmentsQueryKey(params as api.ListAppointmentsParams), staleTime: 30000 } });
@@ -31,6 +34,7 @@ export function PatientDetailsDrawer({ patient, onClose }: { patient: { id: stri
     <button type="button" className="button secondary small" disabled={page >= pages || q.isFetching} onClick={() => setPage(p => p + 1)} data-testid="button-timeline-older">Older Visits</button>
   </nav>;
   return <AppDialog open variant="drawer" onClose={onClose} title={`Patient Details · ${patient.fullName || "Patient"}`} description={[patient.patientCode, patient.email].filter(Boolean).join(" · ") || undefined}>
+    {profile.isLoading ? <p role="status">Loading profile…</p> : profile.error ? <p role="alert">Profile unavailable. <button type="button" onClick={()=>void profile.refetch()}>Retry</button></p> : profile.data ? <ProfileFacts kind="patients" record={profile.data} editable={canCompleteProfile("patients", profile.data, identity.data)} /> : null}
     <div className="dq-tabs pd-tabs" aria-label="Patient details sections" {...tabs.list}>{TABS.map(t => <button className="dq-tab" key={t.id} type="button" {...tabs.tab(t.id)} data-testid={`tab-patient-${t.id}`}><TabIcon name={t.id}/>{t.label}</button>)}</div>
     <div className="pd-panel" {...tabs.panel(tab)} data-testid={`panel-patient-${tab}`}>
       {tab === "timeline" && <>

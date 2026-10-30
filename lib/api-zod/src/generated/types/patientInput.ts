@@ -40,12 +40,18 @@ export interface PatientInput {
   mobile?: string | null;
   /** @nullable */
   email?: string | null;
-  dateOfBirth?: Date;
+  /** @nullable */
+  dateOfBirth?: Date | null;
   /**
      * @minimum 0
      * @maximum 130
      */
   age?: number;
+  /**
+     * Date an approximate age was entered; absent on legacy estimates. Never an exact DOB.
+     * @nullable
+     */
+  readonly ageReferenceDate?: Date | null;
   gender?: string;
   address?: string;
   emergencyContactName?: string;
