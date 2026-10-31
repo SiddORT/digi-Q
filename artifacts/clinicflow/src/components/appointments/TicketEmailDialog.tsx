@@ -1,9 +1,11 @@
 import { FormActions } from "../FormActions";
 import { useEffect, useRef, useState } from "react";
 import * as api from "@workspace/api-client-react";
-import { AppDialog } from "../AppDialog";
+import { AppDialog, AppDialogActions } from "../AppDialog";
+import { CheckCircle2, Check } from "lucide-react";
 import { friendlyError, isFriendlyText, errorStatus } from "../../lib/friendly-error";
 import { RecoveryActions } from "../RecoveryActions";
+import "./ticket-email-dialog.css";
 
 type Row = { id: string; label: string; preview?: api.TicketEmailPreview; error?: string; cause?:unknown; checking?:boolean; state?: "sending" | api.TicketEmailResultState | "failed"; failure?: string };
 
@@ -48,36 +50,44 @@ export function TicketEmailDialog({ open, items, onClose }: { open: boolean; ite
     setNotice("");
     lock.current = true; setBusy(true);
     for (const r of targets) {
-      if (!r.preview?.eligible) continue;
+      if (!r.preview?.eligible || r.state === "provider_accepted") continue;
       let requestId = requestIds.current.get(r.id);
       if (!requestId) { requestId = crypto.randomUUID(); requestIds.current.set(r.id, requestId); }
       patch(r.id, { state: "sending", failure: undefined });
-      try { const res = await api.sendTicketEmail(r.id, { requestId, recipient: r.preview.recipient }); patch(r.id, { state: res.state }); }
+      try { const res = await api.sendTicketEmail(r.id, { requestId, recipient: r.preview.recipient }); patch(r.id, { state: res?.state === "provider_accepted" ? "provider_accepted" : "unknown" }); }
       catch (e) { patch(r.id, { state: "failed", failure: friendlyError(e, "save","We couldn’t confirm the result. Check the same request before sending anything new."),cause:e }); }
     }
     lock.current = false; setBusy(false);
   }
   const eligible = rows.filter(r => r.preview?.eligible);
   const pendingFirst = eligible.filter(r => !r.state);
-  const accepted = rows.filter(r => r.state === "provider_accepted").length;
-  const unknown = rows.filter(r => r.state === "unknown").length;
-  const failed = rows.filter(r => r.state === "failed").length;
   const done = rows.some(r => r.state && r.state !== "sending");
+  const complete = done && !busy && !pendingFirst.length;
+  const success = complete && rows.length > 0 && rows.every(r => r.state === "provider_accepted");
+  const affected = rows.filter(r => r.state !== "provider_accepted");
+  const actions = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (open && complete) actions.current?.querySelector<HTMLButtonElement>("button")?.focus();
+  }, [open, complete]);
   return <AppDialog open={open} onClose={onClose} busy={busy} title={items.length === 1 ? "Email Ticket" : `Email ${items.length} Tickets`}>
-    <p className="muted">Check each email address before sending. Each email includes the visit ticket PDF. Tickets that can’t be emailed are listed below and won’t be sent.</p>
+    {!done && <p className="muted">Check each email address before sending. Each email includes the visit ticket PDF.</p>}
     {notice&&<p role="alert">{notice}</p>}
-    {loading ? <div className="appt-detail-skeleton" role="status" aria-label="Loading recipients"><span /><span /></div> :
-      <ul className="ticket-email-list" data-testid="list-ticket-email">{rows.map(r => <li key={r.id} data-testid={`row-ticket-email-${r.id}`}>
-        <strong>{r.label}</strong>
+    {success ? <div className="ticket-email-success" role="status" data-testid="status-email-success">
+      <CheckCircle2 size={28} aria-hidden="true" />
+      <p>{items.length === 1 ? "Ticket email sent successfully." : "Ticket emails sent successfully."}</p>
+    </div> : loading ? <div className="appt-detail-skeleton" role="status" aria-label="Loading recipients"><span /><span /></div> : <>
+      {done && !busy && <p className="ticket-email-attention" role="status">{rows.some(r => r.state === "provider_accepted") ? "Some ticket emails need attention." : "Ticket email needs attention."}</p>}
+      <ul className="ticket-email-list" data-testid="list-ticket-email">{(done ? affected : rows).map(r => <li key={r.id} data-testid={`row-ticket-email-${r.id}`}>
+        {(!done || items.length > 1) && <strong>{r.label}</strong>}
         {r.error ? <div role="alert">{r.error}<RecoveryActions error={r.cause} onRetry={()=>checkRecipient(r)} busy={busy||r.checking} label="Check recipient again"/></div>
-          : r.preview?.eligible ? <span>To <code data-testid={`text-email-recipient-${r.id}`}>{r.preview.recipient}</code></span>
-          : <span className="muted" data-testid={`text-email-disabled-${r.id}`}>Not sent: {isFriendlyText(r.preview?.reason)?r.preview.reason:"This ticket can’t be emailed. Ask your clinic administrator for help."}</span>}
+          : r.preview?.eligible ? !r.state && <span>To <code data-testid={`text-email-recipient-${r.id}`}>{r.preview.recipient}</code></span>
+          : <span role="alert" data-testid={`text-email-disabled-${r.id}`}>{isFriendlyText(r.preview?.reason)?r.preview.reason:"This ticket can’t be emailed. Ask your clinic administrator for help."}</span>}
         {r.state === "sending" && <span role="status">Sending…</span>}
-        {r.state === "provider_accepted" && <span className="ok" role="status">Email submitted. It may take a few minutes to arrive; inbox delivery isn’t confirmed. You can close this window.</span>}
-        {r.state === "unknown" && <span role="alert">We couldn’t confirm whether the email was sent. It may still arrive. Check the same request without sending a new email. <button type="button" disabled={busy} onClick={() => void send([r])} data-testid={`button-email-resend-${r.id}`}>Check same request</button></span>}
+        {r.state === "unknown" && <span role="alert">We couldn’t confirm whether the email was sent. It may still arrive. <button type="button" disabled={busy} onClick={() => void send([r])} data-testid={`button-email-resend-${r.id}`}>Check same request</button></span>}
         {r.state === "failed" && <div role="alert">{r.failure}{errorStatus(r.cause)===409?<button type="button" disabled={busy||r.checking} onClick={()=>void checkRecipient(r)}>{r.checking?"Checking recipient…":"Review recipient"}</button>:<RecoveryActions error={r.cause} busy={busy} onRetry={()=>send([r])} label="Retry same request"/>}</div>}
-      </li>)}</ul>}
-    {done && <p role="status" data-testid="status-email-summary">{accepted} submitted, {unknown} unconfirmed, {failed} not completed, {rows.filter(r=>r.preview&&!r.preview.eligible).length} can’t be emailed, {rows.filter(r=>r.error).length} recipients not checked.</p>}
-    {done&&!pendingFirst.length?<button type="button" className="button" disabled={busy} onClick={onClose}>Done</button>:<FormActions wide={false} onCancel={onClose} cancelLabel="Cancel" busy={busy} busyLabel="Sending…" disabled={loading || !pendingFirst.length || rows.some(r=>r.checking)} onSubmit={() => void send(pendingFirst)} submitTestId="button-email-confirm" submitLabel={pendingFirst.length ? `Send ${pendingFirst.length} ${pendingFirst.length === 1 ? "Email" : "Emails"}` : "Nothing to send"} />}
+      </li>)}</ul></>}
+    <AppDialogActions><div ref={actions}>
+      {done&&!pendingFirst.length?<FormActions wide={false} busy={busy} busyLabel="Sending…" onSubmit={onClose} submitTestId="button-email-ok" submitLabel={<><Check size={17} aria-hidden="true"/>OK</>}/>:<FormActions wide={false} onCancel={onClose} cancelLabel="Cancel" busy={busy} busyLabel="Sending…" disabled={loading || !pendingFirst.length || rows.some(r=>r.checking)} onSubmit={() => void send(pendingFirst)} submitTestId="button-email-confirm" submitLabel={pendingFirst.length ? `Send ${pendingFirst.length} ${pendingFirst.length === 1 ? "Email" : "Emails"}` : "Nothing to send"} />}
+    </div></AppDialogActions>
   </AppDialog>;
 }

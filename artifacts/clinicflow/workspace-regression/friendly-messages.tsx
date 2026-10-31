@@ -32,6 +32,7 @@ const Demo=lazy(()=>import("../src/auth/DemoLogin").then(m=>({default:m.DemoLogi
 const Staff=lazy(()=>import("../src/auth/StaffLogin").then(m=>({default:m.StaffLogin})));
 const Email=lazy(()=>import("../src/components/EmailProviderPanel").then(m=>({default:m.EmailProviderPanel})));
 const Sms=lazy(()=>import("../src/components/NotificationSmsSettings").then(m=>({default:m.NotificationSmsSettings})));
+const TicketFeedback=lazy(()=>import("./TicketEmailFixture").then(m=>({default:m.TicketEmailFixture})));
 function Crash():never{throw new Error("HTTP 500 SQL provider payload PRIVATE_DIAGNOSTIC");}
 function RecordFixture(){
   const [open,setOpen]=useState(true);
@@ -41,6 +42,7 @@ function RecordFixture(){
 function Fixture(){
   const [open,setOpen]=useState(true);
   const mode=params.get("fixture")||"security";
+  if(mode==="ticket-feedback")return <TicketFeedback entry={params.get("entry")||"single"}/>;
   if(mode==="record")return <RecordFixture/>;
   if(mode==="tickets")return open?<TicketEmailDialog open items={[{id:"one",label:"Fictional visit one"},{id:"two",label:"Fictional visit two"},{id:"three",label:"Fictional visit three"}]} onClose={()=>setOpen(false)}/>:<p>Tickets closed</p>;
   if(mode==="search"){

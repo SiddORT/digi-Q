@@ -64,15 +64,18 @@ test("ticket recipient retry is scoped; mixed results reconcile the same request
   await expect(page.getByTestId("text-email-recipient-two")).toContainText("two@example.invalid");
   expect(previews).toEqual({one:1,two:2,three:1});
   await page.getByTestId("button-email-confirm").click();
-  await expect(page.getByTestId("status-email-summary")).toContainText("1 submitted, 1 unconfirmed");
+  await expect(page.getByText("Some ticket emails need attention.")).toBeVisible();
+  await expect(page.getByTestId("row-ticket-email-one")).toHaveCount(0);
   await page.getByRole("button",{name:"Check same request"}).click();
-  await expect(page.getByTestId("status-email-summary")).toContainText("2 submitted, 0 unconfirmed");
+  await expect(page.getByTestId("row-ticket-email-two")).toHaveCount(0);
+  await expect(page.getByTestId("status-email-success")).toHaveCount(0);
+  await expect(page.getByTestId("status-email-summary")).toHaveCount(0);
   expect(sends.filter(s=>s.id==="one")).toHaveLength(1);
   const twice=sends.filter(s=>s.id==="two");expect(twice).toHaveLength(2);expect(twice[1].requestId).toBe(twice[0].requestId);
   expect(sends.filter(s=>s.id==="three")).toHaveLength(0);
   await mkdir(resolve("generated-artifacts/friendly-messages"),{recursive:true});
   await page.screenshot({path:resolve(`generated-artifacts/friendly-messages/ticket-reconciliation-${info.project.name}.png`),fullPage:true});
-  await page.getByRole("button",{name:"Done",exact:true}).click();
+  await page.getByRole("button",{name:"OK",exact:true}).click();
   await expect(page.getByText("Tickets closed")).toBeVisible();
 });
 test("patient code failure keeps email and code actions, honors server wait and lets details change",async({page},info)=>{

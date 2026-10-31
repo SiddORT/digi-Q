@@ -24,6 +24,15 @@ must never replay historical skipped or cancelled occurrences.
 **How to apply:** Preserve explicit unknown outcomes during retries, operator tooling
 and provider changes. Never report SMTP acceptance as confirmed inbox delivery.
 
+Ticket-email completion may say “Ticket email sent successfully.” after confirmed
+provider acceptance; this wording does not mean confirmed inbox delivery.
+
+**Why:** The user explicitly requested compact success feedback instead of
+per-ticket technical results, while retaining honest failure and uncertainty states.
+
+**How to apply:** Keep partial bulk outcomes distinct from complete success.
+This presentation approval does not authorize a wider messaging redesign or live test emails.
+
 Queue reminders refer to session start, not a promised consultation time. Automatic
 operational appointment SMS in development Preview is explicitly authorized;
 Preview email and unrelated staff/security workers must remain unchanged.

@@ -39,7 +39,7 @@ test("bulk toolbar is compact, page-scoped, no bulk check-in, PDF and email via 
   assert.match(b, /this page only/); assert.match(b, /menu-bulk-more/); assert.match(b, /\.pdf"/);
   assert.doesNotMatch(b, /action:"checkIn"|action:"complete"/);
   const e = r("./TicketEmailDialog.tsx");
-  assert.match(e, /getTicketEmailPreview/); assert.match(e, /requestIds\.current\.get/); assert.match(e, /Resend Same Request/);
+  assert.match(e, /getTicketEmailPreview/); assert.match(e, /requestIds\.current\.get/); assert.match(e, /Check same request/);
   assert.doesNotMatch(e, /setTimeout|setInterval/);
   assert.match(r("../RowMenu.tsx"), /dismissTooltips\(\)/);
   assert.match(r("../AdminListing.tsx"), /bulk-compact/);
