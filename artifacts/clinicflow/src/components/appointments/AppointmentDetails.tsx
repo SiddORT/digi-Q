@@ -12,12 +12,16 @@ import { statusText } from "./detail-history";
 import { isPrivateAppointmentUnavailable } from "./presentation";
 import { clearBookingDraft } from "./booking-drafts";
 import { useBookingDraftGuard } from "./booking-draft-guard";
+import { TicketActionsScope } from "./ticket-actions";
 
 
 type DetailsProps = { appointment: Appointment; supplementaryDetails?: ReactNode; rowContext?: boolean };
 
 /** Private, authorized appointment data only; never render on a public ticket. */
 export function AppointmentDetails(props: DetailsProps) {
+  return <TicketActionsScope scopeKey={props.appointment.id}><AuthorizedDetails {...props}/></TicketActionsScope>;
+}
+function AuthorizedDetails(props: DetailsProps) {
   // Keep the permission-checked record current while ANY section is open,
   // including calendar consumers that began with an authorized list projection.
   const authorized = useGetAppointment(props.appointment.id, { query: {

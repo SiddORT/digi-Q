@@ -75,3 +75,4 @@
 - [Embedded visit history paging](embedded-visit-history-paging.md) — use normalized time plus JSON ordinal for stable private pages; do not confuse display events with operational audit history.
 - [Controlled draft updates](controlled-draft-updates.md) — paired time value/validity callbacks must compose against the latest form draft, not captured props.
 - [Profile demographics](profile-demographic-contract.md) — exact DOB and referenced estimates stay distinct; missing-value actions never imply account creation or contact verification.
+- [Ticket interaction contract](ticket-interaction-contract.md) — view-scoped send lifetime; count-based wait never subtracts elapsed consultation time or silently adds breaks.

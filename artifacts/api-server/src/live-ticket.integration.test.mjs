@@ -24,7 +24,7 @@ test("email attachment is an estimated snapshot with a live link and private QR,
     const path=join(dir,"ticket.pdf");
     await writeFile(path,attachment.content);
     const text=execFileSync("pdftotext",[path,"-"],{encoding:"utf8"}).replace(/\s+/g," ");
-    for(const field of [a.patientName,a.reference,a.token,"Session","Wait from session start","Suggested arrival","Estimate as of","2030-01-07T12:00:00.000Z","snapshot","live ticket"]) assert.ok(text.includes(field),field);
+    for(const field of [a.patientName,a.reference,a.token,"Session","Patients ahead: 0","Approximate wait: Approx. 0 minutes from session start","Suggested arrival","Estimate as of","2030-01-07T12:00:00.000Z","snapshot","live ticket"]) assert.ok(text.includes(field),field);
     assert.match(text,/https:\/\/tickets\.example\.invalid\/live-ticket#/);
     for(const hidden of ["PRIVATE-NOTE-MUST-NOT-EXPORT",a.bookingMobile,"expectedDurationMinutes","minutes per patient"]) if(hidden) assert.ok(!text.includes(hidden),hidden);
     assert.match(attachment.content.toString("latin1"),/\/Subtype \/Image/,"private QR image remains embedded");

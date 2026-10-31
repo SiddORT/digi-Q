@@ -398,7 +398,7 @@ test.describe("touch reference access", () => {
     await directions.scrollIntoViewIfNeeded();
     await page.evaluate(() => {
       (window as any).fixtureDirections = [];
-      window.open = ((url: string) => { (window as any).fixtureDirections.push(url); return null; }) as typeof window.open;
+      window.open = (() => ({opener:null,document:{querySelector:()=>null,body:{}},location:{replace:(url:string)=>(window as any).fixtureDirections.push(url)}})) as typeof window.open;
     });
     await directions.tap();
     await expect(page.locator(".helptip-bubble")).toHaveText("Get Directions");
@@ -864,7 +864,8 @@ test("QR, status URLs, print/download and switching tabs cannot bypass fresh exp
   await expect(download).toBeEnabled();
   state.appointment = { ...state.appointment, status: "completed" };
   await download.click();
-  await expect(details(page).getByRole("alert")).toContainText("Completed visits");
+  // The view-level host keeps errors visible even after the Booking tab unmounts.
+  await expect(page.getByTestId("status-ticket-action-error")).toContainText("Completed visits");
 });
 
 for (const width of [1920, 1366, 1024, 768, 390]) {

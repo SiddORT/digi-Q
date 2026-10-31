@@ -63,7 +63,8 @@ test("appointment presentation reuses standard tabs and groups ticket status in 
   assert.doesNotMatch(css, /\.appt-tabs-list/);
   assert.match(r("./AppointmentHistoryPanel.tsx"), /className="table-fixed appt-history-table"/);
   assert.match(css, /\.appt-detail \.appt-history-table>thead>tr>th\{[^}]*white-space:normal/);
-  const column = booking.slice(booking.indexOf('className="appt-booking-side"'), booking.indexOf("{ctl.dialogs}"));
+  const column = booking.slice(booking.indexOf('className="appt-booking-side"'), booking.indexOf("/** Limited editor"));
+  assert.doesNotMatch(booking, /\{ctl\.dialogs\}/, "the view-scoped host, not the tab, owns ticket dialogs");
   assert.ok(column.indexOf('data-testid="section-detail-ticket"') < column.indexOf('data-testid="ticket-information"'));
   assert.match(column, /text-ticket-qr-warning/);
   assert.match(column, /Refresh Ticket/);

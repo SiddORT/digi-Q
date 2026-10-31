@@ -7,22 +7,23 @@ import { FormActions } from "../FormActions";
 import { PhoneInput } from "../PhoneInput";
 import { useFreshWorkspace } from "../queue/useFreshWorkspace";
 import { VisitTicket, bookingStatusLabel } from "../tickets/VisitTicket";
-import { PublicWebsiteStatus, usePublicWebsite } from "../../lib/public-website";
 import { errorStatus, friendlyError } from "../../lib/friendly-error";
 import { validatePhone } from "../../lib/validators";
 import { formatConfiguredTimestamp } from "../../lib/date-time";
 import { bookingFields } from "../booking/booking-fields";
 import { canShowAppointmentTicket } from "./presentation";
 import { clearBookingDraft, getBookingDraft, isBookingDraftDirty, setBookingDraft, type BookingDraft } from "./booking-drafts";
-import { useAppointmentTicketActions } from "./ticket-actions";
+import { TicketActionsScope, useAppointmentTicketActions } from "./ticket-actions";
 import { refreshAppointmentObservers } from "./refresh";
 import "./booking-tab.css";
-import { ArrivalGuidance, LiveTicketAction } from "../tickets/ArrivalGuidance";
+import { ArrivalGuidance } from "../tickets/ArrivalGuidance";
 
 /** Booking tab: Booking Details left; Ticket & QR with its live strip directly beneath in the right column. Polling reuses the shared
  *  appointment query key, so this layout adds only the queue/QR reads the old stacked ticket already made. */
 export function AppointmentBookingTab({ appointment: a }: { appointment: api.Appointment }) {
-  const site = usePublicWebsite();
+  return <TicketActionsScope scopeKey={a.id}><BookingTabInner appointment={a}/></TicketActionsScope>;
+}
+function BookingTabInner({ appointment: a }: { appointment: api.Appointment }) {
   const live = api.useGetAppointment(a.id, { query: { queryKey: api.getGetAppointmentQueryKey(a.id), retry: false, refetchInterval:30000 } });
   const freshness = useFreshWorkspace(live.dataUpdatedAt, !!live.error);
   const ticketVisible = canShowAppointmentTicket(a);
@@ -51,19 +52,17 @@ export function AppointmentBookingTab({ appointment: a }: { appointment: api.App
         {ticketVisible ? <>
           <VisitTicket compact testId="appointment-ticket" actions={ctl.buttons(a, blocked)} exportDisabled={blocked}
             ticket={{ dateFormat: a.dateFormat, timeFormat: a.timeFormat, patientName: a.patientName, clinicName: a.clinicName, branchName: a.branchName, address: a.branchAddress, doctorName: a.doctorName, date: a.date, startTime: a.startTime, endTime: a.endTime, timezone: a.timezone, waitingNumber: a.token, reference: a.reference, statusLabel: bookingStatusLabel(a.status), qrUrl: qr.data?.checkInUrl }} />
-          {ctl.errorFor(a.id)}
           {qr.error && <p role="alert">Personal QR unavailable. <button type="button" onClick={() => void qr.refetch()} data-testid="button-retry-appointment-qr">Retry QR</button></p>}
         </> : <p className="appt-detail-empty" data-testid="text-detail-ticket-unavailable">Completed visits do not need a ticket. The booking reference remains available for records.</p>}
       </section>
       {ticketVisible && <div className="appt-booking-strip" data-testid="ticket-information">
-      <div data-testid="text-ticket-booking-status"><span className="strip-label">Live ticket</span><LiveTicketAction appointmentId={a.id}/><small>Read-only status. Personal details require the booking owner's account.</small></div>
+      <div data-testid="text-ticket-booking-status"><span className="strip-label">Live ticket</span><small>Read-only status. Open it using Ticket Actions. Personal details require the booking owner's account.</small></div>
       <div data-testid="text-ticket-doctor-status"><span className="strip-label">Doctor status</span>{!queue.error && online && presence ? <p>{presence.status === "onBreak" ? "On break" : presence.status === "away" ? "Away" : "Available"}{presence.status !== "available" && <small>Calling is paused; the booking is kept.</small>}</p> : <p className="muted">Unavailable</p>}</div>
       {freshness.stale && <p role="alert" className="strip-wide">Ticket is offline or stale. Reconnect and refresh before printing. <button type="button" disabled={!online} onClick={() => void live.refetch()}>Refresh Ticket</button></p>}
       <p className="strip-wide muted" data-testid="text-ticket-qr-warning">QR is for authorized staff validation, not public access to patient details. Printed tickets do not update; status refreshes every 30 seconds while connected.</p>
     </div>}
       </div>
     </div>
-    {ctl.dialogs}
   </div>;
 }
 

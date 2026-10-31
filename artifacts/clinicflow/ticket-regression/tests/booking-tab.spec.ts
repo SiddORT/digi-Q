@@ -64,11 +64,11 @@ for (const surface of ["rows", "today"]) for (const [name, width] of [["desktop"
     await expect(page.getByTestId("text-ticket-estimate")).toContainText("20 minutes");
     await noOverflow(page);
     const labels = await page.getByTestId("group-ticket-actions").getByRole("button").evaluateAll(els => els.map(e => e.getAttribute("aria-label")));
-    expect(labels).toEqual(["Download Ticket", "Print Ticket", "Email Ticket", "SMS Booking Status Link"]);
+    expect(labels).toEqual(["Download Ticket", "Print Ticket", "Email Ticket", "SMS Booking Status Link", "Get Directions", "Open Live Ticket"]);
     await page.getByTestId("menu-appointment-1").click();
     await expect(page.getByRole("menuitem", { name: "Download Ticket", exact: true })).toBeVisible();
     const items = await page.getByRole("menuitem").allTextContents();
-    expect(items.filter(t => /Ticket|SMS/.test(t)).map(t => t.replace("…", ""))).toEqual(["Download Ticket", "Print Ticket", "Email Ticket", "SMS Booking Status Link"]);
+    expect(items.filter(t => /Ticket|SMS|Directions/.test(t)).map(t => t.replace("…", ""))).toEqual(labels);
     expect(items.join()).not.toMatch(/A4/);
   });
 }
@@ -190,14 +190,14 @@ test("revoked authorization hides private dialog and draft", async ({ page }) =>
   await expect(page.getByText("Private draft")).toHaveCount(0);
 });
 
-for (const [result, text] of [["provider_accepted", /SMS submitted.*delivery to the phone isn’t confirmed/], ["provider_rejected", /could not be sent/], ["delivery_unknown", /couldn’t confirm whether the SMS was sent/], ["pre_dispatch_failed", /SMS was not sent/], ["blocked", /Not sent/]] as const) {
+for (const [result, text] of [["provider_accepted", /SMS submitted successfully/], ["provider_rejected", /could not be sent/], ["delivery_unknown", /couldn’t confirm whether the SMS was sent/], ["pre_dispatch_failed", /SMS was not sent/], ["blocked", /Not sent/]] as const) {
   test(`SMS outcome ${result} is reported accurately with one request id`, async ({ page }) => {
     const s = await mount(page, "rows"); s.smsResult = { state: result, reason: "Fixture reason" };
     await page.getByTestId("button-ticket-sms").click();
     await expect(page.getByTestId("text-sms-recipient")).toContainText("98765");
     await expect(page.getByTestId("text-sms-message")).toContainText("Fictional approved");
     await page.getByTestId("button-sms-confirm").click();
-    await expect(page.getByTestId("status-sms-result")).toHaveText(text);
+    await expect(page.getByTestId(result==="provider_accepted"?"status-sms-success":"status-sms-result")).toHaveText(text);
     expect(s.smsPosts[0]).toMatchObject({ previewToken: "tok-1" });
     expect(s.smsPosts[0].requestId).toMatch(/^[0-9a-f-]{36}$/);
     if (result === "delivery_unknown") { await page.getByTestId("button-sms-confirm").click(); await expect.poll(() => s.smsPosts.length).toBe(2); expect(s.smsPosts[1].requestId).toBe(s.smsPosts[0].requestId); }

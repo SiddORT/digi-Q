@@ -66,7 +66,7 @@ test("ticket popup retains all information, links and export actions", () => {
   const t = read("./appointments/AppointmentTicket.tsx");
   for (const s of ["confirmationEmailMessage", "LiveTicketAction appointmentId={id}", "Doctor status:", "Calling is paused; your booking is kept.", "ArrivalGuidance", "ErrorNotice error={queue.error}", "QR is for authorized staff validation", "Status refreshes every 30 seconds while connected. Printed tickets do not update.", "Open Booking Status", "Appointment History", "Ticket is offline or stale", "Retry QR"]) assert.ok(t.includes(s), s);
   const arrival = read("./tickets/ArrivalGuidance.tsx");
-  for (const s of ["Patients ahead", "Remaining queue wait", "e.guidance", "button-open-live-ticket"]) assert.ok(arrival.includes(s), s);
+  for (const s of ["Patients ahead", "Approximate wait", "e.guidance", "button-open-live-ticket"]) assert.ok(arrival.includes(s), s);
   const v = read("./tickets/VisitTicket.tsx");
   for (const s of ["button-download-ticket", "button-print-ticket", "m.qrCaption", "ticketModel({ ...t", "sessionRange(t)", "ticket.reference", "modelFor(ticket)"]) assert.ok(v.includes(s), s);
   // Exported/printed HTML still includes every field.

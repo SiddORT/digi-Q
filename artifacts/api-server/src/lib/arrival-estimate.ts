@@ -50,15 +50,8 @@ export function arrivalEstimate(row: any, candidates: any[], duration: number | 
   if (!pre && minute >= breakStart && minute < breakEnd) return unavailable("Doctor is on a scheduled break. Check again after the break.", "paused");
   if (["called", "inConsultation"].includes(row.status)) return { ...base, state: "ready", waitMinutes: 0, guidance: row.status === "called" ? "You have been called. Follow reception guidance." : "Your consultation is in progress." };
   if (!Number.isFinite(duration) || duration === null || duration <= 0) return unavailable("Waiting-time configuration is unavailable. Contact the clinic.");
-  let wait = Math.max(0, position) * duration;
-  if (current.length) {
-    const active = current[0];
-    const since = Date.parse(active.consultationStartedAt || active.calledAt || "");
-    if (!pre && (!Number.isFinite(since) || since > now)) return unavailable("Current consultation timing is unavailable. Check again shortly.");
-    const elapsed = pre ? 0 : (now - since) / 60000;
-    if (elapsed >= duration) return unavailable("The current consultation is taking longer than estimated. Check again shortly.");
-    wait += Math.ceil(duration - elapsed);
-  }
+  // Count-based wait is independent of elapsed consultation time and schedule delays.
+  const wait = base.patientsAhead * duration;
   const anchor = pre ? opens : now;
   let target = anchor + wait * 60000;
   if (Number.isFinite(breakStart) && breakEnd > breakStart) {
@@ -68,7 +61,7 @@ export function arrivalEstimate(row: any, candidates: any[], duration: number | 
   }
   const beyondSessionEnd = target >= closes;
   // Never imply the clinic will silently extend a saved session.
-  if (beyondSessionEnd) return { ...base, state: "ready", waitMinutes: Math.ceil((target - anchor) / 60000), beyondSessionEnd, guidance: "Estimated queue wait reaches beyond session closing. Contact the clinic; no later arrival is suggested." };
+  if (beyondSessionEnd) return { ...base, state: "ready", waitMinutes: Math.ceil(wait), beyondSessionEnd, guidance: "Estimated queue wait reaches beyond session closing. Contact the clinic; no later arrival is suggested." };
   const arrival = localParts(Math.ceil(Math.max(opens, now, target - 10 * 60000) / 60000) * 60000, row.timezone);
-  return { ...base, state: "ready", waitMinutes: Math.ceil((target - anchor) / 60000), suggestedArrival: `${arrival.hour}:${arrival.minute}`, beyondSessionEnd, guidance: uncertainty };
+  return { ...base, state: "ready", waitMinutes: Math.ceil(wait), suggestedArrival: `${arrival.hour}:${arrival.minute}`, beyondSessionEnd, guidance: `${uncertainty}${pre ? " Waiting is counted from session start." : ""}${target > anchor + wait * 60000 ? " Suggested arrival also accounts for the saved break; the approximate wait excludes break time." : ""}` };
 }

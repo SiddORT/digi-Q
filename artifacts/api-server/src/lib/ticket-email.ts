@@ -58,7 +58,7 @@ export async function ticketAttachment(user: any, id: string) {
   pdf.setFontSize(11);
   const e = view.estimate;
   const arrival = e.suggestedArrival ? formatTemplateSession({...view,startTime:e.suggestedArrival},clinic).start : null;
-  const estimateText = `${e.basis === "sessionStart" ? "Wait from session start" : "Remaining queue wait"}: ${e.waitMinutes == null ? "Unavailable" : `Approx. ${e.waitMinutes} minutes`}\nSuggested arrival: ${arrival || "Not available"}${arrival ? ` (${view.timezone})` : ""}\nEstimate as of: ${e.asOf}\n${e.guidance}\nDownloaded snapshot; check the live ticket for updates.`;
+  const estimateText = `Patients ahead: ${e.patientsAhead == null ? "Unavailable" : e.patientsAhead}\nApproximate wait: ${e.waitMinutes == null ? "Unavailable" : `Approx. ${e.waitMinutes} minutes`}${e.basis === "sessionStart" ? " from session start" : ""}\nSuggested arrival: ${arrival || "Not available"}${arrival ? ` (${view.timezone})` : ""}\nEstimate as of: ${e.asOf}\n${e.guidance}\nDownloaded snapshot; check the live ticket for updates.`;
   const text = `${view.patientName}\nWaiting number: ${view.token}\nReference: ${view.reference}\nCurrent status: ${view.status}\n${view.branchAddress ? `Address: ${view.branchAddress}\n` : ""}\n${confirmationText(view, clinic).replace("Your appointment is confirmed.", "Visit details.")}\n${estimateText}\nKeep your QR private. Staff must confirm consultation check-in.`;
   const lines = pdf.splitTextToSize(text, 175);
   let y = 40;

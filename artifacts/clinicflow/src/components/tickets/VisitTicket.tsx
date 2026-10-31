@@ -146,7 +146,7 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
   return <article className={compact ? "vt vt-compact" : "vt"} data-testid={testId} aria-label="Visit ticket" style={ticketCssVars() as CSSProperties}>
     <header className="vt-head"><div className="vt-head-brand"><img src={BRAND_LOGO_URL} alt="DigiQ Doctors logo"/><h2>{compact ? "Ticket & QR" : m.title}</h2></div>
       <div className="vt-head-tools">
-        <DirectionsAction address={ticket.address}/>
+        {!actions && <DirectionsAction address={ticket.address}/>}
         {!compact && <span className="vt-badge" data-testid="ticket-status" aria-label={`Booking Status: ${m.status}`}>{m.status}</span>}
         {actions ?? <div className="vt-actions" role="group" aria-label="Ticket Actions">
           <IconAction className="vt-icon-action" testId="button-download-ticket" label={busy==="download"?"Preparing PDF…":"Download Ticket PDF"} hint="Download Ticket PDF — ticket-sized, for phones and sharing" icon={<Download size={16} aria-hidden/>} onClick={() => void run("download")} disabled={disabled} disabledReason={why}/>

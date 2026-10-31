@@ -1,4 +1,4 @@
 .ticket-email-success{display:flex;align-items:center;gap:12px;padding:16px;border:1px solid #cddcf1;border-radius:var(--radius-control);background:#eef4fc;color:var(--dq-blue)}
-.ticket-email-success svg{flex-shrink:0}
+.ticket-email-success svg{flex-shrink:0;color:#157347}
 .ticket-email-success p{font-weight:600;overflow-wrap:anywhere}
 .ticket-email-attention{margin-bottom:12px;font-weight:600}

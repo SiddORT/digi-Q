@@ -28,15 +28,19 @@ test("active sessions anchor to now; arrivals never drift into the past", () => 
   assert.equal(result.suggestedArrival, "12:20");
   assert.equal(estimate(a, [a, b], "12:00").suggestedArrival, "12:00");
 });
-test("ongoing consultation uses its remaining snapshotted duration conservatively", () => {
+test("active patients count fully regardless of elapsed time or missing start timestamps", () => {
   const active = row("a", 1, { status: "inConsultation", consultationStartedAt: "2030-01-07T10:00:00Z" });
   const pending = row("b", 2);
   const result = estimate(pending, [active, pending], "10:10");
   assert.equal(result.patientsAhead, 1);
-  assert.equal(result.waitMinutes, 20);
-  assert.equal(result.suggestedArrival, "10:20");
-  assert.equal(estimate(pending, [active, pending], "10:31").waitMinutes, null);
-  assert.equal(estimate(pending, [{ ...active, consultationStartedAt: null }, pending], "10:10").suggestedArrival, null);
+  assert.equal(result.waitMinutes, 30);
+  assert.equal(result.suggestedArrival, "10:30");
+  assert.equal(estimate(pending, [active, pending], "10:31").waitMinutes, 30);
+  assert.equal(estimate(pending, [{ ...active, consultationStartedAt: null }, pending], "10:10").waitMinutes, 30);
+  const c = row("c",3), d = row("d",4);
+  assert.equal(estimate(d,[active,pending,c,d],"10:10").waitMinutes,90);
+  assert.equal(estimate(d,[active,pending,c,d],"10:50").waitMinutes,90);
+  assert.equal(estimate(d,[{...active,status:"completed"},pending,c,d],"10:50").waitMinutes,60);
 });
 test("called/current rows and missing, null or invalid duration never invent a pending time", () => {
   const a = row("a", 1, { status: "called", calledAt: "2030-01-07T10:00:00Z" });
@@ -49,7 +53,9 @@ test("pauses, configured breaks and beyond-closing estimates are explicit", () =
   const scheduled = { ...b, breakStart: "11:00", breakEnd: "11:30" };
   assert.equal(estimate(scheduled, [a, scheduled], "11:10").state, "paused");
   const afterBreak = { ...b, breakStart: "10:15", breakEnd: "10:45" };
-  assert.equal(estimate(afterBreak, [a, afterBreak]).waitMinutes, 60);
+  assert.equal(estimate(afterBreak, [a, afterBreak]).waitMinutes, 30);
+  assert.equal(estimate(afterBreak, [a, afterBreak]).suggestedArrival, "10:50");
+  assert.match(estimate(afterBreak, [a, afterBreak]).guidance, /excludes break/);
   const closing = { ...b, endTime: "10:20" };
   assert.equal(estimate(closing, [a, closing]).beyondSessionEnd, true);
   assert.equal(estimate(closing, [a, closing]).suggestedArrival, null);

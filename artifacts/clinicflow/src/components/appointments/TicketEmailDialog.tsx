@@ -2,10 +2,11 @@ import { FormActions } from "../FormActions";
 import { useEffect, useRef, useState } from "react";
 import * as api from "@workspace/api-client-react";
 import { AppDialog, AppDialogActions } from "../AppDialog";
-import { CheckCircle2, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { friendlyError, isFriendlyText, errorStatus } from "../../lib/friendly-error";
 import { RecoveryActions } from "../RecoveryActions";
 import "./ticket-email-dialog.css";
+import { TicketSendSuccess } from "./TicketSendSuccess";
 
 type Row = { id: string; label: string; preview?: api.TicketEmailPreview; error?: string; cause?:unknown; checking?:boolean; state?: "sending" | api.TicketEmailResultState | "failed"; failure?: string };
 
@@ -48,14 +49,16 @@ export function TicketEmailDialog({ open, items, onClose }: { open: boolean; ite
     if (lock.current) return;
     if (!navigator.onLine) {setNotice("You’re offline. Reconnect, then use the same action again. No new email was requested.");return;}
     setNotice("");
+    const epoch = generation.current;
     lock.current = true; setBusy(true);
     for (const r of targets) {
+      if (epoch !== generation.current) break;
       if (!r.preview?.eligible || r.state === "provider_accepted") continue;
       let requestId = requestIds.current.get(r.id);
       if (!requestId) { requestId = crypto.randomUUID(); requestIds.current.set(r.id, requestId); }
       patch(r.id, { state: "sending", failure: undefined });
-      try { const res = await api.sendTicketEmail(r.id, { requestId, recipient: r.preview.recipient }); patch(r.id, { state: res?.state === "provider_accepted" ? "provider_accepted" : "unknown" }); }
-      catch (e) { patch(r.id, { state: "failed", failure: friendlyError(e, "save","We couldn’t confirm the result. Check the same request before sending anything new."),cause:e }); }
+      try { const res = await api.sendTicketEmail(r.id, { requestId, recipient: r.preview.recipient }); if(epoch===generation.current) patch(r.id, { state: res?.state === "provider_accepted" ? "provider_accepted" : "unknown" }); }
+      catch (e) { if(epoch===generation.current) patch(r.id, { state: "failed", failure: friendlyError(e, "save","We couldn’t confirm the result. Check the same request before sending anything new."),cause:e }); }
     }
     lock.current = false; setBusy(false);
   }
@@ -72,10 +75,7 @@ export function TicketEmailDialog({ open, items, onClose }: { open: boolean; ite
   return <AppDialog open={open} onClose={onClose} busy={busy} title={items.length === 1 ? "Email Ticket" : `Email ${items.length} Tickets`}>
     {!done && <p className="muted">Check each email address before sending. Each email includes the visit ticket PDF.</p>}
     {notice&&<p role="alert">{notice}</p>}
-    {success ? <div className="ticket-email-success" role="status" data-testid="status-email-success">
-      <CheckCircle2 size={28} aria-hidden="true" />
-      <p>{items.length === 1 ? "Ticket email sent successfully." : "Ticket emails sent successfully."}</p>
-    </div> : loading ? <div className="appt-detail-skeleton" role="status" aria-label="Loading recipients"><span /><span /></div> : <>
+    {success ? <TicketSendSuccess testId="status-email-success">{items.length === 1 ? "Ticket email sent successfully." : "Ticket emails sent successfully."}</TicketSendSuccess> : loading ? <div className="appt-detail-skeleton" role="status" aria-label="Loading recipients"><span /><span /></div> : <>
       {done && !busy && <p className="ticket-email-attention" role="status">{rows.some(r => r.state === "provider_accepted") ? "Some ticket emails need attention." : "Ticket email needs attention."}</p>}
       <ul className="ticket-email-list" data-testid="list-ticket-email">{(done ? affected : rows).map(r => <li key={r.id} data-testid={`row-ticket-email-${r.id}`}>
         {(!done || items.length > 1) && <strong>{r.label}</strong>}
