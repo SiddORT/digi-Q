@@ -6,7 +6,6 @@ import "../weekly-day-rows.css";
 import { CompactDayEditor } from "./CompactDayEditor";
 import { SHORT } from "./week-days";
 import { FollowLocationHours } from "./FollowLocationHours";
-import { SearchableSelect } from "../SearchableSelect";
 import { AppDialog, AppDialogActions, useAppDialogClose } from "../AppDialog";
 import { HelpTip } from "../HelpTip";
 import { useConfirm } from "../ConfirmDialog";
@@ -19,6 +18,7 @@ import { ScheduleContextHeader } from "./ScheduleContextHeader";
 import { ScheduleExceptions } from "./ScheduleExceptions";
 import { buildWeek as buildSavedWeek, dayErrors, draftSignature, executePlan, outsideHours, planWeek, scheduleReadiness, reconcileDraft, scheduleSnapshot, weekSummary, prefillFromHours, applyWeekTo, SUGGESTED_SESSIONS_PER_DAY, type DraftDay, type DraftSession, type ScheduleRow } from "./week-plan";
 import { dayOverrideSlots } from "./day-overrides";
+import { weekDuration, ensureWeekDuration } from "./week-duration";
 
 type Hours = { startTime: string; endTime: string }[];
 
@@ -47,10 +47,9 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onDirtyChange, onBusy
   const rows = useMemo(() => (baseRows || []).filter(r => r.status !== "inactive"), [baseRows]);
   const dialogClose = useAppDialogClose();
   const busyRef = useRef(false);
-  const [selectedDay, setSelectedDay] = useState(initialDay);
-  const [focus, setFocus] = useState<{ day: number; index: number; nonce: number } | null>(null);
+  const [focus, setFocus] = useState<{ day: number; index: number; field?: string; nonce: number } | null>(null);
   const [week, setWeek] = useState<DraftDay[]>(() => buildWeek([]));
-  const [defaults, setDefaults] = useState({ tokenPrefix: "", maxTokens: "", consultationMinutes: "" });
+  const [defaults, setDefaults] = useState({ tokenPrefix: "", maxTokens: "" });
   const [busy, setBusyState] = useState(false);
   const setBusy = (v: boolean) => { busyRef.current = v; setBusyState(v); };
   const [linkedBusy, setLinkedBusy] = useState(false);
@@ -70,11 +69,12 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onDirtyChange, onBusy
   const sig = (w: DraftDay[]) => draftSignature(w.map(d => d.isOpen ? d : { ...d, sessions: [] }));
   const baseline = useMemo(() => sig(buildWeek(rows)), [rows]);
   const dirty = baseRows !== null && sig(week) !== baseline;
-  useEffect(() => { dirtyRef.current?.(dirty||linkedDirty||exceptionDirty||!!defaults.tokenPrefix||!!defaults.maxTokens||!!defaults.consultationMinutes); }, [dirty,linkedDirty,exceptionDirty,defaults]);
+  useEffect(() => { dirtyRef.current?.(dirty||linkedDirty||exceptionDirty||!!defaults.tokenPrefix||!!defaults.maxTokens); }, [dirty,linkedDirty,exceptionDirty,defaults]);
   useRegisterUnsaved(dirty);
 
-  const template = rows[0] ? (rows[0] as Record<string, unknown>) : branch.data && defaults.tokenPrefix.trim() && Number(defaults.maxTokens) >= 1 && Number(defaults.consultationMinutes) >= 1 ? { doctorId, branchId, clinicId: branch.data.clinicId, timezone: branch.data.timezone, tokenPrefix: defaults.tokenPrefix.trim(), maxTokens: Number(defaults.maxTokens), consultationMinutes: Number(defaults.consultationMinutes), queueMode: "mixed" } : undefined;
-  const copyLocationHours = () => { if (!opening) return; setResult(""); setWeek(w => prefillFromHours(w, opening).map(d=>!mayCustomize&&dayBaselines[d.dayOfWeek]?.following?w[d.dayOfWeek]:d)); };
+  const duration = weekDuration(week);
+  const template = rows[0] ? { ...rows[0], ...(!duration.mixed && duration.value ? { consultationMinutes: Number(duration.value) } : {}) } : branch.data && defaults.tokenPrefix.trim() && Number(defaults.maxTokens) >= 1 && duration.value && !duration.mixed ? { doctorId, branchId, clinicId: branch.data.clinicId, timezone: branch.data.timezone, tokenPrefix: defaults.tokenPrefix.trim(), maxTokens: Number(defaults.maxTokens), consultationMinutes: Number(duration.value), queueMode: "mixed" } : undefined;
+  const copyLocationHours = () => { if (!opening) return; if(duration.mixed) { setResult("Choose and confirm one consultation duration for this edited week before copying location hours. Existing mixed durations are kept."); return; } setResult(""); setWeek(w => ensureWeekDuration(prefillFromHours(w, opening).map(d=>!mayCustomize&&dayBaselines[d.dayOfWeek]?.following?w[d.dayOfWeek]:d), Number(duration.value)||undefined)); };
   const readiness = scheduleReadiness(rows, branch.data ? opening : undefined);
   const errors = week.map(d=>dayErrors(d,template));
   const hasErrors = errors.some(e => e.length);
@@ -134,7 +134,7 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onDirtyChange, onBusy
     try { fresh = await fetchRows(); } catch { /* the saved records are already in the baseline */ }
     setWeek(fresh ? buildWeek(fresh.filter(x => x.status !== "inactive")) : reconcileDraft(draftAtSave, r.savedIds));
     if (fresh) setBaseRows(fresh);
-    setDefaults({ tokenPrefix: "", maxTokens: "", consultationMinutes: "" });
+    setDefaults({ tokenPrefix: "", maxTokens: "" });
     setResult(`Saved ${r.outcomes.length} change${r.outcomes.length > 1 ? "s" : ""}.`);
     return true;
   };
@@ -207,16 +207,17 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onDirtyChange, onBusy
       title:"Discard schedule draft?",description:"Unsaved schedule changes will be discarded. Saved sessions and history are kept.",
       confirmLabel:"Discard Changes",tone:"danger",
     }))return;
-    setWeek(buildWeek(rows));setDefaults({tokenPrefix:"",maxTokens:"",consultationMinutes:""});setResult("");
+    setWeek(buildWeek(rows));setDefaults({tokenPrefix:"",maxTokens:""});setResult("");
   };
   /** A new session needs real capacity, prefix and a 20/30/60 duration, from the slot's own settings or the saved template; a legacy template duration is never implied. */
   const newSlotIssue = () => {
     for (const d of week) if (d.isOpen) for (const [index, s] of d.sessions.entries()) {
       if (s.id || s.locked) continue;
+      if (duration.mixed) return { day: d.dayOfWeek, index, field: "consultationMinutes", message: "Choose and confirm one consultation duration for this week before saving new sessions. Existing mixed durations have not been changed." };
       const v = { ...(template || {}), ...Object.fromEntries(Object.entries(s.settings || {}).filter(([, x]) => x !== undefined && x !== "")) } as Record<string, unknown>;
       const own = s.settings?.consultationMinutes;
-      if (![20, 30, 60].includes(Number(own ?? v.consultationMinutes)) || (own === undefined && !template)) return { day: d.dayOfWeek, index, message: `Slot ${index + 1} on ${SHORT[d.dayOfWeek]}: choose a consultation duration of 20, 30 or 60 minutes.` };
-      if (!(Number(v.maxTokens) >= 1) || !String(v.tokenPrefix || "").trim()) return { day: d.dayOfWeek, index, message: `Slot ${index + 1} on ${SHORT[d.dayOfWeek]}: set capacity and token prefix in Capacity, breaks and queue settings.` };
+      if (![20, 30, 60].includes(Number(own ?? v.consultationMinutes)) || (own === undefined && !template)) return { day: d.dayOfWeek, index, field:"consultationMinutes", message: `Slot ${index + 1} on ${SHORT[d.dayOfWeek]}: choose a consultation duration of 20, 30 or 60 minutes.` };
+      if (!(Number(v.maxTokens) >= 1) || !String(v.tokenPrefix || "").trim()) return { day: d.dayOfWeek, index, field:!(Number(v.maxTokens)>=1)?"maxTokens":"tokenPrefix", message: `Slot ${index + 1} on ${SHORT[d.dayOfWeek]}: set capacity and token prefix in Advanced settings.` };
     }
     return null;
   };
@@ -224,10 +225,12 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onDirtyChange, onBusy
     if (busyRef.current) return;
     if (hasErrors) {
       const day = errors.findIndex(e => e.length); const msg = errors[day][0]; const n = Number(/ession (\d+)/.exec(msg)?.[1] ?? 0);
-      setSelectedDay(day); setFocus({ day, index: n ? n - 1 : 0, nonce: Date.now() }); return;
+      const slot=week[day].sessions[n?n-1:0];
+      const field = slot?.invalidTimes?.[0] || (/capacity/.test(msg)?"maxTokens":/token prefix/.test(msg)?"tokenPrefix":/buffer/.test(msg)?"bufferMinutes":/duration/.test(msg)?"consultationMinutes":/timezone/.test(msg)?"timezone":/queue closing/.test(msg)?"queueCloseTime":/queue opening/.test(msg)?"queueOpenTime":/queue mode/.test(msg)?"queueMode":/break/.test(msg)?"breakStart":/end time must/.test(msg)?"endTime":!slot?.startTime?"startTime":"endTime");
+      setFocus({ day, index: n ? n - 1 : 0, field, nonce: Date.now() }); setResult(`${SHORT[day]}: ${msg}`); return;
     }
     const issue = newSlotIssue();
-    if (issue) { setSelectedDay(issue.day); setFocus({ day: issue.day, index: issue.index, nonce: Date.now() }); setResult(issue.message); return; }
+    if (issue) { setFocus({ day: issue.day, index: issue.index, field:issue.field, nonce: Date.now() }); setResult(issue.message); return; }
     if (needsTemplate && !template) { document.querySelector<HTMLElement>('[data-testid="input-default-token-prefix"]')?.focus(); return; }
     const out: { day: number; key: string }[] = [];
     for (const d of week) if (d.isOpen) for (const s of d.sessions) if (!s.locked && outsideHours(s, hoursFor(d.dayOfWeek), opening !== null)) out.push({ day: d.dayOfWeek, key: s.key });
@@ -241,7 +244,7 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onDirtyChange, onBusy
 
   return <section className={contextual?"cde-section":"panel padded"} data-testid="panel-weekly-editor" aria-busy={busy}>
     {confirmation.dialog}
-    {showContext && <ScheduleContextHeader doctor={doctorName || doctor.data?.fullName || "Doctor"} clinic={clinic.data?.name} location={branch.data?.name} timezone={preferences.timezone} timeFormat={preferences.timeFormat}/>}
+    {showContext && <ScheduleContextHeader doctor={doctorName || doctor.data?.fullName || "Doctor"} doctorCode={doctor.data?.code} clinic={clinic.data?.name} location={branch.data?.name} timezone={preferences.timezone} timeFormat={preferences.timeFormat}/>}
     {q.error && baseRows !== null && <p className="notice" role="alert" data-testid="text-reload-warning">Saved schedule could not be refreshed. Your draft and saved changes are kept. <button type="button" onClick={() => void q.refetch()}>Retry</button></p>}
     {branch.error && <p role="alert">Clinic hours could not be loaded. <button type="button" onClick={() => void branch.refetch()}>Retry Clinic Hours</button></p>}
     {q.data && branch.data && !readiness.ready && <ul className="notice" data-testid="schedule-readiness">{readiness.missing.map(m => <li key={m}>{m}</li>)}</ul>}
@@ -249,13 +252,12 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onDirtyChange, onBusy
     {needsTemplate && <fieldset className="registration-day" data-testid="fieldset-session-defaults"><legend>Settings for New Sessions</legend><div className="form-grid">
       <label>Token prefix<span className="required"> *</span><input maxLength={8} value={defaults.tokenPrefix} onChange={e => setDefaults(v => ({ ...v, tokenPrefix: e.target.value.replace(/[^A-Za-z0-9]/g, "") }))} data-testid="input-default-token-prefix"/></label>
       <label>Max tokens<span className="required"> *</span><input type="number" min={1} step={1} value={defaults.maxTokens} onChange={e => setDefaults(v => ({ ...v, maxTokens: e.target.value }))} data-testid="input-default-max-tokens"/></label>
-      <SearchableSelect label="Expected Consultation Duration" required value={defaults.consultationMinutes} onChange={value => setDefaults(v => ({ ...v, consultationMinutes: value }))} placeholder="Select duration…" options={[20, 30, 60].map(v => ({ value: String(v), label: `${v} minutes` }))}/>
     </div></fieldset>}
-    <CompactDayEditor week={week} setWeek={setWeek} opening={opening} preferences={preferences} busy={busy||linkedBusy} rows={rows} template={template} selected={selectedDay} onSelect={setSelectedDay} focus={focus} protectedDays={mayCustomize?[]:dayBaselines.filter(d=>d.following).map(d=>d.dayOfWeek)} onChange={() => setResult("")} dayStatus={<div className="cde-day-status muted" data-testid="text-day-source">
-      <span>{dayBaselines[selectedDay]?.following ? "Following clinic hours" : "Custom schedule"}</span>
+    <CompactDayEditor week={week} setWeek={setWeek} opening={opening} preferences={preferences} busy={busy||linkedBusy} rows={rows} template={template} focus={focus} protectedDays={mayCustomize?[]:dayBaselines.filter(d=>d.following).map(d=>d.dayOfWeek)} onChange={() => setResult("")} dayStatus={day=><details className="cde-day-source muted" data-testid={`text-day-source-${day}`}>
+      <summary>{dayBaselines[day]?.following ? "Following clinic hours" : "Custom schedule"}</summary>
       <HelpTip label="About custom day schedules" text="Edits to days following clinic hours become custom only after confirmation. Only this doctor's selected weekdays at this location change; clinic hours and other days are unchanged."/>
-      <span>Clinic: {opening===null?"Hours not configured":hoursFor(selectedDay).map(h=>`${fmt(h.startTime)}–${fmt(h.endTime)}`).join(", ")||"Closed"}</span>
-    </div>}/>
+      <span>Clinic: {opening===null?"Hours not configured":hoursFor(day).map(h=>`${fmt(h.startTime)}–${fmt(h.endTime)}`).join(", ")||"Closed"}</span>
+    </details>}/>
     {needsTemplate && !template && <p className="field-error" role="alert">Enter token prefix, max tokens and consultation duration for new sessions.</p>}
     <details className="cde-more"><summary>Location hours: linking and copying</summary>
       <div className="schedule-source" role="group" aria-label="Location hours" data-testid="schedule-source">
@@ -263,7 +265,7 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onDirtyChange, onBusy
       <HelpTip label="About copying location hours" text="Copy once fills this draft with today's location hours. Review capacity, then Save Schedule. Edited days that follow clinic hours require confirmation before becoming custom; later clinic-hour changes do not update confirmed custom days."/>
        {(!opening||!opening.length)&&<small className="muted">Copying needs configured location opening hours. Ask the clinic owner to configure them.</small>}
        {branch.data && <FollowLocationHours branch={branch.data} doctorId={doctorId} dirty={dirty} disabled={busy} onBusyChange={setLinkedBusy} onDirtyChange={setLinkedDirty} defaults={{ maxTokens: (rows[0] as any)?.maxTokens, consultationMinutes: (rows[0] as any)?.consultationMinutes, tokenPrefix: (rows[0] as any)?.tokenPrefix, queueMode: (rows[0] as any)?.queueMode }} />}
-       {!contextual&&siblingIds.length > 0 && <details className="schedule-copy-locations" data-testid="details-copy-locations"><summary>Copy to Other Locations</summary><div className="registration-inline">
+       {siblingIds.length > 0 && <details className="schedule-copy-locations" data-testid="details-copy-locations"><summary>Copy to Other Locations</summary><div className="registration-inline">
         {(siblings.data || []).map(b => <label className="registration-check" key={b.id}><input type="checkbox" checked={copyTargets.includes(b.id)} disabled={busy} onChange={e => setCopyTargets(c => e.target.checked ? [...c, b.id] : c.filter(x => x !== b.id))} data-testid={`check-copy-location-${b.id}`}/>{b.name}</label>)}
         <button type="button" className="button secondary small" disabled={busy || dirty || !copyTargets.length || !rows.length} title={dirty ? "Save this week first" : undefined} onClick={() => void applyToLocations()} data-testid="button-apply-locations">Apply to Selected Locations</button>
         {dirty && <small className="muted">Save this week first, then apply it.</small>}
@@ -272,8 +274,8 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onDirtyChange, onBusy
     </details>
     {result && <p className="notice" role="status" data-testid="status-week-save">{result}</p>}
     <AppDialogActions><div className="cde-footer"><FormActions wide={false} groupPrimary onCancel={dialogClose ? undefined : ()=>void cancelDraft()} cancelClosesDialog cancelTestId="button-reset-week" busy={busy||linkedBusy||exceptionBusy} disabled={!dirty} onSubmit={save} submitTestId="button-save-week" submitLabel="Save Schedule" secondary={<>
-      {canDelete && !!rows.some(r => !r.linkedBranchId) && <button type="button" className="button secondary small" disabled={busy||linkedBusy||dirty} title={dirty?"Save or cancel your changes first":undefined} onClick={() => void deleteSchedule()} data-testid="button-delete-schedule">Delete Schedule</button>}
       {["superAdmin","clinicAdmin","doctor"].includes(identity.data?.user?.role || "") && <ScheduleExceptions doctorId={doctorId} branchId={branchId} doctorName={doctorName || doctor.data?.fullName} branchName={branch.data?.name} preferences={preferences} disabled={busy||linkedBusy} draftDirty={dirty||linkedDirty||Object.values(defaults).some(Boolean)} onDirtyChange={setExceptionDirty} onBusyChange={setExceptionBusy}/>}
+      {canDelete && !!rows.some(r => !r.linkedBranchId) && <button type="button" className="button secondary small" disabled={busy||linkedBusy||dirty} title={dirty?"Save or cancel your changes first":undefined} onClick={() => void deleteSchedule()} data-testid="button-delete-schedule">Delete Schedule</button>}
     </>} /></div></AppDialogActions>
     {outside && <AppDialog open onClose={() => setOutside(null)} title="Doctor Hours Beyond Clinic Hours">
       <p>{outside.length} session{outside.length > 1 ? "s are" : " is"} outside {clinicName}'s hours: {outside.map(o => { const s = week[o.day].sessions.find(x => x.key === o.key); return s ? `${SHORT[o.day]} ${fmt(s.startTime)} – ${fmt(s.endTime)} (clinic ${hoursFor(o.day).map(h => `${fmt(h.startTime)} – ${fmt(h.endTime)}`).join(", ") || "usually closed"})` : ""; }).join("; ")}.</p>

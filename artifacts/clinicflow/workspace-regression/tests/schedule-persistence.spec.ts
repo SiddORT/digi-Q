@@ -2,7 +2,12 @@ import { test, expect, type Page } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 
 const url="/?mode=schedule-persistence";
-const editor=(page:Page)=>page.getByTestId("compact-day-editor");
+const activeDay=new WeakMap<Page,number>();
+const editor=(page:Page)=>page.getByTestId(`row-day-${activeDay.get(page)??1}`);
+const dayNumbers:Record<string,number>={Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6,Sun:0};
+const dayNames=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const timeField=(page:Page,index:number,end:string)=>editor(page).getByLabel(`${dayNames[activeDay.get(page)??1]} slot ${index} ${end} time`,{exact:true});
+const control=(page:Page,id:string)=>editor(page).getByTestId(`${id}-${activeDay.get(page)??1}`);
 const rows=async(page:Page)=>(await (await page.request.get("/__schedule-evidence/rows")).json()).filter((r:any)=>r.status==="active");
 async function actor(page:Page,id:string,role:string){
   const {token}=await (await page.request.get(`/__schedule-evidence/actor/${id}`)).json();
@@ -10,19 +15,21 @@ async function actor(page:Page,id:string,role:string){
   const me=await page.request.get("/api/me");
   expect(me.status()).toBe(200);expect((await me.json()).user.role).toBe(role);
 }
-async function tab(page:Page,day:string){await editor(page).getByRole("tab",{name:new RegExp(`^${day}\\b`)}).click();}
+async function tab(page:Page,day:string){activeDay.set(page,dayNumbers[day]);await expect(editor(page)).toBeVisible();}
 async function slot(page:Page,start:string,end:string,index=1){
-  await editor(page).getByTestId("button-add-time-slot").click();
-  await editor(page).getByLabel(`Slot ${index} start time`,{exact:true}).fill(start);
-  await editor(page).getByLabel(`Slot ${index} start time`,{exact:true}).blur();
-  await editor(page).getByLabel(`Slot ${index} end time`,{exact:true}).fill(end);
-  await editor(page).getByLabel(`Slot ${index} end time`,{exact:true}).blur();
+  if(!await control(page,"toggle-working-day").isChecked())await control(page,"toggle-working-day").check();
+  else await control(page,"button-add-time-slot").click();
+  await timeField(page,index,"start").fill(start);
+  await timeField(page,index,"start").blur();
+  await timeField(page,index,"end").fill(end);
+  await timeField(page,index,"end").blur();
 }
 async function defaults(page:Page){
   await page.getByTestId("input-default-token-prefix").fill("A");
   await page.getByTestId("input-default-max-tokens").fill("10");
-  await page.getByRole("button",{name:"Expected Consultation Duration",exact:true}).click();
+  await control(page,"select-duration").click();
   await page.getByRole("option",{name:"20 minutes",exact:true}).click();
+  await page.getByRole("button",{name:"Apply to Week",exact:true}).click();
 }
 async function save(page:Page){
   await page.getByTestId("button-save-week").click();
@@ -45,8 +52,9 @@ for(const [id,role] of [["sa","superAdmin"],["adm","clinicAdmin"],["docu","docto
     }
     await editor(page).getByRole("button",{name:"Queue mode",exact:true}).first().click();
     await page.getByRole("option",{name:"Appointments only",exact:true}).click();
-    await editor(page).getByRole("button",{name:/Consultation Duration.*slot 1/}).click();
-    await page.getByRole("option",{name:"30 min",exact:true}).click();
+    await control(page,"select-duration").click();
+    await page.getByRole("option",{name:"30 minutes",exact:true}).click();
+    await page.getByRole("button",{name:"Apply to Week",exact:true}).click();
     await tab(page,"Wed");await slot(page,"09:30","12:30");
     await tab(page,"Fri");await slot(page,"15:00","18:00");
     await save(page);
@@ -56,11 +64,12 @@ for(const [id,role] of [["sa","superAdmin"],["adm","clinicAdmin"],["docu","docto
     // Fresh page and actual existing-row Edit, not the already-open draft.
     await page.reload();
     await page.getByTestId(`button-edit-${saved[0].id}`).click();
-    await expect(editor(page).getByLabel("Slot 1 start time",{exact:true})).toHaveValue("09:00");
+    await tab(page,"Mon");
+    await expect(timeField(page,1,"start")).toHaveValue("09:00");
     await editor(page).locator(".cde-adv summary").first().click();
     await expect(editor(page).getByLabel("Max tokens",{exact:true}).first()).toHaveValue("14");
     await tab(page,"Wed");
-    await editor(page).getByLabel("Slot 1 end time",{exact:true}).fill("13:00");await editor(page).getByLabel("Slot 1 end time",{exact:true}).blur();
+    await timeField(page,1,"end").fill("13:00");await timeField(page,1,"end").blur();
     await save(page);
     const edited=await rows(page);
     expect(edited).toHaveLength(4);
@@ -81,21 +90,22 @@ for(const [id,role] of [["sa","superAdmin"],["adm","clinicAdmin"],["docu","docto
     expect(counts.appointments).toBe(0);expect(counts.outbox).toBe(0);
   });
 }
-test("hidden-day validation, copy, cancellation, partial retry, double submit and stale conflict use real SQL",async({page})=>{
+test("whole-week validation, copy, cancellation, partial retry, double submit and stale conflict use real SQL",async({page})=>{
   await actor(page,"adm","clinicAdmin");await page.goto(url);await add(page);
   await slot(page,"09:00","12:00");await defaults(page);
   await editor(page).locator(".cde-adv summary").first().click();
   await editor(page).getByLabel("Max tokens",{exact:true}).fill("1001");
   await tab(page,"Wed");await slot(page,"14:00","16:00");
   await page.getByTestId("button-save-week").click();
-  await expect(editor(page).getByRole("tab",{name:/^Mon\b/})).toHaveAttribute("aria-selected","true");
+  await expect(page.getByTestId("row-day-1").getByLabel("Max tokens",{exact:true})).toBeFocused();
+  await tab(page,"Mon");
   expect(await rows(page)).toHaveLength(0);
   await editor(page).getByLabel("Max tokens",{exact:true}).fill("12");
   // Copy selected Monday to Friday; still draft-only.
-  await tab(page,"Fri");await editor(page).getByTestId("select-copy-from").click();await page.getByRole("option",{name:"Monday",exact:true}).click();
-  await editor(page).getByTestId("button-copy-from-apply").click();
+  await tab(page,"Fri");await control(page,"select-copy-from").click();await page.getByRole("option",{name:"Monday",exact:true}).click();
+  await control(page,"button-copy-from-apply").click();
   await page.getByRole("button",{name:"Copy Day",exact:true}).click();
-  await expect(editor(page).getByLabel("Slot 1 start time",{exact:true})).toHaveValue("09:00");
+  await expect(timeField(page,1,"start")).toHaveValue("09:00");
   expect(await rows(page)).toHaveLength(0);
   // One real server denial after other sessions commit. Not a fabricated success.
   let rejectFriday=true;
@@ -122,7 +132,7 @@ test("hidden-day validation, copy, cancellation, partial retry, double submit an
   const first=complete.find((r:any)=>r.day_of_week===1);
   const concurrent=await page.request.patch(`/api/schedules/${first.id}`,{data:{...first.data,maxTokens:15}});
   expect(concurrent.ok()).toBe(true);
-  await editor(page).getByLabel("Slot 1 end time",{exact:true}).fill("12:30");await editor(page).getByLabel("Slot 1 end time",{exact:true}).blur();
+  await timeField(page,1,"end").fill("12:30");await timeField(page,1,"end").blur();
   await page.getByTestId("button-save-week").click();
   await expect(page.getByTestId("status-week-save")).toContainText("Partly saved");
   expect((await rows(page)).find((r:any)=>r.id===first.id).data.maxTokens).toBe(15);
@@ -133,11 +143,11 @@ test("hidden-day validation, copy, cancellation, partial retry, double submit an
 test("receptionist linked weekdays including empty linked days are locked; denied scope and patient/guest writes stay denied",async({page})=>{
   await page.request.get("/__schedule-evidence/linked");await actor(page,"rec","receptionist");await page.goto(url);
   await page.getByTestId("button-edit-linked").click();
-  await expect(editor(page).getByLabel("Slot 1 start time",{exact:true})).toBeDisabled();
-  await expect(editor(page).getByTestId("button-add-time-slot")).toBeDisabled();
+  await expect(timeField(page,1,"start")).toBeDisabled();
+  await expect(control(page,"button-add-time-slot")).toBeDisabled();
   await tab(page,"Wed");
-  await expect(editor(page).getByTestId("toggle-working-day")).toBeDisabled();
-  await expect(editor(page).getByTestId("button-add-time-slot")).toBeDisabled();
+  await expect(control(page,"toggle-working-day")).toBeDisabled();
+  await expect(control(page,"button-add-time-slot")).toHaveCount(0);
   const context=await(await page.request.get("/api/schedules/day-context?doctorId=d1&branchId=b1")).json();
   const denied=await page.request.post("/api/schedules/day-overrides",{data:{doctorId:"d1",branchId:"b1",dayOfWeek:1,confirmed:true,isOpen:false,sessions:[],requestId:crypto.randomUUID(),expectedSnapshot:context.days[1].snapshot}});
   expect(denied.status()).toBe(403);
@@ -150,6 +160,67 @@ test("receptionist linked weekdays including empty linked days are locked; denie
   await page.context().clearCookies();
   expect([401,403]).toContain((await page.request.post("/api/schedules",{data:input})).status());
   expect(await rows(page)).toHaveLength(1);
+});
+
+test("mixed legacy durations survive unrelated edits; confirmed common choice applies only to the edited context",async({page})=>{
+  await actor(page,"adm","clinicAdmin");
+  for(const [day,start,end,duration] of [[1,"10:00","13:00",15],[1,"19:00","21:00",30],[2,"11:00","14:00",20]] as const){
+    const response=await page.request.post("/api/schedules",{data:{doctorId:"d1",clinicId:"c1",branchId:"b1",dayOfWeek:day,startTime:start,endTime:end,isOpen:true,timezone:"Asia/Kolkata",maxTokens:20,consultationMinutes:duration,tokenPrefix:"A",queueMode:"mixed"}});
+    expect(response.status()).toBe(201);
+  }
+  const original=await rows(page);
+  await page.goto(url);
+  await page.getByTestId(`button-edit-${original[0].id}`).click();
+  const fullWeek=page.getByTestId("compact-day-editor");
+  await expect(fullWeek.locator("[data-day-row]")).toHaveCount(7);
+  await expect(fullWeek.getByRole("tab")).toHaveCount(0);
+  await expect(page.getByTestId("text-duration-mixed")).toContainText("15, 20, 30");
+  await tab(page,"Tue");await timeField(page,1,"end").fill("14:30");await timeField(page,1,"end").blur();
+  await page.getByTestId("button-save-week").click();
+  const extended=page.getByRole("dialog",{name:"Doctor Hours Beyond Clinic Hours"});
+  if(await extended.isVisible())await page.getByTestId("button-outside-submit").click();
+  await expect(page.getByTestId("status-week-save")).toContainText("Saved 1 change");
+  expect((await rows(page)).map((r:any)=>r.data.consultationMinutes)).toEqual([15,30,20]);
+  await control(page,"select-duration").click();await page.getByRole("option",{name:"30 minutes",exact:true}).click();
+  await page.getByRole("dialog",{name:"Use 30 minutes for the whole week?"}).getByRole("button",{name:"Cancel",exact:true}).click();
+  await expect(page.getByTestId("text-duration-mixed")).toBeVisible();
+  await control(page,"select-duration").click();await page.getByRole("option",{name:"30 minutes",exact:true}).click();
+  await page.getByRole("button",{name:"Apply to Week",exact:true}).click();
+  await expect(page.getByTestId("text-duration-mixed")).toHaveCount(0);
+  expect((await rows(page)).map((r:any)=>r.data.consultationMinutes)).toEqual([15,30,20]);
+  await page.getByTestId("button-save-week").click();
+  if(await extended.isVisible())await page.getByTestId("button-outside-submit").click();
+  await page.getByRole("dialog",{name:"Change Consultation Duration?"}).getByRole("button",{name:"Save Schedule",exact:true}).click();
+  await expect(page.getByTestId("status-week-save")).toContainText("Saved 2 changes");
+  const unified=await rows(page);
+  expect(unified.map((r:any)=>r.data.consultationMinutes)).toEqual([30,30,30]);
+  expect(unified.map((r:any)=>[r.data.startTime,r.data.endTime])).toEqual([["10:00","13:00"],["19:00","21:00"],["11:00","14:30"]]);
+  await page.reload();await page.getByTestId(`button-edit-${original[0].id}`).click();
+  await expect(page.getByTestId("select-duration-1")).toHaveAttribute("aria-label","Selected item: 30 minutes");
+});
+
+test("all seven days are independent; off drafts restore, individual removal and cancelled copy do not change neighbours",async({page})=>{
+  await actor(page,"adm","clinicAdmin");await page.goto(url);await add(page);
+  for(const [name,d] of Object.entries(dayNumbers)){
+    await tab(page,name);await slot(page,"10:00","13:00");
+    await control(page,"toggle-working-day").uncheck();
+    await expect(control(page,"text-day-off")).toContainText("Draft slots return");
+    await control(page,"toggle-working-day").check();
+    await expect(timeField(page,1,"start")).toHaveValue("10:00");
+    expect(await rows(page)).toHaveLength(0);
+  }
+  await defaults(page);
+  await tab(page,"Mon");await slot(page,"19:00","21:00",2);
+  await editor(page).getByRole("button",{name:"Remove Monday slot 2",exact:true}).click();
+  await expect(timeField(page,1,"start")).toHaveValue("10:00");
+  await tab(page,"Tue");await control(page,"select-copy-from").click();await page.getByRole("option",{name:"Monday",exact:true}).click();
+  await control(page,"button-copy-cancel").click();
+  await expect(control(page,"copy-from-panel")).toHaveCount(0);
+  await expect(page.getByTestId("row-day-1").getByLabel("Monday slot 1 end time",{exact:true})).toHaveValue("13:00");
+  expect(await rows(page)).toHaveLength(0);
+  await page.getByRole("dialog",{name:"Add Schedule",exact:true}).getByTestId("button-dialog-close").click();
+  await page.getByTestId("button-keep-editing").click();
+  await expect(page.getByTestId("compact-day-editor").locator("[data-day-row]")).toHaveCount(7);
 });
 
 async function onboarding(page:Page,kind:string,linked=false){
@@ -180,8 +251,8 @@ test("onboarding shared custom week persists all settings only on Finish; multi-
   for(const [label,value] of [["Break start","10:00"],["Break end","10:20"],["Queue opens","08:30"],["Queue closes","11:30"]]){
     await editor(page).getByLabel(label,{exact:true}).first().fill(value);await editor(page).getByLabel(label,{exact:true}).first().blur();
   }
-  await tab(page,"Wed");await editor(page).getByTestId("select-copy-from").click();await page.getByRole("option",{name:"Monday",exact:true}).click();
-  await editor(page).getByTestId("button-copy-from-apply").click();await page.getByRole("button",{name:"Copy Day",exact:true}).click();
+  await tab(page,"Wed");await control(page,"select-copy-from").click();await page.getByRole("option",{name:"Monday",exact:true}).click();
+  await control(page,"button-copy-from-apply").click();await page.getByRole("button",{name:"Copy Day",exact:true}).click();
   await tab(page,"Fri");await slot(page,"15:00","18:00");
   await editor(page).locator(".cde-adv summary").first().click();
   await editor(page).getByLabel("Max tokens",{exact:true}).fill("1001");
@@ -189,7 +260,7 @@ test("onboarding shared custom week persists all settings only on Finish; multi-
   await page.getByTestId("registration-next").click();
   await expect(page.getByTestId("registration-error")).toContainText("correct the consultation sessions");
   expect(await(await page.request.get("/__schedule-evidence/counts")).json()).toEqual(initial);
-  await tab(page,"Fri");await editor(page).locator(".cde-adv summary").first().click();
+  await tab(page,"Fri");
   await editor(page).getByLabel("Max tokens",{exact:true}).fill("11");
   await page.getByTestId("details-copy-locations").locator("summary").click();
   await page.getByTestId("check-copy-location-1").check();

@@ -203,9 +203,9 @@ export function prefillFromHours(week: DraftDay[], opening: { dayOfWeek: number;
     const hours = opening.filter(h => h.dayOfWeek === day.dayOfWeek).sort((a, b) => a.startTime.localeCompare(b.startTime));
     const locked = day.sessions.filter(s => s.locked);
     if (!hours.length) return opening.length ? day : { ...day, isOpen: locked.length > 0, sessions: locked };
-    const reusable = day.sessions.filter(s => !s.locked && s.id).map(s => s.id as string);
+    const reusable = day.sessions.filter(s => !s.locked && s.id);
     const copied = hours.filter(h => !locked.some(l => l.startTime < h.endTime && h.startTime < l.endTime))
-      .map(h => ({ key: draftKey(), id: reusable.shift(), startTime: h.startTime, endTime: h.endTime }));
+      .map(h => { const existing = reusable.shift(); return { key: draftKey(), id: existing?.id, startTime: h.startTime, endTime: h.endTime, settings: existing?.settings ? {...existing.settings} : undefined, invalidTimes: existing?.invalidTimes ? [...existing.invalidTimes] : undefined }; });
     return { ...day, isOpen: true, sessions: [...locked, ...copied].sort((a, b) => a.startTime.localeCompare(b.startTime)) };
   });
 }

@@ -74,7 +74,7 @@ export function DoctorScheduleContext({doctor: listed, fixedClinicId, fixedBranc
   const showPicker=inGroup.length>1;
   return <section className="doctor-schedule-context" ref={section} tabIndex={-1} aria-label="Doctor schedule" data-testid="doctor-schedule-context">
     {confirm.dialog}
-    <ScheduleContextHeader doctor={doctor.fullName} clinic={fixedClinicId||groupIds.length===1?(groups.data||[]).find(g=>g.id===activeGroup)?.name||"Clinic Group":undefined} location={inGroup.length===1?inGroup[0].name:undefined} timezone={branch?.timezone} timeFormat={prefs.timeFormat}>
+    <ScheduleContextHeader doctor={doctor.fullName} doctorCode={doctor.code} clinic={fixedClinicId||groupIds.length===1?(groups.data||[]).find(g=>g.id===activeGroup)?.name||"Clinic Group":undefined} location={inGroup.length===1?inGroup[0].name:undefined} timezone={branch?.timezone} timeFormat={prefs.timeFormat}>
         {!fixedClinicId&&groupIds.length>1&&<SearchableSelect labelScope={JSON.stringify([actor,doctor.id,"group"])} retainSelectionLabel={false} label="Clinic Group" testId="select-schedule-group" value={group} disabled={busy} onChange={changeGroup} options={groupIds.map(id=>({value:id,label:(groups.data||[]).find(g=>g.id===id)?.name||"Clinic Group"}))}/>}
         {showPicker&&<SearchableSelect labelScope={JSON.stringify([actor,doctor.id])} retainSelectionLabel={false} label="Location" value={location} disabled={busy} onChange={changeLocation} options={inGroup.map(b=>({value:b.id,label:b.name}))}/>}
     </ScheduleContextHeader>

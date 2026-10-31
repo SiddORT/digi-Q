@@ -23,7 +23,7 @@ export function AvailabilityScheduleEntry({ doctorId, fixedClinicId, fixedBranch
     if(doctor.error)return <ErrorNotice error={doctor.error} onRetry={()=>doctor.refetch()} busy={doctor.isFetching}/>;
     return <div className="skeleton" role="status">Loading doctor schedule…</div>;
   }
-  return <section className="panel padded" data-testid="panel-weekly-editor-entry">
+  return <section className="panel padded schedule-editor-entry" data-testid="panel-weekly-editor-entry">
     <ErrorNotice error={doctor.error}/>
     {doctor.error&&<button type="button" onClick={()=>void doctor.refetch()}>Retry Saved Doctor</button>}
     <DoctorScheduleContext key={doctorId} doctor={savedDoctor} fixedClinicId={fixedClinicId} fixedBranchId={fixedBranchId} canDelete={canDelete} onDisplayContextChange={onDisplayContextChange} onDirtyChange={setDirty} onBusyChange={setBusy}/>
