@@ -21,7 +21,8 @@ test("sensitive entries share visibility controls without retrieving saved secre
 
 test("workspace search respects navigation scope and cancels stale requests", () => {
   const search = read("./WorkspaceSearch.tsx");
-  assert.match(search, /if \(!navigation.length \|\| !categories.some\(cat => categorySources\(cat, role\).includes\(source\)\)\) return/);
+  assert.match(search, /if \(!categories.some\(cat => sources\(cat\).includes\(source\)\)\) return/);
+  assert.match(search, /permittedCategories\(role, navigation, actualRole\)/);
   assert.match(search, /role !== "patient"/);
   assert.match(search, /new AbortController/);
   assert.match(search, /controller.abort\(\)/);

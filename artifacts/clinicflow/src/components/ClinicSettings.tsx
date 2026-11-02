@@ -1,6 +1,5 @@
-import { TabIcon } from "./TabIcon";
+import { WorkspaceTabs } from "./WorkspaceTabs";
 import "./tab-presentation.css";
-import { useTabStripVisibility } from "../lib/tab-strip-visibility";
 import { FormActions } from "./FormActions";
 import { FormDisclosure, FormSection } from "./FormSection";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -10,7 +9,6 @@ import { Link, useLocation, useSearch } from "wouter";
 import { PageHeader } from "./PageHeader";
 import { Building2, Phone, Copy, Check, ExternalLink, Info, ChevronRight, MapPin, Settings2, CalendarDays, Pencil } from "lucide-react";
 import { clinicsReturnHref, clinicWorkspaceHref, parseClinicWorkspace } from "../lib/clinic-navigation";
-import { Pagination, SearchInput } from "./ListingControls";
 import { useWorkspaceLeaveGuard } from "../lib/use-workspace-leave-guard";
 import * as api from "@workspace/api-client-react";
 import { Editor, ErrorNotice, ResourcePage, resources } from "../resources";
@@ -47,7 +45,6 @@ function CopyValue({value,label}:{value:string;label:string}){
  useEffect(()=>()=>window.clearTimeout(timer.current),[]);
  return <><button type="button" className="cs-copy" aria-label={`Copy ${label}`} data-testid={`button-copy-${label.toLowerCase().replace(/\W+/g,"-")}`} onClick={async()=>{try{await navigator.clipboard.writeText(value);setDone(true);window.clearTimeout(timer.current);timer.current=window.setTimeout(()=>setDone(false),2000);}catch{notifyWarning("Copy is not available in this browser. Select and copy the displayed value instead.");}}}>{done?<Check size={14} aria-hidden/>:<Copy size={14} aria-hidden/>}</button><span className="sr-only" role="status">{done?`${label} copied`:""}</span></>;
 }
-
 export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;scopeSwitch?:ReactNode}){
  const [location,navigate]=useLocation();
  const search=useSearch();
@@ -55,14 +52,11 @@ export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;sco
  const parsed=parseClinicWorkspace(location,search) as {clinicId?:string;section?:string}|null;
  const clinicId=parsed?.clinicId||params.get("clinicId")||"";
  const view=(sections.some(([key])=>key===parsed?.section)?parsed?.section:"details") as SectionKey;
- const tabStrip = useTabStripVisibility(view);
  const client=useQueryClient();
  const site=usePublicWebsite();
  const workspaceDrafts=useWorkspaceBranchContext();
  const confirm=useConfirm();
  const askRef=useRef(confirm.ask);askRef.current=confirm.ask;
- const clinicParams={pageSize:2};
- const clinics=api.useListClinics(clinicParams,{query:{queryKey:api.getListClinicsQueryKey(clinicParams),enabled:!clinicId&&identity.user?.role==="clinicAdmin",refetchInterval:30000}});
  const query=api.useGetClinicSettings(clinicId,{query:{queryKey:api.getGetClinicSettingsQueryKey(clinicId),enabled:!!clinicId,refetchInterval:30000}});
  const [section,setSection]=useState<"clinic"|"policies"|null>(null);
  const [branch,setBranch]=useState<api.Branch|null>(null);
@@ -115,7 +109,6 @@ export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;sco
   const canonical=clinicWorkspaceHref(clinicId,view,search);
   if(`${location}${search?`?${search}`:""}`!==canonical)navigate(`${canonical}${window.location.hash}`,{replace:true});
  },[clinicId,view,location,search,anyDirty,locked,navigate]);
- useEffect(()=>{if(!clinicId&&clinics.data?.total===1)setClinic(clinics.data.items[0].id,true);},[clinicId,clinics.data]);// eslint-disable-line react-hooks/exhaustive-deps
  const selectView=(next:SectionKey)=>{if(next===view)return;void guarded(()=>{const keep=params.get("returnTo");navigate(clinicWorkspaceHref(clinicId,next,keep?`returnTo=${encodeURIComponent(keep)}`:""));});};
  const [missingBranch,setMissingBranch]=useState(false);
  useEffect(()=>{
@@ -126,23 +119,17 @@ export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;sco
   if(item){openedBranchId.current=target;setDirty(false);setBranch(item);setMissingBranch(false);}
   else{setMissingBranch(true);url.searchParams.delete("branchId");window.history.replaceState(window.history.state,"",url);}
  },[data,view]);
- const tabKeys=sections.map(([key])=>key);
- const onTabKey=(event:React.KeyboardEvent,index:number)=>{
-  const move=event.key==="ArrowRight"?1:event.key==="ArrowLeft"?-1:0;
-  const target=event.key==="Home"?0:event.key==="End"?tabKeys.length-1:move?(index+move+tabKeys.length)%tabKeys.length:-1;
-  if(target<0)return;event.preventDefault();
-  document.getElementById(`clinic-tab-${tabKeys[target]}`)?.focus();selectView(tabKeys[target]);
- };
  const openClinicEdit=()=>{if(locked)return;setDirty(false);save.reset();setSection("clinic");};
  const linkedCount=data?data.branches.filter(b=>b.linkedSchedule?.enabled).length:0;
  const clinic=data?.clinic;
  const active=clinic?.status==="active";
- return <DateTimePreferencesProvider value={data?.clinic}><section className="clinic-settings">
+  if(!clinicId)return <ResourcePage resource="clinics" identity={identity} allowCreate={identity.user?.role==="superAdmin"}/>;
+  return <DateTimePreferencesProvider value={data?.clinic}><section className="clinic-settings">
    {/* The shell delegates this heading to the workspace so scope and guarded navigation keep one owner. */}
    <PageHeader title="Clinic" actions={<div className="settings-scope" data-testid="settings-scope">{scopeSwitch}<div className="settings-scope-lookup"><ResourceLookup resource="clinics" label={identity.user?.role==="superAdmin"?"Clinic Group":"Your Clinic Group"} value={clinicId} onChange={id=>{if(id!==clinicId)void guarded(()=>setClinic(id));}}/></div></div>}/>
-  {identity.user?.role==="superAdmin"&&<Link className="cs-back" href={clinicsReturnHref(search)} data-testid="link-all-clinic-groups">&larr; Back to Clinics</Link>}
-  <ErrorNotice error={query.error||clinics.error}/>{query.error&&<button type="button" onClick={()=>query.refetch()}>Retry Clinic Settings</button>}
-  {!clinicId?<ClinicScopeList section={parsed?.section}/>:query.isLoading?<p role="status">Loading clinic settings…</p>:data&&clinic&&!query.error&&<>
+   <Link className="cs-back" href={clinicsReturnHref(search)} data-testid="link-all-clinic-groups">&larr; Back to Clinics</Link>
+   <ErrorNotice error={query.error}/>{query.error&&<button type="button" onClick={()=>query.refetch()}>Retry Clinic Settings</button>}
+   {query.isLoading?<p role="status">Loading clinic settings…</p>:data&&clinic&&!query.error&&<>
    <header className="panel padded cs-overview" data-testid="clinic-overview">
     <div className="cs-mark" aria-hidden><Building2 size={44}/></div>
     <div className="cs-identity">
@@ -159,7 +146,7 @@ export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;sco
      <Link className="cs-readiness" href={`/admin/availability?clinicId=${encodeURIComponent(clinicId)}`} data-testid="link-booking-readiness">Check Doctor Booking Readiness <ExternalLink size={14} aria-hidden/></Link>
     </aside>
    </header>
-   <div className="clinic-workspace-tabs-layout"><div ref={tabStrip} className="dq-tabs workspace-tabs" role="tablist" aria-label="Clinic sections">{sections.map(([key,label],index)=><button className="dq-tab" key={key} id={`clinic-tab-${key}`} type="button" role="tab" aria-selected={view===key} aria-controls={`clinic-panel-${key}`} tabIndex={view===key?0:-1} disabled={locked} onKeyDown={event=>onTabKey(event,index)} onClick={()=>selectView(key)} data-testid={`tab-clinic-${key}`}><TabIcon name={key==="activity-history"?"history":key}/>{label}</button>)}</div>
+    <div className="clinic-workspace-tabs-layout"><WorkspaceTabs tabs={sections.map(([id,label])=>({id,label,icon:id==="activity-history"?"history":id}))} area={view} onSelect={next=>selectView(next as SectionKey)} label="Clinic sections" testIdPrefix="tab-clinic-" panelIdPrefix="clinic-" disabled={locked}/>
    <div className="clinic-workspace-content" role="tabpanel" id={`clinic-panel-${view}`} aria-labelledby={`clinic-tab-${view}`}>
    {view==="details"&&<>
     <div className="cs-cards">
@@ -286,21 +273,4 @@ function BranchSettings({branch,clinicId,busy,onDirtyChange,onSave}:{branch:api.
 export function OpeningHoursEditor({value,onChange}:{value:api.OpeningHour[];onChange:(value:api.OpeningHour[])=>void}){
  const week=newWeek().map(day=>({...day,isOpen:value.some(item=>item.dayOfWeek===day.dayOfWeek),sessions:value.filter(item=>item.dayOfWeek===day.dayOfWeek)}));
  return <fieldset className="branch-hours"><legend>Clinic opening days &amp; hours</legend><p className="muted">Opening hours do not create bookable doctor sessions <HelpTip text="An explicitly closed week stays closed until you choose opening hours."/></p><button type="button" onClick={()=>onChange([])}>Close All Days</button><ClinicRegistrationHours value={week} onChange={days=>onChange(days.filter(day=>day.isOpen).flatMap(day=>day.sessions.map(session=>({...session,dayOfWeek:day.dayOfWeek}))))}/></fieldset>;
-}
-
-/** Context-free Clinic entry: list authorized clinics instead of demanding a selection. Rows open the
- *  canonical per-clinic section; nothing is edited from this list. */
-function ClinicScopeList({section}:{section?:string}){
- const [search,setSearch]=useState("");const [page,setPage]=useState(1);const [pageSize,setPageSize]=useState(20);
- const params={search:search.trim()||undefined,page,pageSize};
- const list=api.useListClinics(params,{query:{queryKey:api.getListClinicsQueryKey(params)}});
- const target=section&&sections.some(([key])=>key===section)?section:"details";
- return <section className="panel padded" aria-label="Your clinics" data-testid="clinic-scope-list">
-  <p className="muted">Open a clinic to manage it.</p>
-  <SearchInput value={search} onChange={v=>{setSearch(v);setPage(1);}} placeholder="Search clinics…" label="Search Clinics"/>
-  {list.error&&<div className="error-box" role="alert">Clinics could not be loaded. <button type="button" onClick={()=>void list.refetch()}>Retry</button></div>}
-  {list.isLoading?<div className="skeleton" role="status">Loading clinics…</div>:!(list.data?.items.length)?<div className="empty" role="status"><h3>No clinics</h3><p>{search?"No clinics match.":"No clinics are assigned to your account."}</p></div>:
-   <div className="table-scroll"><table><thead><tr><th>Clinic</th><th>Status</th><th aria-label="Open"/></tr></thead><tbody>{list.data.items.map((c:any)=><tr key={c.id} data-testid={`row-clinic-scope-${c.id}`}><td><strong>{c.name}</strong>{c.city?<small>{c.city}</small>:null}</td><td><span className={`badge ${c.status||""}`}>{c.status==="inactive"?"Inactive":"Active"}</span></td><td><Link className="button secondary small" href={clinicWorkspaceHref(c.id,target)} data-testid={`link-open-clinic-${c.id}`}>Open</Link></td></tr>)}</tbody></table></div>}
-  <Pagination page={page} pageSize={pageSize} total={list.data?.total||0} onPageChange={setPage} onPageSizeChange={setPageSize} state={list.error?"error":list.isLoading?"loading":"ready"}/>
- </section>;
 }

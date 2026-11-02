@@ -3,11 +3,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { clinicLandingDestination, clinicDetailsHref, clinicsReturnHref, clinicWorkspaceHref, parseClinicWorkspace, clinicSections } from "../lib/clinic-navigation.ts";
 
-test("only unscoped Superadmin clinic landings redirect",()=>{
+test("both administrative clinic landings share the directory, including one-clinic owners",()=>{
  assert.equal(clinicLandingDestination("clinic","superAdmin",""),"/admin/clinics");
+ assert.equal(clinicLandingDestination("clinic","clinicAdmin",""),"/admin/clinics");
  for(const search of ["clinicId=c1","clinicId=c2&section=staff","section=qrs","branchId=b1"])
   assert.equal(clinicLandingDestination("clinic","superAdmin",search),null);
- for(const role of ["clinicAdmin","doctor"])
+ for(const role of ["doctor"])
   assert.equal(clinicLandingDestination("clinic",role,""),null);
 });
 test("detail links round-trip every list control, and reject foreign return destinations",()=>{
@@ -42,7 +43,7 @@ test("private clinic routes precede public slug resolution; opaque URL routes re
 });
 test("Superadmin navigation maps to one Clinic listing without changing other role configurations",()=>{
  const source=readFileSync(new URL("../clinic.tsx",import.meta.url),"utf8");
- assert.match(source,/p==="clinic"&&identity\.user!\.role==="superAdmin"\?"clinics":p/);
+ assert.match(source,/p==="clinic"\?"clinics":p/);
  assert.match(source,/doctor:\["dashboard","appointments","queue","patients","clinics","availability","profile","settings"\]/);
  assert.match(source,/clinicLandingDestination\(page,userRole,search\)/);
 });

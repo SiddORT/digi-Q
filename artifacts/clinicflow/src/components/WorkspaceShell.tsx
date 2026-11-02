@@ -9,6 +9,8 @@ import * as api from "@/lib/api";
 import { navLabel } from "./WorkspaceNav";
 import { quickActions } from "./WorkspaceSearch";
 import { useNavigationPreferences } from "@/lib/workspace-preferences";
+import { workspaceHref } from "../lib/workspace-navigation";
+import { useWorkspaceBranchContext } from "./WorkspaceBranch";
 
 /** Sidebar favorites only (Recent was removed from the sidebar for all roles; recent pages remain in WorkspaceSearch). Only permitted pages render. */
 export function SidebarShortcuts({ navigation, role, page, userId, onNavigate }: { navigation: string[]; role: string; page: string; userId: string; onNavigate: () => void }) {
@@ -16,7 +18,7 @@ export function SidebarShortcuts({ navigation, role, page, userId, onNavigate }:
   const favorites = prefs.favorites.filter(p => navigation.includes(p));
   if (!favorites.length) return null;
   const item = (p: string, fav: boolean) => <div key={p} className="wnav-shortcut-row" style={{ display: "flex", alignItems: "center" }}>
-    <Link href={`/${role}/${p}`} className={`wnav-link child${p === page ? " active" : ""}`} aria-current={p === page ? "page" : undefined} onClick={onNavigate} title={navLabel(p, role)} data-testid={`nav-shortcut-${fav ? "fav" : "recent"}-${p}`} style={{ flex: 1, minWidth: 0 }}>
+    <Link href={workspaceHref(role,p)} className={`wnav-link child${p === page ? " active" : ""}`} aria-current={p === page ? "page" : undefined} onClick={onNavigate} title={navLabel(p, role)} data-testid={`nav-shortcut-${fav ? "fav" : "recent"}-${p}`} style={{ flex: 1, minWidth: 0 }}>
       <Star size={16} aria-hidden /><span className="wnav-label">{navLabel(p, role)}</span>
     </Link>
     {fav && <button type="button" className="wnav-label" aria-label={`Remove ${navLabel(p, role)} from favorites`} onClick={() => toggleFavorite(p)} style={{ border: 0, background: "transparent", minHeight: 32, width: 32, padding: 0, color: "var(--soft)" }}>×</button>}
@@ -33,6 +35,7 @@ const actionIcon: Record<string, any> = { book: Plus, queue: Activity, "check-in
 export function WorkspaceScope({ role, roleLabel, open }: { role: string; roleLabel: string; open: boolean }) {
   const staff = role !== "patient" && role !== "superAdmin";
   const client = useQueryClient();
+  const drafts = useWorkspaceBranchContext();
   const q = api.useListWorkspaces({ query: { queryKey: api.getListWorkspacesQueryKey(), enabled: open && staff, staleTime: 60000 } });
   const select = api.useSelectWorkspace({ mutation: { onSuccess: () => { void client.cancelQueries(); client.clear(); window.location.reload(); } } });
   const list = q.data?.workspaces ?? [];
@@ -44,10 +47,11 @@ export function WorkspaceScope({ role, roleLabel, open }: { role: string; roleLa
     {staff && q.error && <p className="muted" role="alert">Workspaces could not be loaded. <button type="button" className="text-link" onClick={() => void q.refetch()}>Retry</button></p>}
     {q.data?.switchable && <ul className="pm-scope-list" aria-label="Switch workspace">
       {[{ id: "", name: `All My Clinics (${list.length})` }, ...list].map(w => { const on = (w.id || null) === active; return <li key={w.id || "all"}>
-        <button type="button" role="menuitemradio" aria-checked={on} disabled={select.isPending} onClick={() => { if (!on) select.mutate({ data: { clinicId: w.id || null } }); }} data-testid={`menu-workspace-${w.id || "all"}`} style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", minWidth: 0 }}>
+        <button type="button" role="menuitemradio" aria-checked={on} disabled={select.isPending||drafts.dirty||drafts.busy} onClick={() => { if (!on&&!drafts.dirty&&!drafts.busy) select.mutate({ data: { clinicId: w.id || null } }); }} data-testid={`menu-workspace-${w.id || "all"}`} style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", minWidth: 0 }}>
           {on ? <Check size={14} aria-hidden /> : <span style={{ width: 14 }} aria-hidden />}<OverflowText value={w.name} />
         </button></li>; })}
     </ul>}
+    {q.data?.switchable&&(drafts.dirty||drafts.busy)&&<small className="muted" role="status">Save or discard your edits before changing workspace.</small>}
     {select.isPending && <small className="muted" role="status">Switching workspace…</small>}
     {select.isError && <small className="field-error" role="alert">Switch failed. You may no longer be assigned to that clinic.</small>}
   </div>;

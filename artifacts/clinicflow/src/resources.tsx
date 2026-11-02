@@ -481,14 +481,16 @@ function renderComputed(c:string,row:any,schedule="dayOfWeek" in row&&!('isClose
  if(c==="maxTokens"&&"isClosed" in row)return row.maxTokens?<span className="cap-chip">{row.maxTokens}<small>tokens</small></span>:<span className="muted">Regular</span>;
  return undefined;
 }
-export function ResourcePage({resource,identity,defaults={},allowCreate=true,onEdit,embedded=false,fixedClinicId}:{resource:string;identity?:api.Identity;defaults?:any;allowCreate?:boolean;onEdit?:(row:any)=>void;embedded?:boolean;fixedClinicId?:string}){
+export function ResourcePage({resource,identity,defaults={},allowCreate=true,onEdit,embedded=false,fixedClinicId,readOnly=false}:{resource:string;identity?:api.Identity;defaults?:any;allowCreate?:boolean;onEdit?:(row:any)=>void;embedded?:boolean;fixedClinicId?:string;readOnly?:boolean}){
  const inheritedScheduleDisplay=useDateTimePreferences();
  const [editorDisplay,setEditorDisplay]=useState<ScheduleDisplayContext|null>(null);
   const scheduleContext=useRef({dirty:false,busy:false,confirming:false});
- const superadminClinics=resource==="clinics"&&identity?.user?.role==="superAdmin";
+ // The approved clinic directory is shared; authority changes capabilities,
+ // never the table/selection journey. Keep platform ownership columns private.
+ const superadminClinics=resource==="clinics"&&["superAdmin","clinicAdmin"].includes(identity?.user?.role||"");
  const confirmation=useConfirm();
  const settings=api.useGetSettings({query:{queryKey:api.getGetSettingsQueryKey(),staleTime:60000}});
-  const baseConfig=resources[resource];const config={...baseConfig,...(resource==="patients"&&identity?.user?.role==="doctor"?{create:undefined,update:undefined,remove:undefined}:{}),name:resource==="branches"?"clinics":resource==="clinics"?"clinic groups":baseConfig.name}; const [,navigate]=useLocation(); const urlSearch=useSearch();
+  const baseConfig=resources[resource];const config={...baseConfig,...(readOnly||resource==="patients"&&identity?.user?.role==="doctor"?{create:undefined,update:undefined,remove:undefined}:{}),...(resource==="clinics"&&identity?.user?.role!=="superAdmin"?{create:undefined,remove:undefined}:{}),name:resource==="branches"?"locations":resource==="clinics"?"clinics":baseConfig.name}; const [,navigate]=useLocation(); const urlSearch=useSearch();
   const urlParams=new URLSearchParams(urlSearch);
   const search=urlParams.get("search")||"";
   const pageValue=Number(urlParams.get("page"));
@@ -606,7 +608,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
   const selection=useListingSelection(selectionContext,query.error||query.isPlaceholderData?[]:query.data?.items||[]);
  const density="compact";
  const compact=["clinics","branches","doctors","patients","users","masters","qrs"].includes(resource);
- const baseColumns=superadminClinics?["name","adminName","locality","contact","status"]:compact?[config.columns[0],...config.columns.slice(1).filter(c=>!["code","reference","city","email","phone","clinicName","specializationName"].includes(c))]:config.columns;
+ const baseColumns=resource==="clinics"?["name",...(identity?.user?.role==="superAdmin"?["adminName"]:[]),"locality","contact","status"]:compact?[config.columns[0],...config.columns.slice(1).filter(c=>!["code","reference","city","email","phone","clinicName","specializationName"].includes(c))]:config.columns;
  // A status tab already states the status of every row; drop the repeated column (users keep their access switch).
  const displayColumnsRaw=!superadminClinics&&filters.status&&resource!=="users"&&config.fields.some(field=>field.key==="status")?baseColumns.filter(c=>c!=="status"):baseColumns;
  // Selected doctor/location is shown once in the filter context; do not repeat it on every schedule row.
@@ -725,7 +727,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
   <button type="button" className="text-link" onClick={()=>changeUrl({open:registeredPatient.id})} data-testid="button-open-registered-patient">Open Saved Patient</button>
  </p>}
  {!allowCreate&&resource==="patients"&&<p className="notice">New patient registration is available to receptionists and administrators. Ask your clinic staff to register a new patient.</p>}<ErrorNotice error={remove.error||statusUpdate.error}/>
- <ListingBulk selection={selection} resource={resource} columns={config.columns} identity={identity} context={selectionContext}/>
+ <ListingBulk selection={selection} resource={resource} columns={config.columns} identity={identity} context={selectionContext} allowStatus={!readOnly}/>
  {resource==="availability"&&!filters.doctorId&&identity?.doctorId&&["doctor","clinicAdmin"].includes(identity.user?.role||"")&&<p className="schedule-manage-entry"><button type="button" className="button secondary small" onClick={()=>changeUrl({doctorId:identity.doctorId as string,manage:"1"})} data-testid="button-manage-own-weekly-schedule">Edit my weekly schedule</button></p>}
  {resource==="availability"&&filters.doctorId&&urlParams.get("manage")!=="1"&&<p className="schedule-manage-entry"><button type="button" className="button secondary small" onClick={()=>changeUrl({manage:"1"})} data-testid="button-manage-weekly-schedule">Edit weekly schedule</button></p>}
  {resource==="availability"&&filters.doctorId&&urlParams.get("manage")==="1"&&<p className="schedule-manage-entry"><button type="button" className="text-link" onClick={()=>changeUrl({manage:""})} data-testid="button-close-weekly-schedule">Close weekly editor</button></p>}

@@ -79,7 +79,12 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
   const linkedIsDoctor = new URLSearchParams(routeSearch).get("tab") === "doctors";
   const exactStaff = useExactRecord<any>(["staff", linkedIsDoctor ? "doctor" : "user"], linkedId, linkedId ? () => (linkedIsDoctor ? api.getDoctor(linkedId) : api.getUser(linkedId)) as Promise<any> : null);
   const closeExactStaff = () => { const q = new URLSearchParams(routeSearch); q.delete("open"); navigateTo(`${window.location.pathname}${q.size ? `?${q}` : ""}`, { replace: true }); };
-  const [tab, setTab] = useState<StaffTab>(tabs.find(t => t.id === new URLSearchParams(window.location.search).get("tab"))?.id || tabs[0].id);
+   const tab:StaffTab = tabs.find(t => t.id === new URLSearchParams(routeSearch).get("tab"))?.id || tabs[0].id;
+   const setTab = (next:StaffTab) => {
+     const query=new URLSearchParams(routeSearch);
+     query.set("tab",next);query.delete("open");query.delete("search");
+     navigateTo(`${window.location.pathname}?${query}`);
+   };
    const preferredSize = usePreferredPageSize();
    const staffDefaults = ():StaffContext => ({...defaultContext(),pageSize:preferredSize});
    const [contexts, setContexts] = useState<Partial<Record<StaffTab,StaffContext>>>({});
@@ -109,14 +114,11 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
     if (!query.has("search")) return;
     const requested = tabs.find(t => t.id === query.get("tab"))?.id ?? tabs[0].id;
     const next = { ...staffDefaults(), search: query.get("search") ?? "" };
-    setTab(requested); setDraftTab(requested);
+     setDraftTab(requested);
     setContexts(previous => ({ ...previous, [requested]: next }));
     setDraft(next);
   }, [routeSearch, clinicId, role]);
   useEffect(() => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("tab", tab);
-     window.history.replaceState(window.history.state, "", url);
     setRecoveryId("");
     recovery.reset();
   }, [tab]);

@@ -25,7 +25,7 @@ import { DemoLogin } from "./auth/DemoLogin";
 import { AuthShell, AuthCard } from "./auth/AuthShell";
 import { ToastHost } from "./components/ToastHost";
 import { friendlyError } from "./lib/friendly-error";
-import { useSettingsBrowserLocation } from "./lib/settings-navigation";
+import { useSettingsBrowserLocation, useSettingsBrowserSearch } from "./lib/settings-navigation";
 import { PublicHeader } from "./components/PublicHeader";
 import { RouteMetadataBoundary } from "./lib/page-metadata";
 import { PageDescription } from "./components/PageDescription";
@@ -77,7 +77,7 @@ function Guard({role, page}: {role:string;page:string}) {
   if (!me.data?.user || me.data.needsOnboarding) return <Redirect to="/onboarding"/>;
   const actual = ["superAdmin","clinicAdmin"].includes(me.data.user.role) ? "admin" : me.data.user.role;
   if(actual !== role) return <Redirect to={`/${actual}/dashboard`}/>;
-  if(page==="staff"&&me.data.user.role!=="superAdmin") return <Redirect to={`/${actual}/dashboard`}/>;
+   if(page==="staff"&&!["superAdmin","clinicAdmin"].includes(me.data.user.role)) return <Redirect to={`/${actual}/dashboard`}/>;
   if(me.data.user.role==="clinicAdmin"&&["masters","audit","demo","integrations","permissions","system-users","communication"].includes(page)) return <Redirect to="/admin/dashboard"/>;
   return <Portal identity={me.data} role={role} page={page}/>;
 }
@@ -122,4 +122,4 @@ function Providers(){
     <Route><div className="empty"><h1>Page Not Found</h1><p>This page is unavailable.</p><Link href="/">Return Home</Link></div></Route>
    </Switch><ToastHost/></PageSizeAccountBoundary></NativeAuthProvider></QueryClientProvider>;
 }
-export default function App(){ return <Router base={basePath} hook={useSettingsBrowserLocation}><Providers/></Router>; }
+export default function App(){ return <Router base={basePath} hook={useSettingsBrowserLocation} searchHook={useSettingsBrowserSearch}><Providers/></Router>; }

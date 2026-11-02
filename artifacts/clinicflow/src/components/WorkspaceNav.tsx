@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { Activity, LayoutDashboard, CalendarDays, Users as UsersIcon, Building2, MapPin, Settings, ChevronDown, Clock3, QrCode, SlidersHorizontal, FileText, UserRound, Plus, ShieldCheck, MessageSquare } from "lucide-react";
 import { title } from "../resources";
+import { workspaceHref } from "../lib/workspace-navigation";
 
-const icons: Record<string, any> = { dashboard: LayoutDashboard, appointments: CalendarDays, queue: Activity, clinic: Building2, clinics: Building2, branches: MapPin, patients: UsersIcon, users: UsersIcon, settings: Settings, reports: FileText, audit: ShieldCheck, availability: Clock3, exceptions: CalendarDays, qrs: QrCode, masters: SlidersHorizontal, profile: UserRound, book: Plus, demo: QrCode, "system-users": UserRound, communication: MessageSquare, templates: FileText };
+const icons: Record<string, any> = { dashboard: LayoutDashboard, appointments: CalendarDays, queue: Activity, clinic: Building2, clinics: Building2, branches: MapPin, patients: UsersIcon, staff: UsersIcon, users: UsersIcon, settings: Settings, reports: FileText, audit: ShieldCheck, availability: Clock3, exceptions: CalendarDays, qrs: QrCode, masters: SlidersHorizontal, profile: UserRound, book: Plus, demo: QrCode, "system-users": UserRound, communication: MessageSquare, templates: FileText };
 
 export function navLabel(p: string, role: string) {
   if (p === "templates") return "Notifications";
@@ -11,6 +12,7 @@ export function navLabel(p: string, role: string) {
   if (p === "permissions") return "Roles & Permissions";
   if (p === "integrations") return "Integrations";
   if (p === "users") return role === "admin" ? "Users" : "Staff";
+   if (p === "staff") return "Staff";
   if (p === "system-users") return "System users";
   if (p === "book") return role === "patient" ? "Book Now" : "Book Appointment";
   if (p === "queue" && role === "patient") return "My Queue";
@@ -21,7 +23,7 @@ export function navLabel(p: string, role: string) {
 type Entry = { kind: "link"; page: string } | { kind: "group"; id: string; name: string; icon: any; pages: string[] };
 const layout: Entry[] = [
   { kind: "link", page: "dashboard" }, { kind: "link", page: "book" }, { kind: "link", page: "appointments" }, { kind: "link", page: "queue" }, { kind: "link", page: "patients" },
-  { kind: "link", page: "clinic" }, { kind: "link", page: "clinics" }, { kind: "link", page: "users" },
+   { kind: "link", page: "clinic" }, { kind: "link", page: "clinics" }, { kind: "link", page: "staff" }, { kind: "link", page: "users" },
   { kind: "link", page: "availability" }, { kind: "link", page: "qrs" },
   { kind: "link", page: "reports" }, { kind: "link", page: "communication" }, { kind: "link", page: "templates" }, { kind: "link", page: "settings" }, { kind: "link", page: "profile" },
 ];
@@ -33,7 +35,7 @@ export function WorkspaceNav({ navigation, role, page, onNavigate, collapsed = f
   const leaf = (p: string, child = false) => {
     const Icon = icons[p] || FileText;
     const active=p===page||(p==="clinics"&&role==="admin"&&page==="clinic"&&!navigation.includes("clinic"));
-    return <Link key={p} href={`/${role}/${p}`} className={`wnav-link${child ? " child" : ""}${active ? " active" : ""}`} title={collapsed ? navLabel(p, role) : undefined} aria-current={active ? "page" : undefined} onClick={onNavigate} data-testid={`nav-${p}`}><Icon size={18} aria-hidden /><span className="wnav-label">{navLabel(p, role)}</span></Link>;
+    return <Link key={p} href={workspaceHref(role,p)} className={`wnav-link${child ? " child" : ""}${active ? " active" : ""}`} title={collapsed ? navLabel(p, role) : undefined} aria-current={active ? "page" : undefined} onClick={onNavigate} data-testid={`nav-${p}`}><Icon size={18} aria-hidden /><span className="wnav-label">{navLabel(p, role)}</span></Link>;
   };
   return <nav className="wnav" aria-label="Workspace">{layout.map(e => {
     if (e.kind === "link") return navigation.includes(e.page) ? leaf(e.page) : null;

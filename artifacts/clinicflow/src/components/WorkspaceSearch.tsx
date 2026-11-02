@@ -17,14 +17,16 @@ import "./workspace-search.css";
 import { openQrInline } from "@/lib/qr-inline";
 import { friendlyError } from "../lib/friendly-error";
 import { RecoveryActions } from "./RecoveryActions";
+import { staffHref, workspaceFunctions, workspaceHref } from "../lib/workspace-navigation";
+import { clinicWorkspaceHref } from "../lib/clinic-navigation";
 
 /** Real, permitted quick actions only: each target is an existing route for this role. */
 export function quickActions(role: string, navigation: string[]) {
   const out: { id: string; label: string; href: string; inline?: boolean }[] = [];
-  if (role === "patient" ? navigation.includes("book") : navigation.includes("appointments")) out.push({ id: "book", label: role === "patient" ? "Book Now" : "Book Appointment", href: `/${role}/book` });
-  if (role !== "patient" && navigation.includes("queue")) out.push({ id: "queue", label: "Open Live Queue", href: `/${role}/queue` });
+  if (role === "patient" ? navigation.includes("book") : navigation.includes("appointments")) out.push({ id: "book", label: role === "patient" ? "Book Now" : "Book Appointment", href: workspaceHref(role,"book") });
+  if (role !== "patient" && navigation.includes("queue")) out.push({ id: "queue", label: "Open Live Queue", href: workspaceHref(role,"queue") });
   if (role !== "patient" && navigation.includes("queue")) out.push({ id: "check-in", label: "Validate Appointment QR", href: "/check-in", inline: true });
-  if (navigation.includes("profile")) out.push({ id: "profile", label: "My Profile", href: `/${role}/profile` });
+  if (navigation.includes("profile")) out.push({ id: "profile", label: "My Profile", href: workspaceHref(role,"profile") });
   return out;
 }
 
@@ -39,13 +41,13 @@ export function sourceListingHref(source: SearchSource, role: string, navigation
   switch (source) {
     case "patients": return `/${role}/patients?search=${q}`;
     case "appointments": return role !== "patient" && !navigation.includes("appointments") ? `/${role}/queue` : `/${role}/appointments?view=all&search=${q}`;
-    case "receptionists": return `/${role}/users?tab=receptionists&search=${q}`;
-    case "clinicAdmins": return `/${role}/users?tab=admins&search=${q}`;
-    case "doctors": return `/${role}/users?tab=doctors&search=${q}`;
+    case "receptionists": return staffHref(role,"receptionists",{search});
+    case "clinicAdmins": return staffHref(role,"admins",{search});
+    case "doctors": return staffHref(role,"doctors",{search});
     case "clinics": return `/${role}/clinics?search=${q}`;
-    case "branches": return `/${role}/branches?search=${q}`;
+    case "branches": return workspaceHref(role,"branches",{search});
     case "schedules": return `/${role}/availability?search=${q}`;
-    case "audit": return `/${role}/audit?search=${q}`;
+    case "audit": return workspaceHref(role,"audit",{search});
     case "reportClinics": case "reportDoctors": return reportSearchHref(role, { groupBy: source === "reportClinics" ? "clinic" : "doctor", ...reportSearchRange(today), search });
   }
 }
@@ -83,7 +85,7 @@ function fetchSource(source: SearchSource, role: string, navigation: string[], s
     case "clinics":
       return api.listClinics(params, options).then(d => ({ total: d.total, items: d.items.map(c => ({ id: c.id, label: c.name, detail: c.code, href: recordHref(role, "clinics", c.id, c.name) })) }));
     case "branches":
-      return api.listBranches(params, options).then(d => ({ total: d.total, items: d.items.map(b => ({ id: b.id, label: b.name, detail: b.clinicName, href: recordHref(role, "branches", b.id, b.name) })) }));
+      return api.listBranches(params, options).then(d => ({ total: d.total, items: d.items.map(b => ({ id: b.id, label: b.name, detail: b.clinicName, href: clinicWorkspaceHref(b.clinicId,"locations",new URLSearchParams({branchId:b.id}).toString()) })) }));
     case "schedules":
       // Exact schedule: doctor + location scope the listing (and its weekly editor); open=<id> selects the session.
       return api.listSchedules(params, options).then(d => ({ total: d.total, items: d.items.map(s => ({ id: s.id, label: s.doctorName ?? "Doctor session", detail: `${s.branchName} · ${s.startTime}–${s.endTime}`, href: recordHref(role, "availability", s.id, "", { doctorId: s.doctorId, branchId: s.branchId }) })) }));
@@ -104,6 +106,10 @@ function fetchSource(source: SearchSource, role: string, navigation: string[], s
 export function WorkspaceSearch({ navigation, role, page, userId }: {
   navigation: string[]; role: string; page: string; userId: string;
 }) {
+  const identity = api.useGetMe({query:{queryKey:api.getGetMeQueryKey()}});
+  const actualRole = identity.data?.user?.role || "";
+  const functions = workspaceFunctions(actualRole);
+  const sources = (category: SearchCategory) => categorySources(category, role, actualRole);
   const { prefs: preferences, toggleFavorite } = useNavigationPreferences(userId, role,role==="admin"&&navigation.includes("clinics")&&!navigation.includes("clinic"));
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -117,8 +123,8 @@ export function WorkspaceSearch({ navigation, role, page, userId }: {
   // "Today" follows the configured clinic timezone, the same rule the Appointments listing uses.
   const settings = api.useGetSettings({ query: { queryKey: api.getGetSettingsQueryKey(), staleTime: 60000, enabled: open } });
   const today = new Date().toLocaleDateString("en-CA", settings.data?.timezone ? { timeZone: settings.data.timezone } : undefined);
-  const allowed = navigation.join("|");
-  const categories = permittedCategories(role, navigation);
+  const allowed = `${actualRole}:${functions.join("|")}`;
+  const categories = permittedCategories(role, navigation, actualRole);
   const primary = PRIMARY_CATEGORIES.filter(c => categories.includes(c));
   const more = MORE_CATEGORIES.filter(c => categories.includes(c));
   const search = query.trim();
@@ -140,7 +146,7 @@ export function WorkspaceSearch({ navigation, role, page, userId }: {
 
   /** Load (or reload / extend) one source independently: its failure never blocks or re-runs the others. */
   const load = (source: SearchSource, pageNo: number, size: number, append: boolean) => {
-    if (!navigation.length || !categories.some(cat => categorySources(cat, role).includes(source))) return;
+    if (!categories.some(cat => sources(cat).includes(source))) return;
     controllers.current[source]?.abort();
     const controller = new AbortController();
     controllers.current[source] = controller;
@@ -160,19 +166,19 @@ export function WorkspaceSearch({ navigation, role, page, userId }: {
     if (!open || !searching) return;
     const timer = setTimeout(() => {
       const targets = tab === "all" ? categories : tab === "pages" ? [] : [tab];
-      for (const cat of targets) for (const source of categorySources(cat, role)) load(source, 1, tab === "all" ? PREVIEW_SIZE : PAGE_SIZE, false);
+      for (const cat of targets) for (const source of sources(cat)) load(source, 1, tab === "all" ? PREVIEW_SIZE : PAGE_SIZE, false);
     }, 300);
     const active = controllers.current;
     return () => { clearTimeout(timer); for (const controller of Object.values(active)) if (controller) controller.abort(); };
   }, [query, open, role, allowed, tab]);
 
   const close = () => { setOpen(false); setQuery(""); setGroups({}); setTab("all"); };
-  const pages = navigation.filter(p => navLabel(p, role).toLowerCase().includes(search.toLowerCase()));
+  const pages = functions.filter(p => navLabel(p, role).toLowerCase().includes(search.toLowerCase()));
   const shortcutList = (items: string[]) => items.filter(p => navigation.includes(p));
-  const pageLink = (target: string) => <Link key={target} href={`/${role}/${target}`} onClick={close}>{navLabel(target, role)}</Link>;
+  const pageLink = (target: string) => <Link key={target} href={workspaceHref(role,target)} onClick={close}>{navLabel(target, role)}</Link>;
   const switchTab = (next: SearchTab) => { setTab(next); inputRef.current?.focus(); };
   const tabButton = (key: SearchTab, label: string) => <button key={key} type="button" role="tab" tabIndex={tab===key?0:-1} aria-selected={tab === key} className="dq-tab ws-tab" onClick={() => switchTab(key)} data-testid={`search-tab-${key}`}>
-    <TabIcon name={key satisfies TabIconName}/>{label}{searching && key !== "all" && key !== "pages" && (() => { const total = categoryTotal(categorySources(key, role).map(src => groups[src]?.total)); return total !== null ? <span className="ws-tab-count">{total}</span> : null; })()}
+    <TabIcon name={key satisfies TabIconName}/>{label}{searching && key !== "all" && key !== "pages" && (() => { const total = categoryTotal(sources(key).map(src => groups[src]?.total)); return total !== null ? <span className="ws-tab-count">{total}</span> : null; })()}
   </button>;
 
   const directory = <>
@@ -184,7 +190,7 @@ export function WorkspaceSearch({ navigation, role, page, userId }: {
   </>;
   const pageList = (limit?: number) => <section><h3>{search ? "Pages" : "All Pages"}{limit && pages.length > limit && <button type="button" className="ws-see-all" onClick={() => switchTab("pages")}>See all {pages.length}</button>}</h3>
     <ul className="workspace-command-pages">{pages.slice(0, limit).map(p => <li key={p}>
-      <button type="button" onClick={() => { close(); navigate(`/${role}/${p}`); }}>{navLabel(p, role)}</button>
+      <button type="button" onClick={() => { close(); navigate(workspaceHref(role,p)); }}>{navLabel(p, role)}</button>
       <button type="button" aria-label={`${preferences.favorites.includes(p) ? "Remove" : "Add"} ${navLabel(p, role)} ${preferences.favorites.includes(p) ? "from" : "to"} favorites`} aria-pressed={preferences.favorites.includes(p)} onClick={() => toggleFavorite(p)}><Star size={16} fill={preferences.favorites.includes(p) ? "currentColor" : "none"} aria-hidden/></button>
     </li>)}</ul>{!pages.length && <p className="muted">No matching pages.</p>}</section>;
 
@@ -204,8 +210,8 @@ export function WorkspaceSearch({ navigation, role, page, userId }: {
     </div>;
   };
   const categoryBlock = (cat: SearchCategory, preview: boolean) => {
-    const sources = categorySources(cat, role);
-    const states = sources.map(src => groups[src] ?? EMPTY_STATE);
+    const categorySourceList = sources(cat);
+    const states = categorySourceList.map(src => groups[src] ?? EMPTY_STATE);
     const shown = states.reduce((n, st) => n + st.items.length, 0);
     const total = categoryTotal(states.map(st => st.total));
     const loading = states.some(st => st.loading) && !shown;
@@ -213,7 +219,7 @@ export function WorkspaceSearch({ navigation, role, page, userId }: {
     return <section key={cat} data-testid={`search-group-${cat}`}>
       <h3>{CATEGORY_LABEL[cat]}<span className="ws-count">{loading ? "Searching…" : failed ? "" : total === null && states.some(st => st.total === null && st.items.length) ? `${shown} shown` : countLabel(shown, total)}</span>
         {preview && !failed && (total === null ? shown > 0 : total > shown) && <button type="button" className="ws-see-all" onClick={() => switchTab(cat)} data-testid={`search-see-all-${cat}`}>{total === null ? "See all" : `See all ${total}`}</button>}</h3>
-      {sources.map(src => sourceBlock(src, preview, sources.length > 1))}
+      {categorySourceList.map(src => sourceBlock(src, preview, categorySourceList.length > 1))}
     </section>;
   };
 

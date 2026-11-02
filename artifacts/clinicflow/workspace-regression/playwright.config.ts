@@ -7,7 +7,8 @@ export default defineConfig({
   // Independent runs must not delete each other's traces during Playwright startup.
   // The default still discovers every workspace spec; projects only isolate artifacts.
   projects: [
-    { name: "workspace", testIgnore: ["qr-validation.spec.ts", "schedule-persistence.spec.ts", "doctor-context.spec.ts", "users-administration.spec.ts", "compact-ui.spec.ts", "tab-presentation.spec.ts"], outputDir: "./test-results/workspace" },
+    { name: "workspace", testIgnore: ["role-layouts-auth.spec.ts", "qr-validation.spec.ts", "schedule-persistence.spec.ts", "doctor-context.spec.ts", "users-administration.spec.ts", "compact-ui.spec.ts", "tab-presentation.spec.ts"], outputDir: "./test-results/workspace" },
+    { name: "role-layouts-auth", testMatch: "role-layouts-auth.spec.ts", outputDir: resolve("generated-artifacts/role-layouts-auth/results") },
     { name: "tab-presentation", testMatch: "tab-presentation.spec.ts", outputDir: resolve("generated-artifacts/tabs/results") },
     { name: "compact-ui", testMatch: "compact-ui.spec.ts", outputDir: resolve("generated-artifacts/compact-ui/results") },
     { name: "doctor-context", testMatch: "doctor-context.spec.ts", outputDir: "./test-results/doctor-context" },
@@ -29,7 +30,7 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "pnpm --dir .. exec vite --config workspace-regression/vite.config.ts",
+    command: process.env.ROLE_LAYOUTS_AUTH==="1" ? "node ../../../scripts/schedule-persistence-server.mjs" : "pnpm --dir .. exec vite --config workspace-regression/vite.config.ts",
     url: "http://127.0.0.1:43720/?mode=resource&resource=clinics",
     reuseExistingServer: false,
     timeout: 120000,

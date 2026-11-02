@@ -1,4 +1,5 @@
 import { clinicWorkspaceHref } from "./clinic-navigation";
+import { workspaceFunctions, workspaceHref } from "./workspace-navigation";
 // Pure category model for workspace search (unit tested without React).
 export type SearchCategory = "patients" | "appointments" | "staff" | "clinics" | "branches" | "schedules" | "reports" | "audit";
 export type SearchTab = "all" | "pages" | SearchCategory;
@@ -6,7 +7,7 @@ export type SearchTab = "all" | "pages" | SearchCategory;
 export const PRIMARY_CATEGORIES: SearchCategory[] = ["patients", "appointments", "staff"];
 export const MORE_CATEGORIES: SearchCategory[] = ["clinics", "branches", "schedules", "reports", "audit"];
 export const CATEGORY_LABEL: Record<SearchCategory, string> = {
-  patients: "Patients", appointments: "Appointments", staff: "Staff", clinics: "Clinic Groups", branches: "Clinics",
+  patients: "Patients", appointments: "Appointments", staff: "Staff", clinics: "Clinics", branches: "Locations",
   schedules: "Schedules", reports: "Reports", audit: "Audit Logs",
 };
 /** Results per request: All shows a short preview; a category tab pages in larger, bounded steps. */
@@ -14,16 +15,17 @@ export const PREVIEW_SIZE = 3;
 export const PAGE_SIZE = 10;
 export const MAX_CATEGORY_ROWS = 100;
 
-/** Categories this role may search. Mirrors navigation permissions; the API still enforces scope. */
-export function permittedCategories(role: string, navigation: string[]): SearchCategory[] {
-  const has = (p: string) => navigation.includes(p);
+/** Supported role functions include nested workspaces. The server, never sidebar visibility, authorizes scope. */
+export function permittedCategories(role: string, _navigation: string[], actualRole = role): SearchCategory[] {
+  const functions = workspaceFunctions(actualRole);
+  const has = (p: string) => functions.includes(p);
   if (role === "patient") return has("appointments") ? ["appointments"] : [];
   const out: SearchCategory[] = [];
   if (has("patients")) out.push("patients");
   // One appointment category: today's visits deep-link to the queue session, so no separate queue group duplicates them.
   if (has("appointments") || has("queue")) out.push("appointments");
-  if (has("users")) out.push("staff");
-  if (has("clinics") && role !== "doctor") out.push("clinics");
+  if (has("staff")) out.push("staff");
+  if (has("clinics")) out.push("clinics");
   if (has("branches")) out.push("branches");
   if (has("availability")) out.push("schedules");
   if (has("reports")) out.push("reports");
@@ -37,11 +39,11 @@ export function permittedCategories(role: string, navigation: string[]): SearchC
 export type SearchSource = "patients" | "appointments" | "receptionists" | "clinicAdmins" | "doctors" | "clinics" | "branches" | "schedules" | "reportClinics" | "reportDoctors" | "audit";
 export const SOURCE_LABEL: Record<SearchSource, string> = {
   patients: "Patients", appointments: "Appointments", receptionists: "Receptionists", clinicAdmins: "Clinic Admins", doctors: "Doctors",
-  clinics: "Clinic Groups", branches: "Clinics", schedules: "Schedules", reportClinics: "Clinic Reports", reportDoctors: "Doctor Reports", audit: "Audit Logs",
+  clinics: "Clinics", branches: "Locations", schedules: "Schedules", reportClinics: "Clinic Reports", reportDoctors: "Doctor Reports", audit: "Audit Logs",
 };
-export function categorySources(cat: SearchCategory, role: string): SearchSource[] {
+export function categorySources(cat: SearchCategory, role: string, actualRole = role): SearchSource[] {
   switch (cat) {
-    case "staff": return role === "admin" ? ["receptionists", "clinicAdmins", "doctors"] : ["receptionists"];
+    case "staff": return actualRole === "superAdmin" ? ["receptionists", "clinicAdmins", "doctors"] : actualRole === "clinicAdmin" ? ["receptionists", "doctors"] : ["receptionists"];
     case "reports": return role === "doctor" ? ["reportDoctors"] : ["reportClinics", "reportDoctors"];
     default: return [cat] as SearchSource[];
   }
@@ -65,7 +67,7 @@ export const canLoadMore = (shown: number, total: number | null) => total !== nu
 export function recordHref(role: string, page: string, id: string, search: string, extra: Record<string, string> = {}) {
   if(role==="admin"&&page==="clinics")return clinicWorkspaceHref(id,"details",new URLSearchParams(extra).toString());
   const q = new URLSearchParams({ ...(search ? { search } : {}), open: id, ...extra });
-  return `/${role}/${page}?${q}`;
+  return workspaceHref(role, page, Object.fromEntries(q));
 }
 export function appointmentHref(role: string, a: { id: string; reference: string }) {
   const q = new URLSearchParams({ view: "all", search: a.reference || a.id, appointment: a.id });

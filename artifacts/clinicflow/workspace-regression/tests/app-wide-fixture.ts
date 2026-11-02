@@ -18,7 +18,8 @@ export async function appWideFixture(page: Page, role: string) {
     seen.push(p);
     if(request.method()!=="GET"){writes.push(`${request.method()} ${p}`);return route.fulfill({status:405,json:{error:"Writes are not allowed in layout acceptance"}});}
     let json:unknown;
-    if(p==="/auth/status")json={authenticated:role!=="anonymous",role,staffPasswordVerified:true};
+    if(p==="/auth/csrf")json={csrfToken:"fictional-fixture-csrf"};
+    else if(p==="/auth/status")json={authenticated:role!=="anonymous",role,staffPasswordVerified:true};
     else if(p==="/me"){
       if(role==="anonymous")return route.fulfill({status:401,json:{error:"Sign in to continue"}});
       json={user,needsOnboarding:false,doctorId:role==="doctor"?"d1":null,patientId:role==="patient"?"p1":null,clinicIds:["c1"],branchIds:["b1"],assignments:[{clinicId:"c1",branchId:"b1",doctorId:"d1"}],permissions:{}};
@@ -32,6 +33,7 @@ export async function appWideFixture(page: Page, role: string) {
     else if(p==="/branches/b1")json=branch;
     else if(p==="/doctors/d1")json={...doctor,...(role==="doctor"?{fullName:user.fullName}:{})};
     else if(p==="/patients/p1")json={...patient,...(role==="patient"?{fullName:user.fullName}:{})};
+    else if(p===`/users/${user.id}`)json=user;
     else if(p==="/staff-assignment-options")json={clinics:[clinic],branches:[branch],doctors:[doctor],pagination:{clinics:{total:1},branches:{total:1},doctors:{total:1}}};
     else if(p==="/appointments")json=list([visit]);
     else if(p==="/appointments/a1")json=visit;

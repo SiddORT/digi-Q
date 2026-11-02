@@ -59,7 +59,7 @@ test("legacy device views stay local and import only on explicit action", () => 
 const { permittedCategories, countLabel, canLoadMore, recordHref, appointmentHref } = await loadModule(new URL("../lib/search-categories.ts", import.meta.url));
 test("search categories: permissions, honest counts, exact-record links", () => {
   assert.deepEqual(permittedCategories("patient", ["appointments", "book"]), ["appointments"]);
-  assert.deepEqual(permittedCategories("receptionist", ["patients", "appointments", "queue"]), ["patients", "appointments"], "queue never adds a duplicate appointments group");
+  assert.deepEqual(permittedCategories("receptionist", ["patients", "appointments", "queue"]), ["patients", "appointments", "schedules"], "nested authorized functions do not depend on sidebar presentation");
   assert.equal(countLabel(3, 47), "Showing 3 of 47");
   assert.equal(countLabel(2, 2), "2 matches");
   assert.equal(countLabel(0, 0), "No matches");
@@ -70,7 +70,7 @@ test("search categories: permissions, honest counts, exact-record links", () => 
 
 test("search sources: distinct record types, exact summed totals, cap hands off to the full listing", async () => {
   const m = await loadModule(new URL("../lib/search-categories.ts", import.meta.url));
-  assert.deepEqual(m.categorySources("staff", "admin"), ["receptionists", "clinicAdmins", "doctors"]);
+  assert.deepEqual(m.categorySources("staff", "admin", "superAdmin"), ["receptionists", "clinicAdmins", "doctors"]);
   assert.deepEqual(m.categorySources("staff", "clinic"), ["receptionists"]);
   assert.equal(m.categoryTotal([3, 0, 12]), 15);
   assert.equal(m.categoryTotal([3, null]), null, "no total claimed until every source reports");

@@ -8,7 +8,7 @@ export type WorkspaceTab = { id:string; label:string; icon:TabIconName };
 /** Automatic activation with focus following the committed selection.
  * A caller may reject a tab change to protect unsaved edits; in that case
  * focus stays on the original tab instead of moving into hidden content. */
-export function WorkspaceTabs({tabs,area,onSelect,label,testIdPrefix="tab-"}:{tabs:WorkspaceTab[];area:string;onSelect:(id:string)=>void;label:string;testIdPrefix?:string}){
+export function WorkspaceTabs({tabs,area,onSelect,label,testIdPrefix="tab-",panelIdPrefix,disabled=false}:{tabs:WorkspaceTab[];area:string;onSelect:(id:string)=>void;label:string;testIdPrefix?:string;panelIdPrefix?:string;disabled?:boolean}){
    const root=useTabStripVisibility(area);
   const keyboardTarget=useRef<string|null>(null);
   useEffect(()=>{
@@ -17,7 +17,7 @@ export function WorkspaceTabs({tabs,area,onSelect,label,testIdPrefix="tab-"}:{ta
     keyboardTarget.current=null;
   },[area]);
   return <div ref={root} className="dq-tabs workspace-tabs" role="tablist" aria-label={label}>
-    {tabs.map((tab,index)=><button className="dq-tab" key={tab.id} type="button" role="tab" aria-selected={area===tab.id} tabIndex={area===tab.id?0:-1} onClick={()=>{keyboardTarget.current=null;onSelect(tab.id);}} onKeyDown={event=>{
+    {tabs.map((tab,index)=><button className="dq-tab" key={tab.id} id={panelIdPrefix?`${panelIdPrefix}tab-${tab.id}`:undefined} aria-controls={panelIdPrefix?`${panelIdPrefix}panel-${tab.id}`:undefined} disabled={disabled} type="button" role="tab" aria-selected={area===tab.id} tabIndex={area===tab.id?0:-1} onClick={()=>{keyboardTarget.current=null;onSelect(tab.id);}} onKeyDown={event=>{
       let next:number;
       switch(event.key){
         case "ArrowRight":next=(index+1)%tabs.length;break;

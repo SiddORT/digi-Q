@@ -55,14 +55,14 @@ export async function updateListingStatus(resource:string,row:any,status:"active
   throw new Error("Status changes are not supported for this list.");
 }
 const html=(value:unknown)=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]!));
-export function ListingBulk({selection,resource,columns,identity,context}:{selection:ReturnType<typeof useListingSelection>;resource:string;columns:string[];identity?:api.Identity;context:string}) {
+export function ListingBulk({selection,resource,columns,identity,context,allowStatus=true}:{selection:ReturnType<typeof useListingSelection>;resource:string;columns:string[];identity?:api.Identity;context:string;allowStatus?:boolean}) {
   const client=useQueryClient();
   const [action,setAction]=useState<"active"|"inactive"|null>(null);
   const [busy,setBusy]=useState(false);
   const lock=useRef(false);
   const [results,setResults]=useState<string[]>([]);
   useEffect(()=>{setAction(null);if(!lock.current)setResults([]);},[context]);
-  const canStatus=identity&&["superAdmin","clinicAdmin","doctor"].includes(identity.user?.role||"")&&["clinics","branches","doctors","users"].includes(resource);
+  const canStatus=allowStatus&&identity&&["superAdmin","clinicAdmin","doctor"].includes(identity.user?.role||"")&&["clinics","branches","doctors","users"].includes(resource);
   async function run(status:"active"|"inactive"){
     if(lock.current||!identity)return;lock.current=true;setBusy(true);
     const rows=[...selection.selected], outcomes:string[]=[], summary:BulkOutcome[]=[];

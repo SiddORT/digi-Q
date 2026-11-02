@@ -44,7 +44,10 @@ test("live profile refresh keeps unsaved fields; a successful response makes sub
   assert.match(editor,/const dirtyFields=form\.formState\.dirtyFields/);
   assert.match(editor,/keepDirtyValues:keepDraft,keepErrors:keepDraft,keepTouched:keepDraft/);
   assert.match(editor,/const keepDraft=synchronized\.current\.revision===savedRevision/);
-  assert.match(profile,/const liveEditorProps=\{refreshInitial:true,savedRevision,mobileVerificationHelp:true\}/);
+  assert.match(profile,/const liveEditorProps=\{refreshInitial:true,savedRevision,mobileVerificationHelp:true,onDirtyChange:guard\.setDirty\}/);
   assert.match(profile,/<Editor \{\.\.\.liveEditorProps\}/);
   assert.match(profile,/client\.setQueryData\(api\.getGetDoctorQueryKey\(identity\.doctorId\),saved\)/);
+  const guard=source("../lib/use-inline-draft-guard.tsx");
+  assert.match(guard,/saved: discard/,"accepted responses advance the editor baseline instead of retaining old dirty callbacks");
+  assert.match(profile,/Object\.keys\(submitted\)\.length===1&&submitted\.status==="active"/,"independent doctor reactivation must not clear a profile draft");
 });

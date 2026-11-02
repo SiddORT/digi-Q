@@ -1,7 +1,7 @@
 import {useEffect} from "react";
-import {useBrowserLocation,navigate as browserNavigate} from "wouter/use-browser-location";
+import {useBrowserLocation,useSearch as useBrowserSearch,navigate as browserNavigate} from "wouter/use-browser-location";
 
-type ExitGuard={pathname:string;onExit:(destination:string)=>void};
+type ExitGuard={pathname:string;search?:string;onExit:(destination:string)=>void;onNavigate?:(destination:string,proceed:()=>void)=>void};
 let settingsGuard:ExitGuard|null=null;
 const POSITION="digiqHistoryPosition";
 export function settingsHistoryPosition():number|null{
@@ -12,12 +12,23 @@ export function settingsHistoryPosition():number|null{
 if(typeof window!=="undefined"&&settingsHistoryPosition()===null)
   window.history.replaceState({...window.history.state,[POSITION]:0},"",window.location.href);
 function navigate(to:Parameters<typeof browserNavigate>[0],options:Parameters<typeof browserNavigate>[1]={}){
-  const position=settingsHistoryPosition()??0;
-  browserNavigate(to,{...options,state:{...(options?.state||{}),[POSITION]:options?.replace?position:position+1}});
+  const proceed=()=>{
+    const position=settingsHistoryPosition()??0;
+    browserNavigate(to,{...options,state:{...(options?.state||{}),[POSITION]:options?.replace?position:position+1}});
+  };
+  const target=new URL(to,window.location.href);
+  if(settingsGuard?.onNavigate&&(target.pathname!==settingsGuard.pathname||settingsGuard.search!==undefined&&target.search!==settingsGuard.search)){
+    settingsGuard.onNavigate(target.href,proceed);return;
+  }
+  proceed();
 }
 export function setSettingsExitGuard(guard:ExitGuard|null){settingsGuard=guard;}
 export function settingsGuardedPath(pathname:string){
   return settingsGuard&&pathname!==settingsGuard.pathname?settingsGuard.pathname:pathname;
+}
+export function useSettingsBrowserSearch(){
+  const search=useBrowserSearch();
+  return settingsGuard?.search!==undefined?settingsGuard.search:search;
 }
 /** Native history can notify React before a component's event listener runs.
  * Freeze the router's settings route until its owner resolves the exit prompt,
