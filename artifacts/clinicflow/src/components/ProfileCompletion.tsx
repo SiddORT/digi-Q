@@ -28,9 +28,12 @@ export function canCompleteProfile(kind: Kind, record: any, identity?: api.Ident
   if (kind === "doctors") return identity?.doctorId === record.id || actor.role === "clinicAdmin" && record.ownerAdminId === actor.id;
   return actor.id === record.id || ["clinicAdmin", "doctor"].includes(actor.role);
 }
-export function ProfileValue({ kind, record, field, editable, children, blocked = false }: {
+export function ProfileValue({ kind, record, field, editable, children, blocked = false, emptyDash = false }: {
   kind: Kind; record: any; field: string; editable: boolean; children?: ReactNode; blocked?: boolean;
+  /** Opt-in: read-only missing values render a dash instead of "Not entered". */
+  emptyDash?: boolean;
 }) {
+  const notEntered = emptyDash ? <span className="muted" aria-label="Not entered" data-testid={`text-missing-${field}`}>—</span> : <span className="muted">Not entered</span>;
   const client = useQueryClient();
   const actor = useDirectoryActor();
   const [open, setOpen] = useState(false), [busy, setBusy] = useState(false), [dirty, setDirty] = useState(false);
@@ -58,10 +61,10 @@ export function ProfileValue({ kind, record, field, editable, children, blocked 
   // The server rechecks permission and the saved baseline on every submission.
   if (!open) {
     if (!missing) return <>{children ?? String(record[field])}</>;
-    if (!editable || !supported[kind].includes(field)) return <span className="muted">Not entered</span>;
+    if (!editable || !supported[kind].includes(field)) return notEntered;
     if (access.isLoading) return <span role="status">Checking access…</span>;
     if (access.error) return <span>Unable to check access. <button type="button" className="text-link" onClick={()=>void access.refetch()}>Retry</button></span>;
-    if (!access.data?.fields.includes(field)) return <span className="muted">Not entered</span>;
+    if (!access.data?.fields.includes(field)) return notEntered;
   }
   const start = async () => {
     if (opening) return;
@@ -96,15 +99,15 @@ export function ProfileValue({ kind, record, field, editable, children, blocked 
     </AppDialog>
   </>;
 }
-export function ProfileFacts({ kind, record, editable, fields }: { kind: Kind; record: any; editable: boolean; fields?: string[] }) {
+export function ProfileFacts({ kind, record, editable, fields, emptyDash = false, testId }: { kind: Kind; record: any; editable: boolean; fields?: string[]; emptyDash?: boolean; testId?: string }) {
   const preferences = useDateTimePreferences();
   const keys = fields || supported[kind].filter(key => kind !== "users" || key !== "photoUrl");
   return <RecordFacts facts={keys.filter(key => !(key === "age" && record.dateOfBirth)).map(key => {
     const value = key === "age" ? patientAgeLabel(record) : key === "dateOfBirth" ? formatDate(record[key], {...preferences,...record}) :
       key === "specializationId" ? record.specializationName : key === "qualificationIds" ? record.qualificationNames?.join(", ") :
       key === "gender" ? title(record[key] || "") : Array.isArray(record[key]) ? record[key].join(", ") : record[key];
-    return [key === "mobile" ? "Profile mobile" : title(key), <ProfileValue key={key} kind={kind} record={record} field={key} editable={editable}>{value}</ProfileValue>];
-  })} />;
+    return [key === "mobile" ? "Profile mobile" : title(key), <ProfileValue key={key} kind={kind} record={record} field={key} editable={editable} emptyDash={emptyDash}>{value}</ProfileValue>];
+  })} testId={testId} />;
 }
 export function ProfileRecordSummary({ kind, id, identity, self = false }: { kind: Kind; id: string; identity: api.Identity; self?: boolean }) {
   const query = useQuery<api.Patient|api.Doctor|api.User>({

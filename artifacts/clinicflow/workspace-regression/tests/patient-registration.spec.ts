@@ -89,7 +89,8 @@ for (const actor of ["sa", "adm", "rec"]) {
         }
         await next.getByTestId(`button-patient-details-${id}`).click();
         await expect(next.getByRole("dialog")).toContainText(`Browser Registration ${actor}`);
-        await expect(next.getByTestId("panel-patient-timeline")).toContainText("No appointments");
+        await next.getByTestId("tab-patient-appointments").click();
+        await expect(next.getByTestId("panel-patient-appointments")).toContainText("No appointments");
         await next.getByTestId("tab-patient-documents").click();
         await expect(next.getByTestId("panel-patient-documents")).not.toContainText("could not");
       } finally { await context.close(); }
@@ -155,7 +156,7 @@ for (const actor of ["sa", "adm", "rec"]) {
   });
 }
 
-test("multiple-location list context and workspace-pinned registration retain the chosen location", async ({ page }) => {
+test("multiple-location list context and booking workspace pin retain the chosen location", async ({ page }) => {
   await connect(page, "adm");
   await page.goto(listUrl("&clinicId=c2&branchId=b2"));
   await page.getByTestId("button-add-patients").click();
@@ -164,15 +165,9 @@ test("multiple-location list context and workspace-pinned registration retain th
   await expect(page.getByTestId("notice-patient-registered")).toBeVisible();
   const second = await h.call("adm", "GET", "/patients?search=Second%20Clinic%20Registration");
   expect(second.data.items[0]).toMatchObject({ clinicId: "c2", branchId: "b2" });
+  // Patients is a list-first browsing page and intentionally ignores the remembered workspace pin.
+  // The actual booking flow below verifies that the pin controls registration in booking context.
   await page.addInitScript(() => localStorage.setItem("dq.workspace.branch.adm", "b2"));
-  await page.goto(listUrl("&pinned=1"));
-  await page.getByTestId("button-add-patients").click();
-  await page.getByTestId("input-fullName").fill("Pinned Clinic Registration");
-  await page.getByTestId("button-save").click();
-  await expect(page.getByTestId("notice-patient-registered")).toBeVisible();
-  const pinned = await h.call("adm", "GET", "/patients?search=Pinned%20Clinic%20Registration");
-  expect(pinned.data.items[0]).toMatchObject({ clinicId: "c2", branchId: "b2" });
-  await noVisits(pinned.data.items[0].id);
   await page.goto(`/?mode=registration&registrationPage=booking&pinned=1&clinic=c1&branch=b1&doctor=d1&date=${bookingDate}`);
   await page.getByTestId("button-booking-continue-visit").click();
   await page.getByRole("button", { name: "Register a New Patient", exact: true }).click();

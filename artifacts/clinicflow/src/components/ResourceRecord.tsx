@@ -17,8 +17,10 @@ export function ResourceRecord({ resource, row, column, columns, portal, superad
     qrs: ["clinicName", "branchName", "doctorName"],
   };
   const key = (keys[resource] || []).find(k => row[k] && !columns.includes(k));
+  // Patients: the patient code is the secondary identifier (searchable server-side); contacts have their own columns.
   const secondary = superadminClinics
     ? (row.code ? `Code: ${row.code}` : "Code not set")
+    : resource === "patients" ? (row.code ? `ID ${row.code}` : "")
     : key ? String(row[key]) : "";
 
   return <div className="admin-record">
