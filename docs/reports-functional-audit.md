@@ -2,6 +2,12 @@
 
 Audit date: 30 October 2026. Product: DigiQ / ClinicFlow.
 
+**Current diagnosis follow-up (31 October):** see
+[Reports access and correctness diagnosis](reports-access-diagnosis.md).
+It rechecks these defects, adds real-route saved clinic-bound authorization
+reproductions and records the still-unresolved hosted incident. The observations
+below remain the original audit, not evidence of a new hosted verification.
+
 ## Answer
 
 **Reports cannot currently be described as complete and correct for every role/filter.**
