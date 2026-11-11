@@ -1,8 +1,16 @@
 import { defineConfig } from "drizzle-kit";
 import path from "path";
+import dotenv from "dotenv";
+
+// Load root project .env
+dotenv.config({
+  path: path.resolve(__dirname, "../../.env"),
+});
 
 if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL, ensure the database is provisioned");
+  throw new Error(
+    "DATABASE_URL is missing. Check your root .env file."
+  );
 }
 
 export default defineConfig({
