@@ -20,22 +20,18 @@ for (const [key, value] of Object.entries(env)) {
   }
 }
 
-console.log('Vite environment loaded:', {
-  databaseUrl: Boolean(process.env.DATABASE_URL),
-  frontendPort: process.env.FRONTEND_PORT,
-  basePath: process.env.BASE_PATH,
-});
-
-const rawPort = process.env.FRONTEND_PORT;
+const rawPort = process.env.NODE_ENV !== 'production' ? process.env.FRONTEND_PORT : process.env.PORT;
 
 if (!rawPort) {
-  throw new Error('FRONTEND_PORT environment variable is required.');
+  throw new Error(
+    `${process.env.NODE_ENV !== 'production' ? 'FRONTEND_PORT' : 'PORT'} environment variable is required.`
+  );
 }
 
 const port = Number(rawPort);
 
 if (!Number.isInteger(port) || port <= 0 || port > 65535) {
-  throw new Error(`Invalid FRONTEND_PORT value: "${rawPort}"`);
+  throw new Error(`Invalid ${process.env.NODE_ENV !== 'production' ? 'FRONTEND_PORT' : 'PORT'} value: "${rawPort}"`);
 }
 
 const basePath = process.env.BASE_PATH;
