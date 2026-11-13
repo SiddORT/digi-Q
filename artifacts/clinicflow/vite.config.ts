@@ -1,31 +1,43 @@
+
 import path from 'path';
 import { readFile } from 'node:fs/promises';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
 
-const rawPort = process.env.PORT;
+const projectRoot = path.resolve(import.meta.dirname, '../..');
+
+// Load environment variables from the root .env file.
+const env = loadEnv( process.env.NODE_ENV || 'development', projectRoot, '', );
+
+// Make loaded environment variables available to SSR modules.
+// Existing system environment variables take precedence.
+for (const [key, value] of Object.entries(env)) {
+  if (process.env[key] === undefined) {
+    process.env[key] = value;
+  }
+}
+
+const rawPort = process.env.NODE_ENV !== 'production' ? process.env.FRONTEND_PORT : process.env.PORT;
 
 if (!rawPort) {
   throw new Error(
-    'PORT environment variable is required but was not provided.',
+    `${process.env.NODE_ENV !== 'production' ? 'FRONTEND_PORT' : 'PORT'} environment variable is required.`
   );
 }
 
 const port = Number(rawPort);
 
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
+if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+  throw new Error(`Invalid ${process.env.NODE_ENV !== 'production' ? 'FRONTEND_PORT' : 'PORT'} value: "${rawPort}"`);
 }
 
 const basePath = process.env.BASE_PATH;
 
 if (!basePath) {
-  throw new Error(
-    'BASE_PATH environment variable is required but was not provided.',
-  );
+  throw new Error('BASE_PATH environment variable is required.');
 }
 
 export default defineConfig({
@@ -34,18 +46,34 @@ export default defineConfig({
     {
       name: 'public-clinic-initial-html',
       configureServer(server) {
-        // Workspace exports are TypeScript with bundler-style imports. Load
-        // them through Vite's server module runner, not native Node imports.
-        let middleware: Promise<ReturnType<typeof import('@workspace/public-pages').publicHtmlMiddleware>> | undefined;
+        let middleware:
+          | Promise<
+              ReturnType<
+                typeof import('@workspace/public-pages').publicHtmlMiddleware
+              >
+            >
+          | undefined;
+
         server.middlewares.use(async (req, res, next) => {
           try {
-            middleware ??= server.ssrLoadModule('@workspace/public-pages').then(({ publicHtmlMiddleware }) =>
-              publicHtmlMiddleware(
-                () => readFile(path.resolve(import.meta.dirname, 'index.html'), 'utf8'),
-                (url: string, html: string) => server.transformIndexHtml(url, html),
-              ));
+            middleware ??= server
+              .ssrLoadModule('@workspace/public-pages')
+              .then(({ publicHtmlMiddleware }) =>
+                publicHtmlMiddleware(
+                  () =>
+                    readFile(
+                      path.resolve(import.meta.dirname, 'index.html'),
+                      'utf8',
+                    ),
+                  (url: string, html: string) =>
+                    server.transformIndexHtml(url, html),
+                ),
+              );
+
             (await middleware)(req, res, next);
-          } catch (error) { next(error); }
+          } catch (error) {
+            next(error);
+          }
         });
       },
     },
@@ -79,7 +107,11 @@ export default defineConfig({
     dedupe: ['react', 'react-dom'],
   },
   ssr: {
-    noExternal: ['@workspace/public-pages', '@workspace/db', '@workspace/api-zod'],
+    noExternal: [
+      '@workspace/public-pages',
+      '@workspace/db',
+      '@workspace/api-zod',
+    ],
   },
   root: path.resolve(import.meta.dirname),
   build: {
@@ -91,6 +123,18 @@ export default defineConfig({
     strictPort: true,
     host: '0.0.0.0',
     allowedHosts: true,
+    ...(process.env.NODE_ENV !== 'production'
+      ? {
+          proxy: {
+            '/api': {
+              target: `http://localhost:${process.env.PORT || '5000'}`,
+              changeOrigin: true,
+              secure: false,
+            },
+          },
+        }
+      : {}),
+
     fs: {
       strict: true,
     },

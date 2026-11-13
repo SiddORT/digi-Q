@@ -55,7 +55,28 @@ app.use("/api", (req, _res, next) => {
     const host = req.get("x-forwarded-host")?.split(",")[0].trim() || req.get("host");
     let originHost;
     try { originHost = origin ? new URL(origin).host : undefined; } catch { return next(new HttpError(403, "Invalid request origin")); }
-    if (fetchSite === "cross-site" || origin && originHost !== host) return next(new HttpError(403, "Cross-origin mutations are not allowed"));
+      const isLocalDevelopment =
+        process.env.NODE_ENV !== "production" &&
+        process.env.NODE_ENV !== "test";
+
+      const allowedLocalOrigins = new Set([
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+      ]);
+
+      const isAllowedLocalOrigin =
+        isLocalDevelopment &&
+        origin !== undefined &&
+        allowedLocalOrigins.has(origin);
+
+      if (
+        fetchSite === "cross-site" ||
+        (origin && originHost !== host && !isAllowedLocalOrigin)
+      ) {
+        return next(
+          new HttpError(403, "Cross-origin mutations are not allowed"),
+        );
+      }
     if (!origin && req.get("sec-fetch-site") !== "same-origin") return next(new HttpError(403, "A same-origin request is required"));
   }
   next();
