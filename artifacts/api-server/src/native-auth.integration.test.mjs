@@ -468,7 +468,13 @@ test("SMTP rejections retain safe authentication/sender/recipient categories, ne
     [{code:"EENVELOPE",responseCode:550,command:"RCPT TO"},"recipient_rejected"],
     [{code:"EENVELOPE"},"provider_rejected"],
     [{code:"EDNS"},"pre_dispatch_failed"],
+    [{code:"ETLS"},"pre_dispatch_failed"],
+    [{code:"ETIMEDOUT",command:"CONN"},"pre_dispatch_failed"],
+    [{code:"EMESSAGE",responseCode:451,command:"DATA"},"provider_rejected"],
+    [{code:"EMESSAGE",responseCode:450,command:"RCPT TO"},"provider_rejected"],
+    [{code:"EMESSAGE",responseCode:554,command:"DATA"},"provider_rejected"],
     [{code:"ETIMEDOUT",command:"DATA"},"delivery_unknown"],
+    [{code:"ESOCKET",command:"DATA"},"delivery_unknown"],
   ]) {
     let failure;
     await assert.rejects(api.sendAuthEmail("fixture@example.test","Fixture","Body",{
@@ -482,6 +488,9 @@ test("SMTP rejections retain safe authentication/sender/recipient categories, ne
   }
   await assert.rejects(api.sendAuthEmail("fixture@example.test","Fixture","Body",{sendMail:async()=>({accepted:[],rejected:["private-transport-sentinel"]})}),
     error=>error.code==="EMAIL_REJECTED" && error.diagnostic==="recipient_rejected" && !JSON.stringify(error).includes("private-transport-sentinel"));
+  await api.sendAuthEmail("fixture@example.test","Fixture","Body",{
+    sendMail:async()=>({accepted:["fixture@example.test"],rejected:[]})
+  });
   let calls=0;
   await assert.rejects(api.sendAuthEmail("fixture@example.test","Fixture","Body",{sendMail:async()=>{calls++;}},undefined,[],undefined,
     async()=>{throw new Error("private-preparation-sentinel");}),
@@ -688,12 +697,44 @@ test("required registration email works with SMS unconfigured, including optiona
   }
 });
 
+test("initial registration reports transport outcomes without account creation or automatic retry",async()=>{
+  for(const [metadata,status] of [
+    [{code:"EAUTH",responseCode:535,command:"AUTH PLAIN"},"provider_rejected"],
+    [{code:"EMESSAGE",responseCode:451,command:"DATA"},"provider_rejected"],
+    [{code:"EDNS"},"pre_dispatch_failed"],
+    [{code:"ETLS"},"pre_dispatch_failed"],
+    [{code:"ETIMEDOUT",command:"CONN"},"pre_dispatch_failed"],
+    [{code:"ETIMEDOUT",command:"DATA"},"delivery_unknown"],
+  ]) {
+    await h.control.query("truncate auth_rate_limits");
+    globalThis.nativeAuthMailFailure=metadata;
+    const before=globalThis.nativeAuthMail.length;
+    const input=newAdmin(`initial-${before}`);
+    const started=await route("/auth/register/start",input);
+    assert.equal(started.res.body.channels.email.status,status);
+    assert.equal(started.res.body.channels.sms.status,"not_requested");
+    assert.equal(globalThis.nativeAuthMail.length,before+1);
+    assert(started.res.cookies.digiq_registration);
+    const pending=(await h.control.query("select data,consumed_at from auth_challenges where id=$1",[started.res.body.challengeId])).rows[0];
+    assert.match(pending.data.passwordHash,/^\$argon2id\$/);
+    assert.equal(pending.data.password,undefined);
+    assert.equal(pending.consumed_at,null);
+    assert.equal((await h.control.query("select count(*)::int as n from users")).rows[0].n,0);
+    assert.equal((await h.control.query("select count(*)::int as n from auth_sessions")).rows[0].n,0);
+    assert.doesNotMatch(JSON.stringify(started.res.body),/passwordHash|\$argon2id|SMTP|fictional transport failure/);
+    const resumed=await route("/auth/registration/resume",{email:input.email,fullName:input.fullName},`digiq_registration=${started.res.body.challengeId}`);
+    assert.equal(resumed.res.body.challengeId,started.res.body.challengeId);
+  }
+});
+
 test("registration resend rejection and uncertainty retain prior proof, expiry and attempts without automatic retries",async()=>{
   for(const [index,metadata] of [
     {code:"EAUTH",responseCode:535,command:"AUTH PLAIN"},
     {code:"EENVELOPE",responseCode:550,command:"MAIL FROM"},
     {code:"EENVELOPE",responseCode:550,command:"RCPT TO"},
     {code:"EDNS"},
+    {code:"ETLS"},
+    {code:"EMESSAGE",responseCode:451,command:"DATA"},
     {code:"ETIMEDOUT",command:"DATA"},
   ].entries()) {
     delete globalThis.nativeAuthMailFailure;
@@ -705,7 +746,7 @@ test("registration resend rejection and uncertainty retain prior proof, expiry a
     globalThis.nativeAuthMailFailure=metadata;
     const calls=globalThis.nativeAuthMail.length;
     await assert.rejects(route("/auth/registration/resend",{challengeId}),{
-      code:metadata.code==="ETIMEDOUT"?"EMAIL_DELIVERY_FAILED":metadata.code==="EDNS"?"REGISTRATION_EMAIL_NOT_SENT":"REGISTRATION_EMAIL_REJECTED"
+      code:metadata.code==="ETIMEDOUT"?"EMAIL_DELIVERY_FAILED":["EDNS","ETLS"].includes(metadata.code)?"REGISTRATION_EMAIL_NOT_SENT":"REGISTRATION_EMAIL_REJECTED"
     });
     assert.equal(globalThis.nativeAuthMail.length,calls+1);
     const after=(await h.control.query("select token_hash,expires_at,attempts,data from auth_challenges where id=$1",[challengeId])).rows[0];

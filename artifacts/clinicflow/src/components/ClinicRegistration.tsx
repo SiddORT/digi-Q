@@ -5,6 +5,7 @@ import { PhoneInput } from "./PhoneInput";
 import { RegistrationMobileProof } from "../auth/RegistrationMobileProof";
 import { type SecurityChannels } from "../auth/SecurityChannelNotice";
 import { RegistrationEmailNotice } from "../auth/RegistrationEmailNotice";
+import { registrationEmailAccepted, registrationEmailError } from "../auth/registration-email-feedback";
 import { useEffect, useRef, useState } from "react";
 import { useNativeAuth, authRequest } from "../auth/native-auth";
 import { Link } from "wouter";
@@ -73,15 +74,17 @@ function RegistrationAccount() {
   }, [draft]);
   useEffect(()=>{if(cooldown<=0)return;const timer=window.setTimeout(()=>setCooldown(value=>Math.max(0,value-1)),1000);return()=>window.clearTimeout(timer);},[cooldown]);
   async function resendCode(){
-    if(busy||limit.wait>0||cooldown>0||!challengeId)return;
-    setBusy(true);setError("");setResendNotice("");setCooldown(60);
+    if(submitLock.current||busy||limit.wait>0||cooldown>0||!challengeId)return;
+    submitLock.current=true;
+    setBusy(true);setError("");setResendNotice("");setChannels(current=>current?.sms?{sms:current.sms}:undefined);setCooldown(60);
     try{
       const result=await authRequest<{challengeId:string;channels?:SecurityChannels}>("registration/resend",{challengeId});
-      setChannels(result.channels);
       if(!result.challengeId)throw new Error("Could not resend the verification code. Please retry.");
-      setChallengeId(result.challengeId);setCode("");setCooldown(60);setResendNotice("Use the code in the latest verification email. Earlier codes no longer work.");notifySuccess("Verification code resent");
-     }catch(caught){limit.record(caught);const message=caught instanceof Error?caught.message:"";setError(/invalid or expired verification/i.test(message)?"This verification session has ended. Choose Change email to restart registration.":friendlyError(caught,"auth"));if((caught as {status?:number})?.status===429||/wait before requesting another code/i.test(message))setCooldown(Math.max(60,retryWaitSeconds(caught)));}
-    finally{setBusy(false);}
+      setChannels(current=>({...current,...result.channels}));
+      setChallengeId(result.challengeId);
+      if(registrationEmailAccepted(result.channels)){setCode("");setResendNotice("Use the code in the latest verification email. Earlier codes no longer work.");notifySuccess("Verification email accepted for sending");}
+     }catch(caught){limit.record(caught);setError(registrationEmailError(caught,"resend"));if((caught as {status?:number})?.status===429)setCooldown(Math.max(60,retryWaitSeconds(caught)));}
+    finally{submitLock.current=false;setBusy(false);}
   }
   const [fieldErrors,setFieldErrors]=useState<Record<string,string|undefined>>({});
   async function submit(event: React.FormEvent) {
@@ -113,7 +116,7 @@ function RegistrationAccount() {
         clearRegistrationDraft(draftKey);
         await refresh();
       }
-    } catch (caught) { limit.record(caught);setError(friendlyError(caught,"auth")); }
+    } catch (caught) { limit.record(caught);setError(registrationEmailError(caught,step === "details" ? "start" : "verify")); }
      finally { submitLock.current = false; setBusy(false); }
   }
   return <AuthShell eyebrow="Register a Clinic" registration><div className="auth-card registration-account-card">

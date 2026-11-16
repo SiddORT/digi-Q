@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
 const require = createRequire(import.meta.url);
 const {build} = createRequire(import.meta.resolve("vite"))("esbuild");
-let render, renderRegistration, summary, friendly, policy;
+let render, renderRegistration, summary, friendly, feedback, policy;
 before(async()=>{
   const result=await build({
     stdin:{resolveDir:import.meta.dirname,contents:`
@@ -13,6 +13,7 @@ before(async()=>{
       import {SecurityChannelNotice,securityChannelSummary} from "./SecurityChannelNotice";
       import {RegistrationEmailNotice} from "./RegistrationEmailNotice";
       export {friendlyError as friendly} from "../lib/friendly-error";
+      export * as feedback from "./registration-email-feedback";
       export * from "../lib/security-template-events";
       export const render=channels=>renderToStaticMarkup(createElement(SecurityChannelNotice,{channels}));
       export const renderRegistration=channels=>renderToStaticMarkup(createElement(RegistrationEmailNotice,{channels}));
@@ -23,7 +24,7 @@ before(async()=>{
   });
   const module={exports:{}};
   new Function("module","exports","require",result.outputFiles[0].text)(module,module.exports,require);
-  ({render,renderRegistration,summary,friendly,...policy}=module.exports);
+  ({render,renderRegistration,summary,friendly,feedback,...policy}=module.exports);
 });
 test("required registration email errors are prominent, actionable and independent of expected absent SMS",()=>{
   for(const status of ["provider_rejected","pre_dispatch_failed","delivery_unknown","disabled"]) {
@@ -34,10 +35,10 @@ test("required registration email errors are prominent, actionable and independe
     assert.match(html,/optional SMS cannot replace/);
     assert.doesNotMatch(html,/SMS:|Approved template and provider configuration/);
     if(status==="delivery_unknown")assert.match(html,/Wait and check/);
-    if(status==="provider_rejected")assert.match(html,/system administrator.*Resend code/);
+     if(status==="provider_rejected")assert.match(html,/Resend code.*system administrator/);
   }
   const accepted=renderRegistration({email:{status:"provider_accepted"},sms:{status:"unavailable"}});
-  assert.match(accepted,/Check your inbox and spam folder for the verification code/);
+   assert.match(accepted,/accepted for sending/);
   assert.doesNotMatch(accepted,/role="alert"|SMS:/);
   assert.match(renderRegistration(undefined),/Email verification is still required/);
   for(const code of ["REGISTRATION_EMAIL_REJECTED","REGISTRATION_EMAIL_NOT_SENT"]) {
@@ -46,6 +47,33 @@ test("required registration email errors are prominent, actionable and independe
     assert.match(message,/previous code and registration details are kept/);
     assert.doesNotMatch(message,/unsafe-response/);
   }
+});
+test("registration feedback requires explicit acceptance and never invents successful resend instructions",()=>{
+  for(const status of ["provider_rejected","pre_dispatch_failed","delivery_unknown","disabled","unavailable","unexpected"]) {
+    const channels={email:{status},sms:{status:"provider_accepted"}};
+    assert.equal(feedback.registrationEmailAccepted(channels),false);
+    assert.doesNotMatch(renderRegistration(channels),/latest verification email|Earlier codes no longer|email was accepted for sending/);
+  }
+  assert.equal(feedback.registrationEmailAccepted(undefined),false);
+  assert.equal(feedback.registrationEmailAccepted({email:{status:"provider_accepted"}}),true);
+  assert.doesNotMatch(renderRegistration(undefined),/Check your inbox|email was sent|Change details/);
+  for(const code of ["EMAIL_UNCONFIGURED","INTEGRATION_DECRYPT_FAILED","REGISTRATION_EMAIL_REJECTED","REGISTRATION_EMAIL_NOT_SENT"]) {
+    const error={status:503,data:{code,error:"SMTP private-sentinel"}};
+    assert.match(feedback.registrationEmailError(error,"start"),/couldn’t send your verification email/);
+    const resend=feedback.registrationEmailError(error,"resend");
+    assert.match(resend,/previous code is unchanged/);
+    assert.match(resend,/timer ends/);
+    assert.doesNotMatch(resend,/SMTP|private-sentinel|latest|Earlier codes/);
+  }
+  assert.match(feedback.registrationEmailError({status:503,data:{code:"EMAIL_DELIVERY_FAILED"}},"resend"),/couldn’t confirm whether.*previous code is unchanged/);
+  for(const action of ["start","resend"])assert.match(feedback.registrationEmailError(new TypeError("Failed to fetch"),action),/couldn’t confirm/);
+  assert.match(feedback.registrationEmailError({status:400,data:{code:"INVALID_VERIFICATION"}},"verify"),/incorrect or has expired.*Resend code.*Change email/);
+  assert.match(feedback.registrationEmailError({status:400,data:{code:"INVALID_VERIFICATION"}},"resend"),/session has ended.*Change email/);
+  assert.match(feedback.registrationEmailError({status:429,retryAfterSeconds:92},"resend"),/92 seconds/);
+  assert.match(feedback.registrationEmailError({status:429},"verify"),/Wait a moment/);
+  const registration=readFileSync(new URL("../components/ClinicRegistration.tsx",import.meta.url),"utf8");
+  assert.match(registration,/if\(registrationEmailAccepted\(result.channels\)\)\{setCode\(""\);setResendNotice/);
+  assert.match(registration,/if\(submitLock.current\|\|busy\|\|limit.wait>0\|\|cooldown>0/);
 });
 test("channel feedback renders independent outcomes, masked destinations and no delivery claim",()=>{
   const html=render({email:{status:"provider_accepted",destination:"e***@example.invalid"},sms:{status:"delivery_unknown",destination:"***3210"}});

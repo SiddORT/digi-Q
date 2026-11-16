@@ -56,9 +56,14 @@ export async function sendAuthEmail(to: string, subject: string, text: string,
       throw new EmailRejectionError("sender_rejected");
     if((error?.code==="EENVELOPE" || rejected) && /^RCPT TO(?: |$)/.test(command))
       throw new EmailRejectionError("recipient_rejected");
-    if(error?.code==="EAUTH"||error?.code==="EENVELOPE"||[530,535,550,551,552,553,554].includes(error?.responseCode))
+    // An explicit negative SMTP completion (including temporary 4xx rejection
+    // after DATA) is not an uncertain send. No automatic retries here.
+    if(error?.code==="EAUTH"||error?.code==="EENVELOPE"||
+      Number(error?.responseCode)>=400 && Number(error?.responseCode)<600)
       throw new HttpError(503,"Email provider rejected the message","EMAIL_REJECTED");
-    if(["EDNS","ECONNECTION"].includes(error?.code))throw new HttpError(503,"Email connection unavailable","EMAIL_PRE_DISPATCH_FAILED");
+    if(["EDNS","ECONNECTION","ETLS"].includes(error?.code) ||
+      error?.code === "ETIMEDOUT" && command === "CONN")
+      throw new HttpError(503,"Email connection unavailable","EMAIL_PRE_DISPATCH_FAILED");
     throw new HttpError(503, "Email delivery outcome is uncertain", "EMAIL_DELIVERY_FAILED");
   }
 }
