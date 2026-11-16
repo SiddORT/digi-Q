@@ -6,6 +6,7 @@ import { assert } from "./http";
 import { mediaConfig } from "./local-media";
 import { ObjectStorageService, objectStorageClient } from "./objectStorage";
 import { DOCUMENT_MAX_BYTES } from "./feature-policy";
+import { privateDirectory } from "../features/files/storage";
 
 /** Private document bytes, using the configured media driver. Keys are server-generated UUIDs only. */
 const KEY = /^[a-f0-9-]{36}$/;
@@ -24,6 +25,7 @@ function objectLocation(key: string) {
 export async function saveDocument(bytes: Buffer, contentType: string) {
   const provider = mediaConfig().driver, key = randomUUID();
   if (provider === "local") {
+    await privateDirectory(mediaConfig().root, ["private-documents"], true);
     const path = localPath(key);
     await mkdir(join(mediaConfig().root, "private-documents"), { recursive: true, mode: 0o700 });
     const handle = await open(path, "wx", 0o600);
@@ -35,6 +37,7 @@ export async function saveDocument(bytes: Buffer, contentType: string) {
 }
 export async function readDocument(provider: string, key: string): Promise<Buffer> {
   if (provider === "local") {
+    await privateDirectory(mediaConfig().root, ["private-documents"]);
     const handle = await open(localPath(key), constants.O_RDONLY | constants.O_NOFOLLOW);
     try {
       const stat = await handle.stat();
@@ -42,6 +45,7 @@ export async function readDocument(provider: string, key: string): Promise<Buffe
       return await handle.readFile();
     } finally { await handle.close(); }
   }
+  assert(provider === "object", 409, "Unknown document provider");
   const [bytes] = await objectLocation(key).download();
   return bytes;
 }

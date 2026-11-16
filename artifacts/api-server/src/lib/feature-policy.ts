@@ -61,6 +61,6 @@ export function sniffDocument(bytes: Buffer): (typeof DOCUMENT_TYPES)[number] | 
   return null;
 }
 export function safeDocumentName(name: string) {
-  const cleaned = String(name || "").replace(/[\\/\u0000-\u001f"<>|:*?]/g, "_").replace(/^[._\s]+/, "").trim().slice(0, 160);
-  return cleaned || "document";
+  const cleaned = String(name || "").replace(/[\\/\u0000-\u001f\u007f"<>|:*?]/g, "_").replace(/^[._\s]+/, "").trim().slice(0, 160).replace(/[.\s]+$/, "");
+  return /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(?:\.|$)/i.test(cleaned) ? `_${cleaned}` : cleaned || "document";
 }

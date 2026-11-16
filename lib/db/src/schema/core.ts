@@ -231,7 +231,8 @@ export const notificationReads = pgTable("notification_reads", {
 }, t => [primaryKey({ columns: [t.userId, t.notificationId] })]);
 /** Private patient documents. Bytes live in private storage; never publicly addressable. */
 export const patientDocuments = pgTable("patient_documents", {
-  id: id(), patientId: text("patient_id").notNull().references(() => patients.id),
+  id: id(), patientId: text("patient_id").references(() => patients.id),
+  doctorId: text("doctor_id").references(() => doctors.id),
   clinicId: text("clinic_id").notNull().references(() => clinics.id),
   uploadedBy: text("uploaded_by").references(() => users.id),
   deletedUploader: boolean("deleted_uploader").notNull().default(false),
@@ -239,7 +240,19 @@ export const patientDocuments = pgTable("patient_documents", {
   provider: text("provider").notNull(), storageKey: text("storage_key").notNull(),
   status: text("status").notNull().default("active"), createdAt: created(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  purpose: text("purpose").notNull().default("documents"),
+  digest: text("digest"),
+  registryVersion: integer("registry_version").notNull().default(0),
+  scanState: text("scan_state").notNull().default("legacy"),
+  scanReviewedAt: timestamp("scan_reviewed_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedFrom: text("deleted_from"),
 }, t => [index("patient_document_patient_idx").on(t.patientId, t.clinicId),
+  index("private_file_doctor_idx").on(t.doctorId, t.clinicId),
+  uniqueIndex("private_file_locator_unique").on(t.provider, t.storageKey).where(sql`${t.registryVersion}=1`),
+  check("private_file_entity", sql`(${t.patientId} is not null and ${t.doctorId} is null and ${t.purpose} in ('profile','documents','medical')) or (${t.patientId} is null and ${t.doctorId} is not null and ${t.purpose} in ('profile','credentials'))`),
+  check("private_file_registry", sql`${t.registryVersion}=0 or (${t.registryVersion}=1 and ${t.provider} in ('local','object') and ${t.size}>0 and ${t.size}<=10485760 and ${t.digest} is not null and ${t.digest} ~ '^[a-f0-9]{64}$' and ${t.contentType} in ('application/pdf','image/png','image/jpeg','image/webp','text/plain') and ${t.status} in ('staging','quarantined','active','deleted','failed') and ${t.scanState} in ('pending','approved') and (${t.status}<>'active' or ${t.scanState}='approved'))`),
+  check("private_file_review", sql`${t.registryVersion}=0 or (${t.scanState}='pending' and ${t.scanReviewedAt} is null) or (${t.scanState}='approved' and ${t.scanReviewedAt} is not null)`),
   check("document_anonymous_uploader", sql`(${t.uploadedBy} is not null and not ${t.deletedUploader}) or (${t.uploadedBy} is null and ${t.deletedUploader})`)]);
 /** Synced listing views. Only allowlisted structured filters and column layout; never search text. */
 export const savedViews = pgTable("saved_views", {

@@ -2,38 +2,23 @@ import { Router, raw } from "express";
 import { db, patients, patientDocuments, appointments, users, clinics } from "@workspace/db";
 import { and, eq, sql } from "drizzle-orm";
 import * as z from "@workspace/api-zod";
-import { requireUser, canRead, scope } from "../lib/auth";
+import { requireUser } from "../lib/auth";
 import { query, assert } from "../lib/http";
 import { audit, uid } from "../lib/store";
 import { sourceSql, pageParams } from "../lib/list-query";
 import { consumeRateLimit } from "../lib/native-auth";
 import { enforcePermissionPolicy } from "../lib/permission-policy";
-import { sniffDocument, safeDocumentName, DOCUMENT_MAX_BYTES } from "../lib/feature-policy";
-import { saveDocument, readDocument, removeDocument } from "../lib/document-storage";
+import { DOCUMENT_MAX_BYTES } from "../lib/feature-policy";
+import { readablePatient, documentClinics, visibleClinic } from "../lib/patient-document-access";
+import { accessibleFile, changeFileState, uploadFile, verifiedFileBytes } from "../features/files/service";
 import { retainedDoctorVisitSql } from "../lib/retained-doctor-access";
 
 export const patientRecordsRouter = Router();
 const STAFF = ["superAdmin", "clinicAdmin", "doctor", "receptionist"];
 
-async function readablePatient(user: any, id: string) {
-  const [row] = await db.select().from(patients).where(eq(patients.id, id));
-  assert(row && await canRead(user, "patients", row), 404, "Patient not found");
-  return row!;
-}
-/** Clinics where this user may attach documents to this patient: their own clinic scope intersected with the patient's clinics. */
-async function documentClinics(user: any, patient: any) {
-  if (!STAFF.includes(user.role)) return [];
-  const visits = await db.select({ clinicId: appointments.clinicId, branchId: appointments.branchId, doctorId: appointments.doctorId }).from(appointments).where(eq(appointments.patientId, patient.id));
-  const ids = new Set<string>([...(patient.clinicId && user.role !== "doctor" ? [patient.clinicId] : []), ...visits.filter(v => user.role !== "doctor" || v.doctorId === user.doctorId && scope(user, v.clinicId, v.branchId)).map(v => v.clinicId)]);
-  if (user.role === "doctor" && user.handoffHistoryInstalled) {
-    const historical = await db.execute(sql`select distinct ht.clinic_id,ht.from_branch_id from appointment_transitions ht
-      where ht.patient_id=${patient.id} and ht.from_doctor_id=${user.doctorId}`);
-    for (const row of historical.rows as any[]) if (scope(user, row.clinic_id, row.from_branch_id)) ids.add(row.clinic_id);
-  }
-  return [...ids].filter(c => user.role === "superAdmin" || user.clinicIds.includes(c));
-}
-const visibleClinic = (user: any, clinicId: string, doctorClinics: string[]) => user.role === "superAdmin" || user.role === "patient" || (user.role === "doctor" ? doctorClinics.includes(clinicId) : user.clinicIds.includes(clinicId));
-
+patientRecordsRouter.use(["/patients/:id/documents", "/patient-documents/:id"], (_req, res, next) => {
+  res.set({ "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" }); next();
+});
 patientRecordsRouter.get("/patients/:id/documents", async (req, res) => {
   const user = await requireUser(req), patient = await readablePatient(user, String(req.params.id));
   const allowed = await documentClinics(user, patient);
@@ -55,42 +40,24 @@ patientRecordsRouter.post("/patients/:id/documents", async (req, _res, next) => 
   const clinicId = q.clinicId || allowed[0];
   assert(clinicId && allowed.includes(clinicId), 403, "You cannot add documents for this patient in that clinic");
   assert(Buffer.isBuffer(req.body) && req.body.length > 0, 400, "Choose a file to upload");
-  const type = sniffDocument(req.body);
-  assert(type, 400, "Upload a PDF, PNG, JPEG, WebP or plain text file up to 10 MB");
   await consumeRateLimit(`document-upload:${user.id}`, 30, 900000);
-  const stored = await saveDocument(req.body, type!);
-  const row = { id: uid(), patientId: patient.id, clinicId, uploadedBy: user.id, name: safeDocumentName(q.name), contentType: type!, size: req.body.length, provider: stored.provider, storageKey: stored.key };
-  try {
-    await db.transaction(async tx => {
-      await tx.insert(patientDocuments).values(row);
-      await audit(user, "uploadDocument", "patient_documents", { id: row.id, clinicId }, tx);
-    });
-  } catch (error) { await removeDocument(stored.provider, stored.key); throw error; }
-  res.status(201).json({ id: row.id, patientId: row.patientId, clinicId, name: row.name, contentType: row.contentType, size: row.size, createdAt: new Date().toISOString(), uploadedByName: user.fullName });
+  const row = await uploadFile(user, { patientId: patient.id, clinicId, purpose: "documents", name: q.name }, req.body);
+  res.status(201).json({ id: row.id, patientId: row.patientId, clinicId, name: row.name, contentType: row.contentType, size: row.size, createdAt: row.createdAt.toISOString(), uploadedByName: user.fullName, status: row.status, scanState: row.scanState });
 });
-async function authorizedDocument(user: any, id: string) {
-  const [doc] = await db.select().from(patientDocuments).where(eq(patientDocuments.id, id));
-  assert(doc && doc.status === "active", 404, "Document not found");
-  const patient = await readablePatient(user, doc!.patientId);
-  assert(visibleClinic(user, doc!.clinicId, await documentClinics(user, patient)), 404, "Document not found");
-  return doc!;
-}
 patientRecordsRouter.get("/patient-documents/:id", async (req, res) => {
-  const user = await requireUser(req), doc = await authorizedDocument(user, String(req.params.id));
-  const bytes = await readDocument(doc.provider, doc.storageKey);
+  const user = await requireUser(req), doc = await accessibleFile(user, String(req.params.id));
+  assert(doc.patientId, 404, "Document not found");
+  const bytes = await verifiedFileBytes(doc);
   await audit(user, "downloadDocument", "patient_documents", { id: doc.id, clinicId: doc.clinicId });
   res.set({ "Content-Type": doc.contentType, "Content-Length": String(bytes.length), "X-Content-Type-Options": "nosniff", "Cache-Control": "private, no-store",
-    "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(doc.name)}` });
+    "Content-Security-Policy": "sandbox", "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(doc.name).replace(/'/g, "%27")}` });
   res.send(bytes);
 });
 patientRecordsRouter.delete("/patient-documents/:id", async (req, res) => {
-  const user = await requireUser(req), doc = await authorizedDocument(user, String(req.params.id));
-  assert(["superAdmin", "clinicAdmin"].includes(user.role) || doc.uploadedBy === user.id, 403, "Only the uploader or a clinic administrator can delete this document");
-  await db.transaction(async tx => {
-    await tx.update(patientDocuments).set({ status: "deleted", deletedAt: new Date() }).where(eq(patientDocuments.id, doc.id));
-    await audit(user, "deleteDocument", "patient_documents", { id: doc.id, clinicId: doc.clinicId }, tx);
-  });
-  await removeDocument(doc.provider, doc.storageKey);
+  const user = await requireUser(req), id = String(req.params.id);
+  const doc = await accessibleFile(user, id, { pending: true });
+  assert(doc.patientId, 404, "Document not found");
+  await changeFileState(user, id, "delete");
   res.status(204).end();
 });
 

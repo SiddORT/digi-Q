@@ -162,6 +162,13 @@
       "when": 1790980000008,
       "tag": "0023_staff_identity_write_fences",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790980000009,
+      "tag": "0024_private_file_registry",
+      "breakpoints": true
     }
   ]
 }

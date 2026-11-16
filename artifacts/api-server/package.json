@@ -19,7 +19,8 @@
     "test:owner-booking:jwt": "node --test --test-name-pattern=jwt ./src/owner-booking.integration.test.mjs",
     "test:queue-contention": "node --test ./src/queue-contention.test.mjs",
     "test:schedules": "node --test --test-concurrency=1 ./src/schedule-contention.test.mjs ./src/schedule-day-overrides.test.mjs",
-    "test:features": "node --test ./src/feature-policy.test.mjs ./src/functional-features.integration.test.mjs"
+    "test:features": "node --test ./src/feature-policy.test.mjs ./src/functional-features.integration.test.mjs",
+    "test:files": "node --test --test-concurrency=1 ./src/private-files.integration.test.mjs ./src/private-files-upgrade.test.mjs ./src/feature-policy.test.mjs ./src/functional-features.integration.test.mjs ./src/staff-deletion-impact.integration.test.mjs ./src/staff-visit-handoff.integration.test.mjs"
   },
   "dependencies": {
     "@google-cloud/storage": "^8.4.0",

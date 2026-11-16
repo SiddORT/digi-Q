@@ -30,6 +30,7 @@ export const userReferences: Reference[] = [
   { table: "audit_logs", columns: ["actor_id"], action: "anonymize" },
 ];
 const doctorReferences: Reference[] = [
+  { table: "patient_documents", columns: ["doctor_id"], action: "resolve" },
   { table: "appointment_transitions", columns: ["from_doctor_id", "to_doctor_id"], action: "anonymize" },
   { table: "appointments", columns: ["doctor_id"], action: "anonymize" },
   { table: "guest_requests", columns: ["doctor_id"], action: "anonymize" },
@@ -140,6 +141,7 @@ export async function computeStaffDeletionImpact(conn: any, actorId: string, tar
       const rows = await rawRows(conn, sql`select * from ${identifier(ref.table)} where ${sql.join(ref.columns.map(column =>
         sql`${identifier(column)} in (${sql.join(doctorIds.map(id => sql`${id}`), sql.raw(","))})`), sql.raw(" or "))}`);
       add(`doctor:${ref.table}`, ref.action, rows);
+      if (ref.table === "patient_documents" && rows.length) warn("PRIVATE_DOCTOR_FILES", "Private doctor files require an approved personal-file erasure policy before this account can be removed.", ref.table, rows.map(rowKey));
       if (ref.table === "appointments") {
         const active = rows.filter(r => !closedVisits.has(r.status));
         if (active.length) warn("OPEN_VISITS", "Resolve or explicitly hand off every unfinished visit. Visits already called or in consultation must be resolved in the queue first.", ref.table, active.map(rowKey));

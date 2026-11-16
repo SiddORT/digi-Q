@@ -3,6 +3,21 @@ import assert from "node:assert/strict";
 import { createFeatureHarness } from "./test-support/feature-harness.mjs";
 import { seedFeatureFixtures } from "./test-support/feature-fixtures.mjs";
 
+test("personal doctor files block staff erasure until an explicit byte-erasure policy is approved", async () => {
+  const h = await createFeatureHarness({ deletion: true });
+  try {
+    await seedFeatureFixtures(h.pg);
+    const file = await h.call("docu", "POST", "/files?clinicId=c1&doctorId=d1&purpose=credentials&name=license.pdf", Buffer.from("%PDF-1.4\nfixture"));
+    assert.equal(file.status, 201, JSON.stringify(file.data));
+    const impact = await h.staffDeletionImpact("sa", "docu");
+    assert.ok(impact.blockers.some(b => b.code === "PRIVATE_DOCTOR_FILES" && b.ids.includes(file.data.id)));
+    assert.ok(!impact.blockers.some(b => b.code === "UNKNOWN_RELATION"));
+    await h.call("docu", "DELETE", `/files/${file.data.id}`);
+    const deleted = await h.staffDeletionImpact("sa", "docu");
+    assert.ok(deleted.blockers.some(b => b.code === "PRIVATE_DOCTOR_FILES"), "soft deletion is not personal-byte erasure");
+  } finally { await h.close(); }
+});
+
 test("impact is live, role-gated, versioned and fails closed on new references", async () => {
   const h = await createFeatureHarness({ deletion: true });
   try {

@@ -209,6 +209,8 @@ import type {
   PersonalNotificationInput,
   PersonalNotificationSettings,
   PincodeLookup,
+  PrivateFileApproval,
+  PrivateFileMetadata,
   ProfileCompletionInput,
   ProfileFieldAccess,
   ProfileInput,
@@ -281,6 +283,7 @@ import type {
   TicketEmailPreview,
   TicketEmailResult,
   UploadPatientDocumentParams,
+  UploadPrivateFileParams,
   User,
   UserInput,
   UserList,
@@ -341,6 +344,463 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getUploadPrivateFileUrl = (params: UploadPrivateFileParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/files?${stringifiedParams}` : `/api/files`
+}
+
+/**
+ * @summary Stage a private file for manual security review
+ */
+export const uploadPrivateFile = async (uploadPrivateFileBody: Blob,
+    params: UploadPrivateFileParams, options?: Parameters<typeof customFetch>[1]): Promise<PrivateFileMetadata> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PrivateFileMetadata>(getUploadPrivateFileUrl(params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/octet-stream', ...getHeaders(options?.headers) },
+    body: uploadPrivateFileBody
+  }
+);}
+
+
+
+
+
+export const getUploadPrivateFileMutationKey = () => ['uploadPrivateFile'] as const;
+
+export const getUploadPrivateFileMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadPrivateFile>>, TError,UploadPrivateFileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadPrivateFile>>, TError,UploadPrivateFileMutationVariables, TContext> => {
+
+const mutationKey = getUploadPrivateFileMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadPrivateFile>>, UploadPrivateFileMutationVariables> = (props) => {
+          const {data,params} = props ?? {};
+
+          return  uploadPrivateFile(data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadPrivateFileMutationResult = NonNullable<Awaited<ReturnType<typeof uploadPrivateFile>>>
+    export type UploadPrivateFileMutationBody = BodyType<Blob>
+    export type UploadPrivateFileMutationError = ErrorType<void>
+    export type UploadPrivateFileMutationVariables = {data: BodyType<Blob>;params: UploadPrivateFileParams}
+
+    /** @summary Stage a private file for manual security review */
+export const useUploadPrivateFile = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadPrivateFile>>, TError,UploadPrivateFileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadPrivateFile>>,
+        TError,
+        UploadPrivateFileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUploadPrivateFileMutationOptions(options));
+    }
+
+export const getGetPrivateFileUrl = (fileId: string,) => {
+
+
+
+
+  return `/api/files/${fileId}`
+}
+
+export const getPrivateFile = async (fileId: string, options?: Parameters<typeof customFetch>[1]): Promise<PrivateFileMetadata> => {
+
+  return customFetch<PrivateFileMetadata>(getGetPrivateFileUrl(fileId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPrivateFileQueryKey = (fileId: string,) => {
+    return [
+    `/api/files/${fileId}`
+    ] as const;
+    }
+
+
+export const getGetPrivateFileQueryOptions = <TData = Awaited<ReturnType<typeof getPrivateFile>>, TError = ErrorType<void>>(fileId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrivateFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPrivateFileQueryKey(fileId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPrivateFile>>> = ({ signal }) => getPrivateFile(fileId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: fileId !== null && fileId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPrivateFile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPrivateFileQueryResult = NonNullable<Awaited<ReturnType<typeof getPrivateFile>>>
+export type GetPrivateFileQueryError = ErrorType<void>
+
+
+export function useGetPrivateFile<TData = Awaited<ReturnType<typeof getPrivateFile>>, TError = ErrorType<void>>(
+ fileId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrivateFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPrivateFileQueryOptions(fileId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDeletePrivateFileUrl = (fileId: string,) => {
+
+
+
+
+  return `/api/files/${fileId}`
+}
+
+export const deletePrivateFile = async (fileId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeletePrivateFileUrl(fileId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeletePrivateFileMutationKey = () => ['deletePrivateFile'] as const;
+
+export const getDeletePrivateFileMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePrivateFile>>, TError,DeletePrivateFileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePrivateFile>>, TError,DeletePrivateFileMutationVariables, TContext> => {
+
+const mutationKey = getDeletePrivateFileMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePrivateFile>>, DeletePrivateFileMutationVariables> = (props) => {
+          const {fileId} = props ?? {};
+
+          return  deletePrivateFile(fileId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePrivateFileMutationResult = NonNullable<Awaited<ReturnType<typeof deletePrivateFile>>>
+
+    export type DeletePrivateFileMutationError = ErrorType<void>
+    export type DeletePrivateFileMutationVariables = {fileId: string}
+
+    export const useDeletePrivateFile = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePrivateFile>>, TError,DeletePrivateFileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePrivateFile>>,
+        TError,
+        DeletePrivateFileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeletePrivateFileMutationOptions(options));
+    }
+
+export const getDownloadPrivateFileUrl = (fileId: string,) => {
+
+
+
+
+  return `/api/files/${fileId}/content`
+}
+
+export const downloadPrivateFile = async (fileId: string, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getDownloadPrivateFileUrl(fileId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadPrivateFileQueryKey = (fileId: string,) => {
+    return [
+    `/api/files/${fileId}/content`
+    ] as const;
+    }
+
+
+export const getDownloadPrivateFileQueryOptions = <TData = Awaited<ReturnType<typeof downloadPrivateFile>>, TError = ErrorType<void>>(fileId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadPrivateFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadPrivateFileQueryKey(fileId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadPrivateFile>>> = ({ signal }) => downloadPrivateFile(fileId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: fileId !== null && fileId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadPrivateFile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadPrivateFileQueryResult = NonNullable<Awaited<ReturnType<typeof downloadPrivateFile>>>
+export type DownloadPrivateFileQueryError = ErrorType<void>
+
+
+export function useDownloadPrivateFile<TData = Awaited<ReturnType<typeof downloadPrivateFile>>, TError = ErrorType<void>>(
+ fileId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadPrivateFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadPrivateFileQueryOptions(fileId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRestorePrivateFileUrl = (fileId: string,) => {
+
+
+
+
+  return `/api/files/${fileId}/restore`
+}
+
+export const restorePrivateFile = async (fileId: string, options?: Parameters<typeof customFetch>[1]): Promise<PrivateFileMetadata> => {
+
+  return customFetch<PrivateFileMetadata>(getRestorePrivateFileUrl(fileId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRestorePrivateFileMutationKey = () => ['restorePrivateFile'] as const;
+
+export const getRestorePrivateFileMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restorePrivateFile>>, TError,RestorePrivateFileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof restorePrivateFile>>, TError,RestorePrivateFileMutationVariables, TContext> => {
+
+const mutationKey = getRestorePrivateFileMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof restorePrivateFile>>, RestorePrivateFileMutationVariables> = (props) => {
+          const {fileId} = props ?? {};
+
+          return  restorePrivateFile(fileId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RestorePrivateFileMutationResult = NonNullable<Awaited<ReturnType<typeof restorePrivateFile>>>
+
+    export type RestorePrivateFileMutationError = ErrorType<void>
+    export type RestorePrivateFileMutationVariables = {fileId: string}
+
+    export const useRestorePrivateFile = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restorePrivateFile>>, TError,RestorePrivateFileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof restorePrivateFile>>,
+        TError,
+        RestorePrivateFileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRestorePrivateFileMutationOptions(options));
+    }
+
+export const getApprovePrivateFileUrl = (fileId: string,) => {
+
+
+
+
+  return `/api/files/${fileId}/approve`
+}
+
+/**
+ * @summary Superadmin attests completed offline security review of the exact digest
+ */
+export const approvePrivateFile = async (fileId: string,
+    privateFileApproval: PrivateFileApproval, options?: Parameters<typeof customFetch>[1]): Promise<PrivateFileMetadata> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PrivateFileMetadata>(getApprovePrivateFileUrl(fileId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(privateFileApproval)
+  }
+);}
+
+
+
+
+
+export const getApprovePrivateFileMutationKey = () => ['approvePrivateFile'] as const;
+
+export const getApprovePrivateFileMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approvePrivateFile>>, TError,ApprovePrivateFileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approvePrivateFile>>, TError,ApprovePrivateFileMutationVariables, TContext> => {
+
+const mutationKey = getApprovePrivateFileMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approvePrivateFile>>, ApprovePrivateFileMutationVariables> = (props) => {
+          const {fileId,data} = props ?? {};
+
+          return  approvePrivateFile(fileId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApprovePrivateFileMutationResult = NonNullable<Awaited<ReturnType<typeof approvePrivateFile>>>
+    export type ApprovePrivateFileMutationBody = BodyType<PrivateFileApproval>
+    export type ApprovePrivateFileMutationError = ErrorType<void>
+    export type ApprovePrivateFileMutationVariables = {fileId: string;data: BodyType<PrivateFileApproval>}
+
+    /** @summary Superadmin attests completed offline security review of the exact digest */
+export const useApprovePrivateFile = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approvePrivateFile>>, TError,ApprovePrivateFileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approvePrivateFile>>,
+        TError,
+        ApprovePrivateFileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getApprovePrivateFileMutationOptions(options));
+    }
 
 export const getIssueLiveTicketLinkUrl = () => {
 

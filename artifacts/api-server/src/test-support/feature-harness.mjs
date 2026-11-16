@@ -13,7 +13,7 @@ const root = resolve(import.meta.dirname, "../../../..");
 const migrations = resolve(root, "lib/db/drizzle");
 let harnessSequence = 0;
 
-export async function createFeatureHarness({administration=false, simulatedMail=false, bookingLookups=false, postgres=false, fakeBookingMail=false, registration=false, deletion=false, notificationSettings=false, communicationUsage=false, staffAccounts=false, appointmentDetails=false}={}) {
+export async function createFeatureHarness({files=false, administration=false, simulatedMail=false, bookingLookups=false, postgres=false, fakeBookingMail=false, registration=false, deletion=false, notificationSettings=false, communicationUsage=false, staffAccounts=false, appointmentDetails=false}={}) {
   const cluster=postgres?await createQueueHarness({empty:true}):null;
   const {Pool}=postgres?createRequire(resolve(root,"lib/db/package.json"))("pg"):{};
   const pool=postgres?new Pool({host:cluster.temp,port:5432,user:"queue_test",database:"postgres",password:"",ssl:false,max:8,statement_timeout:10000}):null;
@@ -46,6 +46,11 @@ export async function createFeatureHarness({administration=false, simulatedMail=
       import express from "express";
       import { workspaceFeaturesRouter } from "./routes/workspace-features";
       import { patientRecordsRouter } from "./routes/patient-records";
+      import { filesRouter } from "./routes/files";
+      ${files ? `export * as fileStorageTools from "./features/files/storage";
+      export * as storageConfigTools from "./lib/storage-config";
+      import { logosRouter, localMediaRouter } from "./routes/logos";
+      import { mediaConfig } from "./lib/storage-config";` : ""}
       import { reportingRouter } from "./routes/reporting";
       ${staffAccounts ? `import { staffVerificationRouter } from "./routes/staff-verification";
       import { db as staffDb } from "@workspace/db";
@@ -125,7 +130,8 @@ export async function createFeatureHarness({administration=false, simulatedMail=
         ${administration || bookingLookups ? `app.use(nativeSession);` : ""}
         ${!bookingLookups ? `app.use((req, _res, next) => { const id = req.get("x-test-user"); if (id) { req.authUserId = id; req.authSessionHash = "test-session-" + id; } next(); });` : ""}
         app.use(express.json());
-        app.use("/api", workspaceFeaturesRouter, patientRecordsRouter, reportingRouter);
+        app.use("/api", workspaceFeaturesRouter, patientRecordsRouter, filesRouter, reportingRouter);
+        ${files ? `app.use("/api", logosRouter); app.use(mediaConfig().url,localMediaRouter);` : ""}
         ${staffAccounts ? `app.use("/api", staffVerificationRouter);` : ""}
         ${communicationUsage ? `app.use("/api", notificationHistoryRouter);` : ""}
         ${notificationSettings ? `app.use("/api", notificationSettingsRouter);
@@ -143,7 +149,7 @@ export async function createFeatureHarness({administration=false, simulatedMail=
       }` },
     outfile: bundle, bundle: true, platform: "node", format: "esm", logLevel: "error",
     external: ["argon2", "pg", "pg-native", "@electric-sql/pglite", "@google-cloud/storage", "express", "pino", "pino-http", "libphonenumber-js/max",
-      ...((bookingLookups || registration || appointmentDetails) ? ["qrcode", "jspdf", "sharp", "express-rate-limit"] : []),
+      ...((files || bookingLookups || registration || appointmentDetails) ? ["qrcode", "jspdf", "sharp", "express-rate-limit"] : []),
       ...(bookingLookups && !simulatedMail ? ["nodemailer"] : [])],
     plugins: [{ name: "feature-fixtures", setup(b) {
       if (staffAccounts) {
@@ -201,15 +207,34 @@ export async function createFeatureHarness({administration=false, simulatedMail=
           if (hook) await hook();
           return transaction(...args);
         };` : ""}` }));
-      b.onResolve({ filter: /\/document-storage$/ }, () => ({ path: "storage", namespace: "memory-storage" }));
+      if (files) {
+        b.onResolve({filter: /\/objectStorage$/},()=>({path:"objects",namespace:"file-object-fixture"}));
+        b.onLoad({filter:/.*/,namespace:"file-object-fixture"},()=>({contents:`
+          export class ObjectNotFoundError extends Error {}
+          export class ObjectStorageService { getPrivateObjectDir(){return "/fixture-bucket/private";} }
+          export const objectStorageClient = {bucket(bucket){return {file(key){const path="/"+bucket+"/"+key;return {
+            async save(bytes){globalThis.__featureBlobs.set(path,Buffer.from(bytes));},
+            async getMetadata(){const b=globalThis.__featureBlobs.get(path);if(!b)throw {code:404};return [{size:b.length}];},
+            async download(){const b=globalThis.__featureBlobs.get(path);if(!b)throw {code:404};return [b];},
+            async delete(){globalThis.__featureBlobs.delete(path);}
+          };}};}};
+        `}));
+      } else {
+        b.onResolve({filter:/^\.\/storage$/},args=>args.importer.includes("/features/files/")?({path:"new-storage",namespace:"memory-storage"}):undefined);
+      }
+      if (!files) b.onResolve({ filter: /\/document-storage$/ }, () => ({ path: "storage", namespace: "memory-storage" }));
       b.onLoad({ filter: /.*/, namespace: "memory-storage" }, () => ({ contents: `
         let n = 0;
+        export const fileKey = (_c,_k,_e,_p,id) => id;
+        export const planFileStorage = key => ({provider:"object",key});
+        export async function writeFileBytes(key,bytes){globalThis.__featureBlobs.set(key,Buffer.from(bytes));return {provider:"object",key};}
+        export async function readFileBytes(file){return readDocument(file.provider,file.storageKey);}
         export async function saveDocument(bytes) { const key = "mem-" + (++n); globalThis.__featureBlobs.set(key, Buffer.from(bytes)); return { provider: "memory", key }; }
         export async function readDocument(_p, key) { const b = globalThis.__featureBlobs.get(key); if (!b) throw Object.assign(new Error("gone"), { status: 404 }); return b; }
         export async function removeDocument(_p, key) { globalThis.__featureBlobs.delete(key); }` }));
     } }],
   }).catch(failedSetup);
-   const { createApp, cleanupHistory, inviteStaffFixture, dispatchOutbox, dispatchSmsOutbox, dispatchStaffNotices, approvedAppointmentSms, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals } = await import(bundle).catch(failedSetup);
+   const { createApp, fileStorageTools, storageConfigTools, cleanupHistory, inviteStaffFixture, dispatchOutbox, dispatchSmsOutbox, dispatchStaffNotices, approvedAppointmentSms, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals } = await import(bundle).catch(failedSetup);
   const server = createApp().listen(0);
   await new Promise(r => server.once("listening", r));
   const base = `http://127.0.0.1:${server.address().port}/api`;
@@ -219,10 +244,10 @@ export async function createFeatureHarness({administration=false, simulatedMail=
     const init = { method, headers: { connection: "close", ...(user ? { "x-test-user": user } : {}), ...headers } };
     if (body instanceof Buffer) { init.body = body; init.headers["content-type"] ||= "application/octet-stream"; }
     else if (body !== undefined) { init.body = JSON.stringify(body); init.headers["content-type"] = "application/json"; }
-    const res = await fetch(base + path, {...init,signal:AbortSignal.timeout(20000)});
+    const res = await fetch(base + path.replace(/^\/api(?=\/)/, ""), {...init,signal:AbortSignal.timeout(20000)});
     const type = res.headers.get("content-type") || "";
     const data = type.includes("json") ? await res.json() : Buffer.from(await res.arrayBuffer());
     return { status: res.status, data, headers: res.headers };
   }
-   return { pg, call, cleanupHistory, blobs, mail, sms, base, pool, errors, inviteStaffFixture, dispatchOutbox, dispatchSmsOutbox, dispatchStaffNotices, approvedAppointmentSms, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals, beforeTransaction(hook) { globalThis.__featureBeforeTransaction=hook; }, async close() { globalThis.__featureBeforeTransaction=null;delete globalThis.__featureErrors;if(staffAccounts)delete globalThis.__featureStaffSms;if(simulatedMail||fakeBookingMail)delete globalThis.__featureMail;server.close(); await pg.close(); await rm(bundle, { force: true }); } };
+   return { pg, call, fileStorageTools, storageConfigTools, cleanupHistory, blobs, mail, sms, base, pool, errors, inviteStaffFixture, dispatchOutbox, dispatchSmsOutbox, dispatchStaffNotices, approvedAppointmentSms, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals, beforeTransaction(hook) { globalThis.__featureBeforeTransaction=hook; }, async close() { globalThis.__featureBeforeTransaction=null;delete globalThis.__featureErrors;if(staffAccounts)delete globalThis.__featureStaffSms;if(simulatedMail||fakeBookingMail)delete globalThis.__featureMail;server.close(); await pg.close(); await rm(bundle, { force: true }); } };
 }

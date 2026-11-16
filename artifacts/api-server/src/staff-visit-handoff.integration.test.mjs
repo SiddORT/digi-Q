@@ -20,7 +20,12 @@ test("reviewed visit handoff preserves receipt, freezes both coordinates and rep
       const response = await fetch(h.base + "/patients/handoff-patient/documents?clinicId=" + clinicId + "&name=fixture.pdf",
         { method: "POST", headers: { cookie: `digiq_session=${tokens[role]}`, "content-type": "application/pdf" },
           body: Buffer.from("%PDF-1.4\nFictional signed care narrative - unchanged") });
-      return { status: response.status, data: await response.json() };
+      const data = await response.json();
+      if (response.status === 201) {
+        const meta = await call("sa", "GET", "/files/" + data.id);
+        assert.equal((await call("sa", "POST", "/files/" + data.id + "/approve", { digest: meta.data.digest, reviewed: true })).status, 200);
+      }
+      return { status: response.status, data };
     };
     await h.pg.exec(`begin;
       insert into users(id,email,full_name,role,status) values('replacement','handoff-replacement@test.invalid','Fixture Replacement','doctor','active');

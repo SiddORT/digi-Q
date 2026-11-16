@@ -154,10 +154,12 @@ test("patient documents: staff upload in shared clinic, scoped list/download, up
   assert.equal((await h.call("rec", "POST", "/patients/p3/documents?name=a.pdf", PDF)).status >= 403, true, "foreign patient");
   assert.equal((await h.call("patu", "POST", "/patients/p1/documents?name=a.pdf", PDF)).status, 403, "patients cannot upload");
   const up = await h.call("rec", "POST", "/patients/p1/documents?name=../../Lab%20report.pdf&clinicId=c1", PDF);
+  const meta = await h.call("sa", "GET", `/files/${up.data.id}`);
+  assert.equal((await h.call("sa", "POST", `/files/${up.data.id}/approve`, { digest: meta.data.digest, reviewed: true })).status, 200);
   assert.equal(up.status, 201); assert.equal(up.data.contentType, "application/pdf"); assert.doesNotMatch(up.data.name, /[\\/]|^\./); assert.match(up.data.name, /Lab report\.pdf$/);
   assert.equal(h.blobs.size, 1);
   const row = (await rows("select clinic_id, uploaded_by, provider, status from patient_documents where id=$1", [up.data.id]))[0];
-  assert.deepEqual(row, { clinic_id: "c1", uploaded_by: "rec", provider: "memory", status: "active" });
+  assert.deepEqual(row, { clinic_id: "c1", uploaded_by: "rec", provider: "object", status: "active" });
   assert.deepEqual(ids(await h.call("adm", "GET", "/patients/p1/documents")), [up.data.id]);
   assert.deepEqual(ids(await h.call("patu", "GET", "/patients/p1/documents")), [up.data.id], "patient sees own documents");
   assert.equal((await h.call("patu", "GET", "/patients/p1/documents")).data.uploadClinicIds.length, 0);
@@ -171,17 +173,19 @@ test("patient documents: staff upload in shared clinic, scoped list/download, up
   assert.equal((await h.call("rec3", "GET", `/patient-documents/${up.data.id}`)).status, 404);
   assert.equal((await h.call("rec2", "DELETE", `/patient-documents/${up.data.id}`)).status, 403, "same-clinic peer is not the uploader");
   assert.equal((await h.call("adm", "DELETE", `/patient-documents/${up.data.id}`)).status, 204);
-  assert.equal(h.blobs.size, 0, "bytes removed");
+  assert.equal(h.blobs.size, 1, "bytes retained for eligible restore");
   assert.equal((await h.call("adm", "GET", `/patient-documents/${up.data.id}`)).status, 404);
   assert.deepEqual(ids(await h.call("adm", "GET", "/patients/p1/documents")), []);
   const audits = (await rows("select actor_id, action from audit_logs where entity_type='patient_documents' order by created_at")).map(r => `${r.actor_id}:${r.action}`);
-  assert.deepEqual(audits, ["rec:uploadDocument", "patu:downloadDocument", "adm:deleteDocument"]);
+  assert.deepEqual(audits, ["rec:uploadDocument", "sa:approveDocument", "patu:downloadDocument", "adm:deleteDocument"]);
 });
 
 test("permission policy: alternate routes are denied under their source module", async () => {
   const setPolicy = denied => h.pg.query(`insert into settings(id,data) values ('permission-policy',$1) on conflict (id) do update set data=excluded.data`, [JSON.stringify({ revision: 1, denied })]);
   const up = await h.call("rec", "POST", "/patients/p1/documents?name=policy.pdf&clinicId=c1", PDF);
   assert.equal(up.status, 201);
+  const meta = await h.call("sa", "GET", `/files/${up.data.id}`);
+  assert.equal((await h.call("sa", "POST", `/files/${up.data.id}/approve`, { digest: meta.data.digest, reviewed: true })).status, 200);
   try {
     await setPolicy(["receptionist:appointments:read"]);
     for (const [m, p, b] of [["GET", "/notifications"], ["POST", "/notifications/read", { all: true }], ["GET", "/search/records?q=REF"], ["GET", "/patients/p1/activity"]])

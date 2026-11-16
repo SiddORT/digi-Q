@@ -23,6 +23,152 @@
 import * as zod from 'zod';
 
 
+/**
+ * @summary Stage a private file for manual security review
+ */
+export const uploadPrivateFileQueryClinicIdMax = 128;
+
+export const uploadPrivateFileQueryPatientIdMax = 128;
+
+export const uploadPrivateFileQueryDoctorIdMax = 128;
+
+export const uploadPrivateFileQueryNameMax = 160;
+
+
+
+export const UploadPrivateFileQueryParams = zod.object({
+  "clinicId": zod.coerce.string().min(1).max(uploadPrivateFileQueryClinicIdMax),
+  "patientId": zod.coerce.string().min(1).max(uploadPrivateFileQueryPatientIdMax).optional(),
+  "doctorId": zod.coerce.string().min(1).max(uploadPrivateFileQueryDoctorIdMax).optional(),
+  "purpose": zod.enum(['profile', 'credentials', 'documents', 'medical']),
+  "name": zod.coerce.string().min(1).max(uploadPrivateFileQueryNameMax)
+})
+
+export const UploadPrivateFileResponse = zod.object({
+  "id": zod.string(),
+  "clinicId": zod.string(),
+  "patientId": zod.string().nullish(),
+  "doctorId": zod.string().nullish(),
+  "purpose": zod.string(),
+  "name": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.int(),
+  "status": zod.string(),
+  "scanState": zod.string(),
+  "digest": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "contentUrl": zod.string()
+})
+
+
+export const getPrivateFilePathFileIdMax = 128;
+
+
+
+export const GetPrivateFileParams = zod.object({
+  "fileId": zod.coerce.string().min(1).max(getPrivateFilePathFileIdMax)
+})
+
+export const GetPrivateFileResponse = zod.object({
+  "id": zod.string(),
+  "clinicId": zod.string(),
+  "patientId": zod.string().nullish(),
+  "doctorId": zod.string().nullish(),
+  "purpose": zod.string(),
+  "name": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.int(),
+  "status": zod.string(),
+  "scanState": zod.string(),
+  "digest": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "contentUrl": zod.string()
+})
+
+
+export const deletePrivateFilePathFileIdMax = 128;
+
+
+
+export const DeletePrivateFileParams = zod.object({
+  "fileId": zod.coerce.string().min(1).max(deletePrivateFilePathFileIdMax)
+})
+
+export const DeletePrivateFileResponse = zod.void()
+
+
+export const downloadPrivateFilePathFileIdMax = 128;
+
+
+
+export const DownloadPrivateFileParams = zod.object({
+  "fileId": zod.coerce.string().min(1).max(downloadPrivateFilePathFileIdMax)
+})
+
+export const DownloadPrivateFileResponse = zod.unknown()
+
+
+export const restorePrivateFilePathFileIdMax = 128;
+
+
+
+export const RestorePrivateFileParams = zod.object({
+  "fileId": zod.coerce.string().min(1).max(restorePrivateFilePathFileIdMax)
+})
+
+export const RestorePrivateFileResponse = zod.object({
+  "id": zod.string(),
+  "clinicId": zod.string(),
+  "patientId": zod.string().nullish(),
+  "doctorId": zod.string().nullish(),
+  "purpose": zod.string(),
+  "name": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.int(),
+  "status": zod.string(),
+  "scanState": zod.string(),
+  "digest": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "contentUrl": zod.string()
+})
+
+
+/**
+ * @summary Superadmin attests completed offline security review of the exact digest
+ */
+export const approvePrivateFilePathFileIdMax = 128;
+
+
+
+export const ApprovePrivateFileParams = zod.object({
+  "fileId": zod.coerce.string().min(1).max(approvePrivateFilePathFileIdMax)
+})
+
+export const approvePrivateFileBodyDigestRegExp = new RegExp('^[a-f0-9]{64}$');
+
+
+export const ApprovePrivateFileBody = zod.object({
+  "digest": zod.string().regex(approvePrivateFileBodyDigestRegExp),
+  "reviewed": zod.literal(true)
+})
+
+export const ApprovePrivateFileResponse = zod.object({
+  "id": zod.string(),
+  "clinicId": zod.string(),
+  "patientId": zod.string().nullish(),
+  "doctorId": zod.string().nullish(),
+  "purpose": zod.string(),
+  "name": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.int(),
+  "status": zod.string(),
+  "scanState": zod.string(),
+  "digest": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "contentUrl": zod.string()
+})
+
+
 export const issueLiveTicketLinkBodyReceiptSecretRegExp = new RegExp('^[a-f0-9]{64}$');
 
 

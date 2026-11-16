@@ -23,6 +23,93 @@ servers:
 security:
   - NativeSession: []
 paths:
+  /files:
+    post:
+      operationId: uploadPrivateFile
+      summary: Stage a private file for manual security review
+      parameters:
+        - { name: clinicId, in: query, required: true, schema: { type: string, minLength: 1, maxLength: 128 } }
+        - { name: patientId, in: query, schema: { type: string, minLength: 1, maxLength: 128 } }
+        - { name: doctorId, in: query, schema: { type: string, minLength: 1, maxLength: 128 } }
+        - { name: purpose, in: query, required: true, schema: { type: string, enum: [profile, credentials, documents, medical] } }
+        - { name: name, in: query, required: true, schema: { type: string, minLength: 1, maxLength: 160 } }
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: { $ref: '#/components/schemas/PrivateFileBytes' }
+      responses:
+        '201':
+          description: Quarantined file; content unavailable until approved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PrivateFileMetadata' }
+        '400': { description: Invalid file or owner }
+        '401': { description: Authentication required }
+        '403': { description: Permission denied }
+        '413': { description: File exceeds 10 MiB }
+  /files/{fileId}:
+    parameters:
+      - { name: fileId, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 128 } }
+    get:
+      operationId: getPrivateFile
+      responses:
+        '200':
+          description: Authorized file metadata; never includes a storage locator
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PrivateFileMetadata' }
+        '404': { description: Not found or not accessible }
+    delete:
+      operationId: deletePrivateFile
+      responses:
+        '204': { description: Soft deleted; bytes retained without automatic purge }
+        '404': { description: Not found or not accessible }
+        '409': { description: Lifecycle conflict }
+  /files/{fileId}/content:
+    parameters:
+      - { name: fileId, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 128 } }
+    get:
+      operationId: downloadPrivateFile
+      responses:
+        '200':
+          description: Approved private attachment; no-store
+          content:
+            application/octet-stream:
+              schema: { $ref: '#/components/schemas/PrivateFileBytes' }
+        '404': { description: 'Not found, hidden or quarantined' }
+        '409': { description: Stored bytes unavailable or changed }
+  /files/{fileId}/restore:
+    parameters:
+      - { name: fileId, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 128 } }
+    post:
+      operationId: restorePrivateFile
+      responses:
+        '200':
+          description: Restored to previous approval state
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PrivateFileMetadata' }
+        '409': { description: 'Missing retained bytes, erasure fence or lifecycle conflict' }
+  /files/{fileId}/approve:
+    parameters:
+      - { name: fileId, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 128 } }
+    post:
+      operationId: approvePrivateFile
+      summary: Superadmin attests completed offline security review of the exact digest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PrivateFileApproval' }
+      responses:
+        '200':
+          description: Exact retained bytes approved for authorized attachment downloads
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PrivateFileMetadata' }
+        '403': { description: Superadmin review authority required }
+        '409': { description: Digest or lifecycle conflict }
   /live-ticket-links:
     post:
       operationId: issueLiveTicketLink
@@ -1879,6 +1966,33 @@ components:
     From: { name: from, in: query, schema: { type: string, format: date } }
     To: { name: to, in: query, schema: { type: string, format: date } }
   schemas:
+    PrivateFileBytes:
+      type: string
+      format: binary
+    PrivateFileApproval:
+      type: object
+      additionalProperties: false
+      required: [digest, reviewed]
+      properties:
+        digest: { type: string, pattern: '^[a-f0-9]{64}$' }
+        reviewed: { type: boolean, enum: [true] }
+    PrivateFileMetadata:
+      type: object
+      required: [id, clinicId, purpose, name, contentType, size, status, scanState, createdAt, contentUrl]
+      properties:
+        id: { type: string }
+        clinicId: { type: string }
+        patientId: { type: [string, 'null'] }
+        doctorId: { type: [string, 'null'] }
+        purpose: { type: string }
+        name: { type: string }
+        contentType: { type: string }
+        size: { type: integer }
+        status: { type: string }
+        scanState: { type: string }
+        digest: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+        contentUrl: { type: string }
     ArrivalEstimate:
       type: object
       required: [state, basis, asOf, patientsAhead, waitMinutes, suggestedArrival, beyondSessionEnd, guidance]

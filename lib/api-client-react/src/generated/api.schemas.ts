@@ -20,6 +20,33 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+export type PrivateFileBytes = Blob;
+
+export interface PrivateFileApproval {
+  /** @pattern ^[a-f0-9]{64}$ */
+  digest: string;
+  reviewed: true;
+}
+
+export interface PrivateFileMetadata {
+  id: string;
+  clinicId: string;
+  /** @nullable */
+  patientId?: string | null;
+  /** @nullable */
+  doctorId?: string | null;
+  purpose: string;
+  name: string;
+  contentType: string;
+  size: number;
+  status: string;
+  scanState: string;
+  /** @nullable */
+  digest?: string | null;
+  createdAt: string;
+  contentUrl: string;
+}
+
 export type ArrivalEstimateState = typeof ArrivalEstimateState[keyof typeof ArrivalEstimateState];
 
 
@@ -4090,6 +4117,40 @@ export type DateParameter = string;
 export type FromParameter = string;
 
 export type ToParameter = string;
+
+export type UploadPrivateFileParams = {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  clinicId: string;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  patientId?: string;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  doctorId?: string;
+  purpose: UploadPrivateFilePurpose;
+  /**
+   * @minLength 1
+   * @maxLength 160
+   */
+  name: string;
+};
+
+export type UploadPrivateFilePurpose = typeof UploadPrivateFilePurpose[keyof typeof UploadPrivateFilePurpose];
+
+
+export const UploadPrivateFilePurpose = {
+  profile: 'profile',
+  credentials: 'credentials',
+  documents: 'documents',
+  medical: 'medical',
+} as const;
 
 export type GetPublicWebsiteConfig200 = {
   publicOrigin: string;

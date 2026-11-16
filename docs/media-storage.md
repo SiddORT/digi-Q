@@ -1,5 +1,9 @@
 # Logo storage configuration
 
+For doctor/patient attachments, registry migration, quarantine, retained-byte
+restore and backup requirements, see [Private uploads](private-uploads.md).
+The no-schema-change statement below refers only to the earlier logo feature.
+
 Logo selection supports **file uploads and existing HTTPS image links**. An external
 image link does not require upload storage.
 

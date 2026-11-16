@@ -35,7 +35,7 @@ export function PatientDocuments({ patientId, timezone }: { patientId: string; t
     try {
       // The File is sent as-is (generated client sets application/octet-stream); the server sniffs magic bytes.
       await api.uploadPatientDocument(patientId, f, { name: f.name.slice(0, 160), clinicId: clinicId || uploadClinics[0] });
-      setMessage(`"${f.name}" uploaded.`); await refresh();
+      setMessage(`"${f.name}" uploaded and awaiting security review. Downloads appear after approval.`); await refresh();
     } catch (e) { setError((e as { data?: { error?: string } })?.data?.error || "Upload failed. Use a PDF, PNG, JPEG, WebP or plain text file."); }
     finally { setBusy(null); if (file.current) file.current.value = ""; }
   }

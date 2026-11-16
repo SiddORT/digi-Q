@@ -3,18 +3,9 @@ import { mkdir, open, unlink } from "node:fs/promises";
 import { constants } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { assert } from "./http";
+import { mediaConfig } from "./storage-config";
+export { mediaConfig } from "./storage-config";
 
-export function mediaConfig(env = process.env) {
-  const driver = env.MEDIA_STORAGE || "object";
-  assert(["local", "object"].includes(driver), 500, "MEDIA_STORAGE must be local or object");
-  const root = env.MEDIA_ROOT || "";
-  const url = (env.MEDIA_URL || "/media").replace(/\/$/, "");
-  assert(/^\/[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)*$/.test(url) && !/^\/(api|admin|assets)(\/|$)/.test(url), 500, "MEDIA_URL must be a dedicated URL path, such as /media");
-  if (driver === "local") {
-    assert(isAbsolute(root) && root !== "/", 500, "Local media requires an absolute MEDIA_ROOT folder");
-  }
-  return { driver, root, url };
-}
 export async function initializeMedia() {
   const config = mediaConfig();
   if (config.driver !== "local") return;
