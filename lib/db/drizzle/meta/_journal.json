@@ -169,6 +169,13 @@
       "when": 1790980000009,
       "tag": "0024_private_file_registry",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790980000010,
+      "tag": "0025_private_file_s3",
+      "breakpoints": true
     }
   ]
 }

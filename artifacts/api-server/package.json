@@ -20,9 +20,11 @@
     "test:queue-contention": "node --test ./src/queue-contention.test.mjs",
     "test:schedules": "node --test --test-concurrency=1 ./src/schedule-contention.test.mjs ./src/schedule-day-overrides.test.mjs",
     "test:features": "node --test ./src/feature-policy.test.mjs ./src/functional-features.integration.test.mjs",
-    "test:files": "node --test --test-concurrency=1 ./src/private-files.integration.test.mjs ./src/private-files-upgrade.test.mjs ./src/feature-policy.test.mjs ./src/functional-features.integration.test.mjs ./src/staff-deletion-impact.integration.test.mjs ./src/staff-visit-handoff.integration.test.mjs"
+    "test:files": "node --test --test-concurrency=1 ./src/private-files.integration.test.mjs ./src/private-files-upgrade.test.mjs ./src/s3-file-storage.test.mjs ./src/s3-files.integration.test.mjs ./src/feature-policy.test.mjs ./src/functional-features.integration.test.mjs ./src/staff-deletion-impact.integration.test.mjs ./src/staff-visit-handoff.integration.test.mjs",
+    "test:files:s3": "node --test --test-concurrency=1 ./src/s3-file-storage.test.mjs ./src/s3-files.integration.test.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1169.0",
     "@google-cloud/storage": "^8.4.0",
     "@replit/connectors-sdk": "^0.4.3",
     "@workspace/api-zod": "workspace:*",

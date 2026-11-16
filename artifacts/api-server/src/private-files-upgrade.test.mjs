@@ -26,6 +26,9 @@ test("registry upgrade preserves preexisting metadata, old provider keys and del
       assert.equal(after[i].deleted_from, null);
       assert.equal(after[i].digest, null, "no invented proof of historical bytes");
     }
+    await pg.exec(await readFile(new URL("0025_private_file_s3.sql", directory), "utf8"));
+    assert.deepEqual((await pg.query("select * from patient_documents order by id")).rows, after,
+      "S3 provider allowlist extension leaves all historical data unchanged");
     assert.equal((await pg.query(`select count(*)::int n from pg_trigger where tgrelid='patient_documents'::regclass and tgname in
       ('erased_asset_reference_guard','erased_staff_reference_guard','private_file_identity_guard')`)).rows[0].n, 3);
   } finally { await pg.close(); }

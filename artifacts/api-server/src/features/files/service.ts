@@ -35,7 +35,7 @@ export async function uploadFile(user: any, input: FileSubject & { purpose: stri
     registryVersion: 1, scanState: "pending", status: "staging" };
   await db.insert(fileRegistry).values(row);
   try {
-    const written = await writeFileBytes(key, bytes, contentType!);
+    const written = await writeFileBytes(key, bytes, contentType!, storage);
     assert(written.provider === row.provider && written.key === row.storageKey, 409, "Storage configuration changed during upload");
     return await db.transaction(async tx => {
       const [current] = await tx.select().from(fileRegistry).where(eq(fileRegistry.id, id)).for("update");

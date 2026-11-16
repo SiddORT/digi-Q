@@ -2,11 +2,19 @@
 
 ## Scope and rollout boundary
 
-This is the local/private-file foundation, not an S3 migration, clinical database,
+This is the private-file foundation, not a file migration, clinical database,
 automated antivirus service, retention policy or production rollout. Clinical and
 business records remain relational PostgreSQL data. Files are attachments only.
 No existing bytes or locators are moved or rewritten. No live provider is needed
 for the tests below.
+
+The opt-in [S3-compatible adapter](s3-private-storage.md) extends this interface.
+`FILES_STORAGE` selects new private uploads separately from public logos; blank
+preserves the existing `MEDIA_STORAGE` behavior. Apply migration
+`0025_private_file_s3` before deliberately selecting S3 on a persistent
+environment. It changes only the provider allowlist, not file metadata/locators
+or immutable identity/erasure guards. No persistent database has been migrated
+as part of the S3 adapter work.
 
 **Apply the reviewed additive migration before running the changed document
 routes on any persistent environment.** Migration `0024_private_file_registry`

@@ -19,3 +19,16 @@ For object-storage readiness, test object read/create permissions rather than bu
 **Why:** Replit-managed credentials denied bucket metadata with HTTP 403 while explicitly granting both object read and create. Treating bucket metadata as the upload capability produced a false failure.
 
 **How to apply:** Keep permission probes read-only and distinguish permission grants from a completed browser upload. Never broaden storage privileges just to make an administrative metadata probe pass.
+
+When pinning historical S3 storage authority, exclude the SDK's ambient endpoint
+overrides as well as validating the app's own endpoint setting.
+
+**Why:** AWS SDK v3 can consume global/service endpoint URLs from environment or
+shared profiles when no explicit endpoint is supplied. Hashing only the app's
+configured authority would not prevent those sources from redirecting a
+historical bucket/key to another provider.
+
+**How to apply:** Keep SDK-configured endpoint overrides disabled for this
+adapter, and exercise the actual signing/HTTP pipeline offline rather than
+relying exclusively on command doubles. Endpoint changes are not authorization
+to migrate files.

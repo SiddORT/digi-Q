@@ -2,6 +2,8 @@
 
 For doctor/patient attachments, registry migration, quarantine, retained-byte
 restore and backup requirements, see [Private uploads](private-uploads.md).
+An optional [S3-compatible private adapter](s3-private-storage.md) is selected
+separately with `FILES_STORAGE`; it never changes this public-logo configuration.
 The no-schema-change statement below refers only to the earlier logo feature.
 
 Logo selection supports **file uploads and existing HTTPS image links**. An external

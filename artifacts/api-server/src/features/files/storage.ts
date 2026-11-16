@@ -7,9 +7,11 @@ import { mediaConfig, privateStorageConfig } from "../../lib/storage-config";
 import { objectStorageClient } from "../../lib/objectStorage";
 import { readDocument } from "../../lib/document-storage";
 import { DOCUMENT_MAX_BYTES } from "../../lib/feature-policy";
+import { PRIVATE_FILE_KEY as KEY } from "./keys";
+import { createS3FileAdapter, s3Locator } from "./s3-storage";
+import { s3FileConfig } from "./s3-config";
 
 const ID = /^(?!con$|prn$|aux$|nul$|com[0-9]$|lpt[0-9]$)[a-zA-Z0-9_-]{1,128}$/i;
-const KEY = /^private\/clinics\/[A-Za-z0-9_-]+\/(?:doctors|patients)\/[A-Za-z0-9_-]+\/(?:profile|credentials|documents|medical)\/[a-f0-9-]{36}\.(?:pdf|png|jpg|webp|txt)$/;
 const extensions: Record<string, string> = { "application/pdf": "pdf", "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "text/plain": "txt" };
 
 export function fileKey(clinicId: string, kind: "patients" | "doctors", entityId: string, purpose: string, id: string, mime: string) {
@@ -56,12 +58,19 @@ function objectFile(locator: string) {
 export function planFileStorage(key: string) {
   assert(KEY.test(key), 400, "Invalid private locator");
   const config = privateStorageConfig();
+  if (config.driver === "s3") return { provider: "s3", key: s3Locator(key, config.s3) };
   return { provider: config.driver, key: config.driver === "local" ? key :
     `/${process.env.PRIVATE_OBJECT_DIR!.replace(/^\/+|\/+$/g, "")}/uploads/${key}` };
 }
-export async function writeFileBytes(key: string, bytes: Buffer, contentType: string) {
+export async function writeFileBytes(key: string, bytes: Buffer, contentType: string, planned = planFileStorage(key)) {
   const config = privateStorageConfig();
+  const current = planFileStorage(key);
+  assert(current.provider === planned.provider && current.key === planned.key, 409, "Storage configuration changed during upload");
   assert(bytes.length > 0 && bytes.length <= DOCUMENT_MAX_BYTES, 400, "Invalid file size");
+  if (config.driver === "s3") {
+    await createS3FileAdapter(config.s3).upload(planned.key, bytes, contentType);
+    return planned;
+  }
   if (config.driver === "object") {
     const locator = planFileStorage(key).key;
     await objectFile(locator).save(bytes, { resumable: false, contentType, preconditionOpts: { ifGenerationMatch: 0 }, metadata: { cacheControl: "private, no-store" } });
@@ -82,7 +91,8 @@ export async function writeFileBytes(key: string, bytes: Buffer, contentType: st
 
 export async function readFileBytes(file: { provider: string; storageKey: string; registryVersion: number }): Promise<Buffer> {
   if (!file.registryVersion) return readDocument(file.provider, file.storageKey);
-  assert(["local", "object"].includes(file.provider), 409, "Unknown file provider");
+  assert(["local", "object", "s3"].includes(file.provider), 409, "Unknown file provider");
+  if (file.provider === "s3") return createS3FileAdapter(s3FileConfig()).read(file.storageKey);
   if (file.provider === "object") {
     const object = objectFile(file.storageKey);
     const [metadata] = await object.getMetadata();

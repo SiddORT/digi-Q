@@ -1,6 +1,7 @@
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { existsSync } from "node:fs";
 import { assert } from "./http";
+import { s3FileConfig } from "../features/files/s3-config";
 
 /** Environment is read after the existing bootstrap/vault loading; never log it. */
 export function mediaConfig(env = process.env) {
@@ -15,7 +16,12 @@ export function mediaConfig(env = process.env) {
 
 export function privateStorageConfig(env = process.env) {
   const config = mediaConfig(env);
-  if (config.driver === "local") {
+  const driver = env.FILES_STORAGE || config.driver;
+  assert(["local", "object", "s3"].includes(driver), 503, "FILES_STORAGE must be local, object or s3");
+  if (driver === "s3") return { ...config, driver: "s3" as const, s3: s3FileConfig(env) };
+  const selected = { ...config, driver: driver as "local" | "object" };
+  if (selected.driver === "local") {
+    assert(isAbsolute(config.root) && config.root !== "/", 503, "Local private files require an absolute MEDIA_ROOT folder");
     assert(basename(config.root) === "uploads", 503, "Private files require MEDIA_ROOT ending in uploads");
     assert(!config.root.split(/[\\/]/).some(p => ["public", "static"].includes(p.toLowerCase())), 503, "Private uploads cannot be in a public folder");
     if (env.NODE_ENV === "production") {
@@ -31,5 +37,5 @@ export function privateStorageConfig(env = process.env) {
     assert(parts.length >= 2 && /^[a-z0-9][a-z0-9._-]{1,221}[a-z0-9]$/.test(parts[0]) &&
       parts.every(p => /^[a-zA-Z0-9._-]+$/.test(p) && !p.includes("..") && p !== "."), 503, "Private object storage is not configured");
   }
-  return config;
+  return selected;
 }

@@ -13,7 +13,8 @@ const root = resolve(import.meta.dirname, "../../../..");
 const migrations = resolve(root, "lib/db/drizzle");
 let harnessSequence = 0;
 
-export async function createFeatureHarness({files=false, administration=false, simulatedMail=false, bookingLookups=false, postgres=false, fakeBookingMail=false, registration=false, deletion=false, notificationSettings=false, communicationUsage=false, staffAccounts=false, appointmentDetails=false}={}) {
+export async function createFeatureHarness({files=false, s3ClientFactory, administration=false, simulatedMail=false, bookingLookups=false, postgres=false, fakeBookingMail=false, registration=false, deletion=false, notificationSettings=false, communicationUsage=false, staffAccounts=false, appointmentDetails=false}={}) {
+  if (s3ClientFactory) globalThis.__featureS3ClientFactory = s3ClientFactory;
   const cluster=postgres?await createQueueHarness({empty:true}):null;
   const {Pool}=postgres?createRequire(resolve(root,"lib/db/package.json"))("pg"):{};
   const pool=postgres?new Pool({host:cluster.temp,port:5432,user:"queue_test",database:"postgres",password:"",ssl:false,max:8,statement_timeout:10000}):null;
@@ -148,10 +149,18 @@ export async function createFeatureHarness({files=false, administration=false, s
         return app;
       }` },
     outfile: bundle, bundle: true, platform: "node", format: "esm", logLevel: "error",
-    external: ["argon2", "pg", "pg-native", "@electric-sql/pglite", "@google-cloud/storage", "express", "pino", "pino-http", "libphonenumber-js/max",
+    external: ["@aws-sdk/client-s3", "argon2", "pg", "pg-native", "@electric-sql/pglite", "@google-cloud/storage", "express", "pino", "pino-http", "libphonenumber-js/max",
       ...((files || bookingLookups || registration || appointmentDetails) ? ["qrcode", "jspdf", "sharp", "express-rate-limit"] : []),
       ...(bookingLookups && !simulatedMail ? ["nodemailer"] : [])],
     plugins: [{ name: "feature-fixtures", setup(b) {
+      if (s3ClientFactory) {
+        b.onResolve({filter: /\/s3-storage$/}, () => ({path:"s3-storage", namespace:"s3-fixture"}));
+        b.onLoad({filter: /.*/, namespace:"s3-fixture"}, () => ({resolveDir:root, contents:`
+          export * from "${resolve(root,"artifacts/api-server/src/features/files/s3-storage.ts")}";
+          import {createS3FileAdapter as real} from "${resolve(root,"artifacts/api-server/src/features/files/s3-storage.ts")}";
+          export const createS3FileAdapter = config => real(config, globalThis.__featureS3ClientFactory, 40);
+        `}));
+      }
       if (staffAccounts) {
         b.onResolve({filter:/\/notification-sms-transport$/},()=>({path:"staff-sms",namespace:"staff-sms"}));
         b.onLoad({filter:/.*/,namespace:"staff-sms"},()=>({resolveDir:resolve(root,"artifacts/api-server/src"),contents:`
