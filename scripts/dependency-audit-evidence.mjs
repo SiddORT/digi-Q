@@ -1,5 +1,5 @@
 // Retain small, reviewable, credential-free audit evidence in tracked docs.
-// Usage: node scripts/dependency-audit-evidence.mjs before|after [f01|f02]
+// Usage: node scripts/dependency-audit-evidence.mjs before|after
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
@@ -8,8 +8,6 @@ import { spawnSync } from "node:child_process";
 
 const phase = process.argv[2];
 if (!["before", "after"].includes(phase)) throw Error("Specify before or after");
-const label = process.argv[3] || "f01";
-if (!["f01", "f02", "f04"].includes(label)) throw Error("Specify f01, f02 or f04");
 const root = resolve(import.meta.dirname, "..");
 const require = createRequire(resolve(root, "artifacts/clinicflow-project-deck/package.json"));
 const lockText = await readFile(resolve(root, "pnpm-lock.yaml"), "utf8");
@@ -33,5 +31,5 @@ const evidence = {
   metadata: raw.metadata, advisoryCounts: counts, advisories, lockedPackages: packages,
 };
 await mkdir(resolve(root, "docs/security"), { recursive: true });
-await writeFile(resolve(root, `docs/security/${label}-audit-${phase}.json`), JSON.stringify(evidence, null, 2) + "\n");
+await writeFile(resolve(root, `docs/security/f01-audit-${phase}.json`), JSON.stringify(evidence, null, 2) + "\n");
 console.log(JSON.stringify({ phase, vulnerabilities: raw.metadata.vulnerabilities, advisoryCounts: counts }));
