@@ -626,7 +626,6 @@ export type GetStaffVerificationQueryResult = NonNullable<Awaited<ReturnType<typ
 export type GetStaffVerificationQueryError = ErrorType<unknown>
 
 
-
 export function useGetStaffVerification<TData = Awaited<ReturnType<typeof getStaffVerification>>, TError = ErrorType<unknown>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffVerification>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -929,7 +928,6 @@ export type GetPublicWebsiteConfigQueryResult = NonNullable<Awaited<ReturnType<t
 export type GetPublicWebsiteConfigQueryError = ErrorType<void>
 
 
-
 export function useGetPublicWebsiteConfig<TData = Awaited<ReturnType<typeof getPublicWebsiteConfig>>, TError = ErrorType<void>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWebsiteConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -998,7 +996,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetMyNotificationSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyNotificationSettings>>>
 export type GetMyNotificationSettingsQueryError = ErrorType<unknown>
-
 
 
 export function useGetMyNotificationSettings<TData = Awaited<ReturnType<typeof getMyNotificationSettings>>, TError = ErrorType<unknown>>(
@@ -1160,7 +1157,6 @@ export type GetManagedNotificationSettingsQueryResult = NonNullable<Awaited<Retu
 export type GetManagedNotificationSettingsQueryError = ErrorType<unknown>
 
 
-
 export function useGetManagedNotificationSettings<TData = Awaited<ReturnType<typeof getManagedNotificationSettings>>, TError = ErrorType<unknown>>(
  params?: GetManagedNotificationSettingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getManagedNotificationSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -1320,7 +1316,6 @@ export type SearchGeographyQueryResult = NonNullable<Awaited<ReturnType<typeof s
 export type SearchGeographyQueryError = ErrorType<unknown>
 
 
-
 export function useSearchGeography<TData = Awaited<ReturnType<typeof searchGeography>>, TError = ErrorType<unknown>>(
  params: SearchGeographyParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchGeography>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -1398,7 +1393,6 @@ export type SearchPublicGeographyQueryResult = NonNullable<Awaited<ReturnType<ty
 export type SearchPublicGeographyQueryError = ErrorType<unknown>
 
 
-
 export function useSearchPublicGeography<TData = Awaited<ReturnType<typeof searchPublicGeography>>, TError = ErrorType<unknown>>(
  params: SearchPublicGeographyParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchPublicGeography>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -1467,7 +1461,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type LookupPublicPincodeQueryResult = NonNullable<Awaited<ReturnType<typeof lookupPublicPincode>>>
 export type LookupPublicPincodeQueryError = ErrorType<unknown>
-
 
 
 export function useLookupPublicPincode<TData = Awaited<ReturnType<typeof lookupPublicPincode>>, TError = ErrorType<unknown>>(
@@ -1608,7 +1601,6 @@ export type GetStorageConfigurationQueryResult = NonNullable<Awaited<ReturnType<
 export type GetStorageConfigurationQueryError = ErrorType<unknown>
 
 
-
 export function useGetStorageConfiguration<TData = Awaited<ReturnType<typeof getStorageConfiguration>>, TError = ErrorType<unknown>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStorageConfiguration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -1686,7 +1678,6 @@ export type GetSystemUsersQueryResult = NonNullable<Awaited<ReturnType<typeof ge
 export type GetSystemUsersQueryError = ErrorType<unknown>
 
 
-
 export function useGetSystemUsers<TData = Awaited<ReturnType<typeof getSystemUsers>>, TError = ErrorType<unknown>>(
  params?: GetSystemUsersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSystemUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -1760,7 +1751,7 @@ export type GetStaffDeletionImpactQueryResult = NonNullable<Awaited<ReturnType<t
 export type GetStaffDeletionImpactQueryError = ErrorType<void>
 
 
-
+/** Live Superadmin-only staff impact. A blocked review does not authorize deletion. */
 export function useGetStaffDeletionImpact<TData = Awaited<ReturnType<typeof getStaffDeletionImpact>>, TError = ErrorType<void>>(
  id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffDeletionImpact>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -1834,7 +1825,7 @@ export type GetStaffHistoryReviewQueryResult = NonNullable<Awaited<ReturnType<ty
 export type GetStaffHistoryReviewQueryError = ErrorType<void>
 
 
-
+/** Superadmin-only bounded scan of unproven history. Unknown ownership can block any staff removal. */
 export function useGetStaffHistoryReview<TData = Awaited<ReturnType<typeof getStaffHistoryReview>>, TError = ErrorType<void>>(
  id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffHistoryReview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -1928,7 +1919,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ScanStaffHistoryReviewMutationError = ErrorType<unknown>
     export type ScanStaffHistoryReviewMutationVariables = {id: string;data: BodyType<HistoryReviewCursorInput>}
 
-    export const useScanStaffHistoryReview = <TError = ErrorType<unknown>,
+    /** Read-only cursor scan; no history or account changes. */
+export const useScanStaffHistoryReview = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof scanStaffHistoryReview>>, TError,ScanStaffHistoryReviewMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof scanStaffHistoryReview>>,
@@ -2323,7 +2315,6 @@ export type GetStaffRemovalReceiptQueryResult = NonNullable<Awaited<ReturnType<t
 export type GetStaffRemovalReceiptQueryError = ErrorType<void>
 
 
-
 export function useGetStaffRemovalReceipt<TData = Awaited<ReturnType<typeof getStaffRemovalReceipt>>, TError = ErrorType<void>>(
  operationId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffRemovalReceipt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -2460,7 +2451,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetStaffHandoffOptionsQueryResult = NonNullable<Awaited<ReturnType<typeof getStaffHandoffOptions>>>
 export type GetStaffHandoffOptionsQueryError = ErrorType<unknown>
-
 
 
 export function useGetStaffHandoffOptions<TData = Awaited<ReturnType<typeof getStaffHandoffOptions>>, TError = ErrorType<unknown>>(
@@ -2699,7 +2689,6 @@ export type GetCustomRolesQueryResult = NonNullable<Awaited<ReturnType<typeof ge
 export type GetCustomRolesQueryError = ErrorType<unknown>
 
 
-
 export function useGetCustomRoles<TData = Awaited<ReturnType<typeof getCustomRoles>>, TError = ErrorType<unknown>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCustomRoles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -2850,7 +2839,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetPermissionPolicyQueryResult = NonNullable<Awaited<ReturnType<typeof getPermissionPolicy>>>
 export type GetPermissionPolicyQueryError = ErrorType<unknown>
-
 
 
 export function useGetPermissionPolicy<TData = Awaited<ReturnType<typeof getPermissionPolicy>>, TError = ErrorType<unknown>>(
@@ -3110,7 +3098,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UploadLocalLogoMutationError = ErrorType<unknown>
     export type UploadLocalLogoMutationVariables = {id: string;data: BodyType<Blob>}
 
-    export const useUploadLocalLogo = <TError = ErrorType<unknown>,
+    /** Authenticated same-origin local image upload. Requires the normal CSRF header. */
+export const useUploadLocalLogo = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadLocalLogo>>, TError,UploadLocalLogoMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof uploadLocalLogo>>,
@@ -3246,7 +3235,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetNotificationTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof getNotificationTemplates>>>
 export type GetNotificationTemplatesQueryError = ErrorType<unknown>
-
 
 
 export function useGetNotificationTemplates<TData = Awaited<ReturnType<typeof getNotificationTemplates>>, TError = ErrorType<unknown>>(
@@ -3572,7 +3560,6 @@ export type GetEventControlsQueryResult = NonNullable<Awaited<ReturnType<typeof 
 export type GetEventControlsQueryError = ErrorType<unknown>
 
 
-
 export function useGetEventControls<TData = Awaited<ReturnType<typeof getEventControls>>, TError = ErrorType<unknown>>(
  params?: GetEventControlsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEventControls>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -3810,7 +3797,7 @@ export type GetIntegrationSettingsQueryResult = NonNullable<Awaited<ReturnType<t
 export type GetIntegrationSettingsQueryError = ErrorType<void>
 
 
-
+/** Super Admin only. Environment readiness only; never returns configuration values. */
 export function useGetIntegrationSettings<TData = Awaited<ReturnType<typeof getIntegrationSettings>>, TError = ErrorType<void>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIntegrationSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -3884,7 +3871,7 @@ export type GetSmtpTestReceiptQueryResult = NonNullable<Awaited<ReturnType<typeo
 export type GetSmtpTestReceiptQueryError = ErrorType<void>
 
 
-
+/** Latest SMTP test for the signed-in non-demo Superadmin. Receipt is a manual assertion, never delivery proof. */
 export function useGetSmtpTestReceipt<TData = Awaited<ReturnType<typeof getSmtpTestReceipt>>, TError = ErrorType<void>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSmtpTestReceipt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -4059,7 +4046,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type SendSmtpTestEmailMutationError = ErrorType<void>
     export type SendSmtpTestEmailMutationVariables = {data: BodyType<SmtpTestInput>}
 
-    export const useSendSmtpTestEmail = <TError = ErrorType<void>,
+    /** Super Admin only. Sends a fixed DigiQ Doctors test message. Rate limited by user and IP. */
+export const useSendSmtpTestEmail = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendSmtpTestEmail>>, TError,SendSmtpTestEmailMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof sendSmtpTestEmail>>,
@@ -4144,7 +4132,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type SendNotificationSmsTestMessageMutationError = ErrorType<void>
     export type SendNotificationSmsTestMessageMutationVariables = {data: BodyType<NotificationSmsTestInput>}
 
-    export const useSendNotificationSmsTestMessage = <TError = ErrorType<void>,
+    /** Super Admin only. Explicitly sends one test using saved notification SMS configuration, without activating clinic notifications. */
+export const useSendNotificationSmsTestMessage = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendNotificationSmsTestMessage>>, TError,SendNotificationSmsTestMessageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof sendNotificationSmsTestMessage>>,
@@ -4229,7 +4218,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type DemoLoginMutationError = ErrorType<unknown>
     export type DemoLoginMutationVariables = {data: BodyType<DemoLoginInput>}
 
-    export const useDemoLogin = <TError = ErrorType<unknown>,
+    /** Dedicated demo identity only. Local Argon2id password verification issues a scoped HttpOnly session cookie. */
+export const useDemoLogin = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof demoLogin>>, TError,DemoLoginMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof demoLogin>>,
@@ -4295,7 +4285,7 @@ export type GetDemoSetupQueryResult = NonNullable<Awaited<ReturnType<typeof getD
 export type GetDemoSetupQueryError = ErrorType<unknown>
 
 
-
+/** Super Admin only */
 export function useGetDemoSetup<TData = Awaited<ReturnType<typeof getDemoSetup>>, TError = ErrorType<unknown>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDemoSetup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -4374,7 +4364,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateDemoSetupMutationError = ErrorType<unknown>
 
 
-    export const useCreateDemoSetup = <TError = ErrorType<unknown>,
+    /** Explicit Super Admin creation; initial password is returned once only and stored only as Argon2id hash */
+export const useCreateDemoSetup = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDemoSetup>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createDemoSetup>>,
@@ -4529,7 +4520,7 @@ export type ListQueueSessionsQueryResult = NonNullable<Awaited<ReturnType<typeof
 export type ListQueueSessionsQueryError = ErrorType<void>
 
 
-
+/** Paginated staff-only session overview in the effective authorized workspace. Includes empty scheduled sessions and persisted appointment session snapshots for one local date. Counts contain no patient records. available describes an open session template, not booking eligibility or permission to perform actions; drill down to the operational queue for authoritative checks. */
 export function useListQueueSessions<TData = Awaited<ReturnType<typeof listQueueSessions>>, TError = ErrorType<void>>(
  params: ListQueueSessionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listQueueSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -4610,7 +4601,7 @@ export type GetSessionContextsQueryResult = NonNullable<Awaited<ReturnType<typeo
 export type GetSessionContextsQueryError = ErrorType<unknown>
 
 
-
+/** Scope-checked staff operational sessions, merging current templates with persisted appointment snapshots. Historical-only sessions never authorize new booking. Select using startTime as well as sessionId because one template can have multiple historical timings. */
 export function useGetSessionContexts<TData = Awaited<ReturnType<typeof getSessionContexts>>, TError = ErrorType<unknown>>(
  params: GetSessionContextsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSessionContexts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -4679,7 +4670,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetRegistrationOptionsQueryResult = NonNullable<Awaited<ReturnType<typeof getRegistrationOptions>>>
 export type GetRegistrationOptionsQueryError = ErrorType<unknown>
-
 
 
 export function useGetRegistrationOptions<TData = Awaited<ReturnType<typeof getRegistrationOptions>>, TError = ErrorType<unknown>>(
@@ -4841,7 +4831,6 @@ export type GetClinicRegistrationCompletionQueryResult = NonNullable<Awaited<Ret
 export type GetClinicRegistrationCompletionQueryError = ErrorType<unknown>
 
 
-
 export function useGetClinicRegistrationCompletion<TData = Awaited<ReturnType<typeof getClinicRegistrationCompletion>>, TError = ErrorType<unknown>>(
  params: GetClinicRegistrationCompletionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClinicRegistrationCompletion>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -4919,7 +4908,6 @@ export type GetClinicAdminSetupCompletionQueryResult = NonNullable<Awaited<Retur
 export type GetClinicAdminSetupCompletionQueryError = ErrorType<unknown>
 
 
-
 export function useGetClinicAdminSetupCompletion<TData = Awaited<ReturnType<typeof getClinicAdminSetupCompletion>>, TError = ErrorType<unknown>>(
  params: GetClinicAdminSetupCompletionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClinicAdminSetupCompletion>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -4988,7 +4976,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetClinicSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getClinicSettings>>>
 export type GetClinicSettingsQueryError = ErrorType<unknown>
-
 
 
 export function useGetClinicSettings<TData = Awaited<ReturnType<typeof getClinicSettings>>, TError = ErrorType<unknown>>(
@@ -5316,7 +5303,6 @@ export type CheckSlugAvailabilityQueryResult = NonNullable<Awaited<ReturnType<ty
 export type CheckSlugAvailabilityQueryError = ErrorType<unknown>
 
 
-
 export function useCheckSlugAvailability<TData = Awaited<ReturnType<typeof checkSlugAvailability>>, TError = ErrorType<unknown>>(
  params: CheckSlugAvailabilityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof checkSlugAvailability>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -5396,7 +5382,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type ResolveClinicSlugQueryResult = NonNullable<Awaited<ReturnType<typeof resolveClinicSlug>>>
 export type ResolveClinicSlugQueryError = ErrorType<unknown>
-
 
 
 export function useResolveClinicSlug<TData = Awaited<ReturnType<typeof resolveClinicSlug>>, TError = ErrorType<unknown>>(
@@ -5485,7 +5470,6 @@ export type ResolveBranchSlugQueryResult = NonNullable<Awaited<ReturnType<typeof
 export type ResolveBranchSlugQueryError = ErrorType<unknown>
 
 
-
 export function useResolveBranchSlug<TData = Awaited<ReturnType<typeof resolveBranchSlug>>, TError = ErrorType<unknown>>(
  clinicSlug: string,
     branchSlug: string,
@@ -5567,7 +5551,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetDoctorPresenceQueryResult = NonNullable<Awaited<ReturnType<typeof getDoctorPresence>>>
 export type GetDoctorPresenceQueryError = ErrorType<unknown>
-
 
 
 export function useGetDoctorPresence<TData = Awaited<ReturnType<typeof getDoctorPresence>>, TError = ErrorType<unknown>>(
@@ -5731,7 +5714,6 @@ export type GetBookingScheduleAccessQueryResult = NonNullable<Awaited<ReturnType
 export type GetBookingScheduleAccessQueryError = ErrorType<unknown>
 
 
-
 export function useGetBookingScheduleAccess<TData = Awaited<ReturnType<typeof getBookingScheduleAccess>>, TError = ErrorType<unknown>>(
  params: GetBookingScheduleAccessParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBookingScheduleAccess>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -5809,7 +5791,6 @@ export type GetPublicBookingContextQueryResult = NonNullable<Awaited<ReturnType<
 export type GetPublicBookingContextQueryError = ErrorType<unknown>
 
 
-
 export function useGetPublicBookingContext<TData = Awaited<ReturnType<typeof getPublicBookingContext>>, TError = ErrorType<unknown>>(
  params: GetPublicBookingContextParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicBookingContext>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -5885,7 +5866,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetPublicAvailabilitySessionsQueryResult = NonNullable<Awaited<ReturnType<typeof getPublicAvailabilitySessions>>>
 export type GetPublicAvailabilitySessionsQueryError = ErrorType<unknown>
-
 
 
 export function useGetPublicAvailabilitySessions<TData = Awaited<ReturnType<typeof getPublicAvailabilitySessions>>, TError = ErrorType<unknown>>(
@@ -6129,7 +6109,6 @@ export type ListGuestRequestsQueryResult = NonNullable<Awaited<ReturnType<typeof
 export type ListGuestRequestsQueryError = ErrorType<unknown>
 
 
-
 export function useListGuestRequests<TData = Awaited<ReturnType<typeof listGuestRequests>>, TError = ErrorType<unknown>>(
  params?: ListGuestRequestsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGuestRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -6283,7 +6262,6 @@ export type HealthCheckQueryResult = NonNullable<Awaited<ReturnType<typeof healt
 export type HealthCheckQueryError = ErrorType<unknown>
 
 
-
 export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, TError = ErrorType<unknown>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof healthCheck>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -6352,7 +6330,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetAuthCsrfQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthCsrf>>>
 export type GetAuthCsrfQueryError = ErrorType<unknown>
-
 
 
 export function useGetAuthCsrf<TData = Awaited<ReturnType<typeof getAuthCsrf>>, TError = ErrorType<unknown>>(
@@ -6447,7 +6424,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type NativeStaffLoginMutationError = ErrorType<void>
     export type NativeStaffLoginMutationVariables = {data: BodyType<NativeStaffLoginInput>}
 
-    export const useNativeStaffLogin = <TError = ErrorType<void>,
+    /** Verify the local staff password with Argon2id and create a session directly. No email code or SMTP delivery is required. */
+export const useNativeStaffLogin = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof nativeStaffLogin>>, TError,NativeStaffLoginMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof nativeStaffLogin>>,
@@ -6534,6 +6512,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type VerifyStaffDeviceMutationVariables = {data: BodyType<AuthCodeInput>}
 
     /**
+ * Retired compatibility tombstone. Use staff email and password login; no payload can create a session.
  * @deprecated
  */
 export const useVerifyStaffDevice = <TError = ErrorType<void>,
@@ -6621,7 +6600,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type StartPatientEmailMutationError = ErrorType<unknown>
     export type StartPatientEmailMutationVariables = {data: BodyType<PatientLoginStartInput>}
 
-    export const useStartPatientEmail = <TError = ErrorType<unknown>,
+    /** Requests email login (including new patients) or SMS login for existing active patient accounts. Email outcome is always not_reported to protect eligibility. Optional registration SMS proves only the supplied phone, independently of email eligibility, and returns its safe channel outcome. SMS login uses the platform patient-login template, bypasses optional notification gates and never returns the code. */
+export const useStartPatientEmail = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startPatientEmail>>, TError,StartPatientEmailMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof startPatientEmail>>,
@@ -6706,7 +6686,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ResendPatientEmailCodeMutationError = ErrorType<unknown>
     export type ResendPatientEmailCodeMutationVariables = {data: BodyType<RegistrationChallengeReference>}
 
-    export const useResendPatientEmailCode = <TError = ErrorType<unknown>,
+    /** Rotates an eligible email code on the same intent, preserving optional phone proof, original expiry and attempt limits. Generic response does not confirm account matching or delivery. */
+export const useResendPatientEmailCode = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendPatientEmailCode>>, TError,ResendPatientEmailCodeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof resendPatientEmailCode>>,
@@ -6791,7 +6772,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type VerifyPatientEmailMutationError = ErrorType<void>
     export type VerifyPatientEmailMutationVariables = {data: BodyType<PatientLoginVerifyInput>}
 
-    export const useVerifyPatientEmail = <TError = ErrorType<void>,
+    /** Consumes a single-use patient code for its exact delivery channel and establishes an HTTP-only session. SMS never creates users or verifies email ownership. */
+export const useVerifyPatientEmail = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyPatientEmail>>, TError,VerifyPatientEmailMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof verifyPatientEmail>>,
@@ -6876,7 +6858,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type RequestRegistrationMobileCodeMutationError = ErrorType<unknown>
     export type RequestRegistrationMobileCodeMutationVariables = {data: BodyType<RegistrationChallengeReference>}
 
-    export const useRequestRegistrationMobileCode = <TError = ErrorType<unknown>,
+    /** Requests a separate optional phone code for a pending email registration intent. Does not create a session or verify email. */
+export const useRequestRegistrationMobileCode = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestRegistrationMobileCode>>, TError,RequestRegistrationMobileCodeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof requestRegistrationMobileCode>>,
@@ -6961,7 +6944,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type VerifyRegistrationMobileCodeMutationError = ErrorType<unknown>
     export type VerifyRegistrationMobileCodeMutationVariables = {data: BodyType<AuthCodeInput>}
 
-    export const useVerifyRegistrationMobileCode = <TError = ErrorType<unknown>,
+    /** Verifies only the intent-bound phone. Required email proof remains independent. No account merge or login. */
+export const useVerifyRegistrationMobileCode = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyRegistrationMobileCode>>, TError,VerifyRegistrationMobileCodeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof verifyRegistrationMobileCode>>,
@@ -7128,7 +7112,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ResendClinicRegistrationMutationError = ErrorType<ApiError>
     export type ResendClinicRegistrationMutationVariables = {data: BodyType<RegistrationChallengeReference>}
 
-    export const useResendClinicRegistration = <TError = ErrorType<ApiError>,
+    /** Resends the registration verification code for the existing challenge without changing its ID or original expiry. Uses the anonymous CSRF cookie and matching CSRF request header; no authenticated session is required. */
+export const useResendClinicRegistration = <TError = ErrorType<ApiError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendClinicRegistration>>, TError,ResendClinicRegistrationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof resendClinicRegistration>>,
@@ -7213,7 +7198,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ResumeClinicRegistrationMutationError = ErrorType<unknown>
     export type ResumeClinicRegistrationMutationVariables = {data: BodyType<RegistrationResumeIdentity>}
 
-    export const useResumeClinicRegistration = <TError = ErrorType<unknown>,
+    /** Resumes a matching unexpired verification challenge from an HttpOnly cookie; the temporary account draft has no challenge reference. */
+export const useResumeClinicRegistration = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resumeClinicRegistration>>, TError,ResumeClinicRegistrationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof resumeClinicRegistration>>,
@@ -7757,7 +7743,7 @@ export type GetAuthStatusQueryResult = NonNullable<Awaited<ReturnType<typeof get
 export type GetAuthStatusQueryError = ErrorType<ErrorResponse>
 
 
-
+/** Returns role and local session state, with no clinical data. Does not issue a CSRF cookie or token; use GET /auth/csrf for that. */
 export function useGetAuthStatus<TData = Awaited<ReturnType<typeof getAuthStatus>>, TError = ErrorType<ErrorResponse>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -7830,7 +7816,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetProfileFieldAccessQueryResult = NonNullable<Awaited<ReturnType<typeof getProfileFieldAccess>>>
 export type GetProfileFieldAccessQueryError = ErrorType<unknown>
-
 
 
 export function useGetProfileFieldAccess<TData = Awaited<ReturnType<typeof getProfileFieldAccess>>, TError = ErrorType<unknown>>(
@@ -7992,7 +7977,7 @@ export type GetMeQueryResult = NonNullable<Awaited<ReturnType<typeof getMe>>>
 export type GetMeQueryError = ErrorType<unknown>
 
 
-
+/** Returns database identity; user is null before onboarding. Never accepts a role from the client. */
 export function useGetMe<TData = Awaited<ReturnType<typeof getMe>>, TError = ErrorType<unknown>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -8167,7 +8152,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type OnboardMutationError = ErrorType<ErrorResponse>
     export type OnboardMutationVariables = {data: BodyType<OnboardingInput>}
 
-    export const useOnboard = <TError = ErrorType<ErrorResponse>,
+    /** Atomically creates the first patient profile only. Staff and doctors must use authorized invitation flows with complete ownership and assignments. Existing profiles return 409; no admin self-claim or role switching. */
+export const useOnboard = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof onboard>>, TError,OnboardMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof onboard>>,
@@ -8252,7 +8238,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type RequestOtpMutationError = ErrorType<ErrorResponse>
     export type RequestOtpMutationVariables = {data: BodyType<OtpRequest>}
 
-    export const useRequestOtp = <TError = ErrorType<ErrorResponse>,
+    /** Rate-limited mobile challenge bound to authenticated identity. External SMS provider required in production. Never returns the code in production; an explicitly enabled provider with NODE_ENV=development returns developmentCode only in development. */
+export const useRequestOtp = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestOtp>>, TError,RequestOtpMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof requestOtp>>,
@@ -8404,7 +8391,6 @@ export type ListPublicClinicsQueryResult = NonNullable<Awaited<ReturnType<typeof
 export type ListPublicClinicsQueryError = ErrorType<unknown>
 
 
-
 export function useListPublicClinics<TData = Awaited<ReturnType<typeof listPublicClinics>>, TError = ErrorType<unknown>>(
  params?: ListPublicClinicsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPublicClinics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -8480,7 +8466,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type ListPublicBranchesQueryResult = NonNullable<Awaited<ReturnType<typeof listPublicBranches>>>
 export type ListPublicBranchesQueryError = ErrorType<unknown>
-
 
 
 export function useListPublicBranches<TData = Awaited<ReturnType<typeof listPublicBranches>>, TError = ErrorType<unknown>>(
@@ -8560,7 +8545,6 @@ export type ListPublicDoctorsQueryResult = NonNullable<Awaited<ReturnType<typeof
 export type ListPublicDoctorsQueryError = ErrorType<unknown>
 
 
-
 export function useListPublicDoctors<TData = Awaited<ReturnType<typeof listPublicDoctors>>, TError = ErrorType<unknown>>(
  params?: ListPublicDoctorsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPublicDoctors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -8638,7 +8622,6 @@ export type GetPublicAvailabilityQueryResult = NonNullable<Awaited<ReturnType<ty
 export type GetPublicAvailabilityQueryError = ErrorType<unknown>
 
 
-
 export function useGetPublicAvailability<TData = Awaited<ReturnType<typeof getPublicAvailability>>, TError = ErrorType<unknown>>(
  params: GetPublicAvailabilityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicAvailability>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -8709,7 +8692,6 @@ export type GetPublicDisplayQueryResult = NonNullable<Awaited<ReturnType<typeof 
 export type GetPublicDisplayQueryError = ErrorType<ErrorResponse>
 
 
-
 export function useGetPublicDisplay<TData = Awaited<ReturnType<typeof getPublicDisplay>>, TError = ErrorType<ErrorResponse>>(
  reference: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicDisplay>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -8778,7 +8760,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type ResolveQrQueryResult = NonNullable<Awaited<ReturnType<typeof resolveQr>>>
 export type ResolveQrQueryError = ErrorType<ErrorResponse>
-
 
 
 export function useResolveQr<TData = Awaited<ReturnType<typeof resolveQr>>, TError = ErrorType<ErrorResponse>>(
@@ -8856,7 +8837,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type ListClinicsQueryResult = NonNullable<Awaited<ReturnType<typeof listClinics>>>
 export type ListClinicsQueryError = ErrorType<unknown>
-
 
 
 export function useListClinics<TData = Awaited<ReturnType<typeof listClinics>>, TError = ErrorType<unknown>>(
@@ -9009,7 +8989,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetClinicQueryResult = NonNullable<Awaited<ReturnType<typeof getClinic>>>
 export type GetClinicQueryError = ErrorType<unknown>
-
 
 
 export function useGetClinic<TData = Awaited<ReturnType<typeof getClinic>>, TError = ErrorType<unknown>>(
@@ -9240,7 +9219,6 @@ export type ListBranchesQueryResult = NonNullable<Awaited<ReturnType<typeof list
 export type ListBranchesQueryError = ErrorType<unknown>
 
 
-
 export function useListBranches<TData = Awaited<ReturnType<typeof listBranches>>, TError = ErrorType<unknown>>(
  params?: ListBranchesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBranches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -9391,7 +9369,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetBranchQueryResult = NonNullable<Awaited<ReturnType<typeof getBranch>>>
 export type GetBranchQueryError = ErrorType<unknown>
-
 
 
 export function useGetBranch<TData = Awaited<ReturnType<typeof getBranch>>, TError = ErrorType<unknown>>(
@@ -9622,7 +9599,6 @@ export type ListDoctorsQueryResult = NonNullable<Awaited<ReturnType<typeof listD
 export type ListDoctorsQueryError = ErrorType<unknown>
 
 
-
 export function useListDoctors<TData = Awaited<ReturnType<typeof listDoctors>>, TError = ErrorType<unknown>>(
  params?: ListDoctorsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDoctors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -9715,7 +9691,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateDoctorMutationError = ErrorType<unknown>
     export type CreateDoctorMutationVariables = {data: BodyType<DoctorInput>}
 
-    export const useCreateDoctor = <TError = ErrorType<unknown>,
+    /** Authorized administrator creates doctor and identity invitation; never silently promotes an unrelated existing patient. */
+export const useCreateDoctor = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDoctor>>, TError,CreateDoctorMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createDoctor>>,
@@ -9776,7 +9753,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetDoctorQueryResult = NonNullable<Awaited<ReturnType<typeof getDoctor>>>
 export type GetDoctorQueryError = ErrorType<unknown>
-
 
 
 export function useGetDoctor<TData = Awaited<ReturnType<typeof getDoctor>>, TError = ErrorType<unknown>>(
@@ -9872,7 +9848,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UpdateDoctorMutationError = ErrorType<unknown>
     export type UpdateDoctorMutationVariables = {id: string;data: BodyType<DoctorInput>}
 
-    export const useUpdateDoctor = <TError = ErrorType<unknown>,
+    /** Own professional profile or authorized administration; clinic assignments are authorization-checked. */
+export const useUpdateDoctor = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDoctor>>, TError,UpdateDoctorMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof updateDoctor>>,
@@ -10010,7 +9987,6 @@ export type ListUsersQueryResult = NonNullable<Awaited<ReturnType<typeof listUse
 export type ListUsersQueryError = ErrorType<unknown>
 
 
-
 export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<unknown>>(
  params?: ListUsersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -10103,7 +10079,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateUserMutationError = ErrorType<unknown>
     export type CreateUserMutationVariables = {data: BodyType<UserInput>}
 
-    export const useCreateUser = <TError = ErrorType<unknown>,
+    /** Admin-only identity invitation and database role assignment; clinic admins cannot grant platform administration. */
+export const useCreateUser = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createUser>>, TError,CreateUserMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createUser>>,
@@ -10188,7 +10165,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type OnboardClinicAdminMutationError = ErrorType<ErrorResponse>
     export type OnboardClinicAdminMutationVariables = {data: BodyType<ClinicAdminOnboardingInput>}
 
-    export const useOnboardClinicAdmin = <TError = ErrorType<ErrorResponse>,
+    /** Super Admin only. Atomically creates an active Clinic Admin and their first active clinic, with ownership persisted through clinic.adminId. Existing clinics and doctor ownership are never changed. */
+export const useOnboardClinicAdmin = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof onboardClinicAdmin>>, TError,OnboardClinicAdminMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof onboardClinicAdmin>>,
@@ -10249,7 +10227,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetUserQueryResult = NonNullable<Awaited<ReturnType<typeof getUser>>>
 export type GetUserQueryError = ErrorType<unknown>
-
 
 
 export function useGetUser<TData = Awaited<ReturnType<typeof getUser>>, TError = ErrorType<unknown>>(
@@ -10481,7 +10458,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type RequestUserPasswordResetMutationError = ErrorType<unknown>
     export type RequestUserPasswordResetMutationVariables = {id: string}
 
-    export const useRequestUserPasswordReset = <TError = ErrorType<unknown>,
+    /** Requests a local password reset link by email; never returns credentials. */
+export const useRequestUserPasswordReset = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestUserPasswordReset>>, TError,RequestUserPasswordResetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof requestUserPasswordReset>>,
@@ -10552,7 +10530,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ResendUserInvitationMutationError = ErrorType<unknown>
     export type ResendUserInvitationMutationVariables = {id: string}
 
-    export const useResendUserInvitation = <TError = ErrorType<unknown>,
+    /** Retries the local set-password invitation for a scoped staff profile without a local password. Database role and assignments are not changed. */
+export const useResendUserInvitation = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendUserInvitation>>, TError,ResendUserInvitationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof resendUserInvitation>>,
@@ -10625,7 +10604,7 @@ export type GetStaffAssignmentOptionsQueryResult = NonNullable<Awaited<ReturnTyp
 export type GetStaffAssignmentOptionsQueryError = ErrorType<unknown>
 
 
-
+/** Management catalog only. It does not grant clinical or operational access. Doctors may request receptionist options only. */
 export function useGetStaffAssignmentOptions<TData = Awaited<ReturnType<typeof getStaffAssignmentOptions>>, TError = ErrorType<unknown>>(
  params: GetStaffAssignmentOptionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffAssignmentOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -10706,7 +10685,7 @@ export type ListPatientsQueryResult = NonNullable<Awaited<ReturnType<typeof list
 export type ListPatientsQueryError = ErrorType<unknown>
 
 
-
+/** Patients visible only through authorized clinic registration or appointment relationship. */
 export function useListPatients<TData = Awaited<ReturnType<typeof listPatients>>, TError = ErrorType<unknown>>(
  params?: ListPatientsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPatients>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -10857,7 +10836,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetPatientQueryResult = NonNullable<Awaited<ReturnType<typeof getPatient>>>
 export type GetPatientQueryError = ErrorType<unknown>
-
 
 
 export function useGetPatient<TData = Awaited<ReturnType<typeof getPatient>>, TError = ErrorType<unknown>>(
@@ -11091,7 +11069,7 @@ export type ListMastersQueryResult = NonNullable<Awaited<ReturnType<typeof listM
 export type ListMastersQueryError = ErrorType<unknown>
 
 
-
+/** Authenticated dropdown reads; only super admins mutate. Workflow statuses and roles are governed codes, not arbitrary new privileges. */
 export function useListMasters<TData = Awaited<ReturnType<typeof listMasters>>, TError = ErrorType<unknown>>(
  params?: ListMastersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMasters>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -11242,7 +11220,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetMasterQueryResult = NonNullable<Awaited<ReturnType<typeof getMaster>>>
 export type GetMasterQueryError = ErrorType<unknown>
-
 
 
 export function useGetMaster<TData = Awaited<ReturnType<typeof getMaster>>, TError = ErrorType<unknown>>(
@@ -11473,7 +11450,6 @@ export type GetScheduleDayContextQueryResult = NonNullable<Awaited<ReturnType<ty
 export type GetScheduleDayContextQueryError = ErrorType<unknown>
 
 
-
 export function useGetScheduleDayContext<TData = Awaited<ReturnType<typeof getScheduleDayContext>>, TError = ErrorType<unknown>>(
  params: GetScheduleDayContextParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScheduleDayContext>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -11631,7 +11607,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type ListSchedulesQueryResult = NonNullable<Awaited<ReturnType<typeof listSchedules>>>
 export type ListSchedulesQueryError = ErrorType<unknown>
-
 
 
 export function useListSchedules<TData = Awaited<ReturnType<typeof listSchedules>>, TError = ErrorType<unknown>>(
@@ -11953,7 +11928,6 @@ export type ListAvailabilityExceptionsQueryResult = NonNullable<Awaited<ReturnTy
 export type ListAvailabilityExceptionsQueryError = ErrorType<unknown>
 
 
-
 export function useListAvailabilityExceptions<TData = Awaited<ReturnType<typeof listAvailabilityExceptions>>, TError = ErrorType<unknown>>(
  params?: ListAvailabilityExceptionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAvailabilityExceptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -12264,7 +12238,6 @@ export type ListAppointmentsQueryResult = NonNullable<Awaited<ReturnType<typeof 
 export type ListAppointmentsQueryError = ErrorType<unknown>
 
 
-
 export function useListAppointments<TData = Awaited<ReturnType<typeof listAppointments>>, TError = ErrorType<unknown>>(
  params?: ListAppointmentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAppointments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -12357,7 +12330,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateAppointmentMutationError = ErrorType<ErrorResponse>
     export type CreateAppointmentMutationVariables = {data: BodyType<AppointmentInput>}
 
-    export const useCreateAppointment = <TError = ErrorType<ErrorResponse>,
+    /** Atomically checks assignment, computed availability, OTP policy and capacity, allocates reference/token. Patients can book only self; staff may create walk-in and phone bookings. Duplicate requestId returns original booking. */
+export const useCreateAppointment = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAppointment>>, TError,CreateAppointmentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createAppointment>>,
@@ -12501,7 +12475,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetBookingStatusSmsPreviewQueryResult = NonNullable<Awaited<ReturnType<typeof getBookingStatusSmsPreview>>>
 export type GetBookingStatusSmsPreviewQueryError = ErrorType<unknown>
-
 
 
 export function useGetBookingStatusSmsPreview<TData = Awaited<ReturnType<typeof getBookingStatusSmsPreview>>, TError = ErrorType<unknown>>(
@@ -12655,7 +12628,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetTicketEmailPreviewQueryResult = NonNullable<Awaited<ReturnType<typeof getTicketEmailPreview>>>
 export type GetTicketEmailPreviewQueryError = ErrorType<unknown>
-
 
 
 export function useGetTicketEmailPreview<TData = Awaited<ReturnType<typeof getTicketEmailPreview>>, TError = ErrorType<unknown>>(
@@ -12818,7 +12790,6 @@ export type GetAppointmentCalendarQueryResult = NonNullable<Awaited<ReturnType<t
 export type GetAppointmentCalendarQueryError = ErrorType<unknown>
 
 
-
 export function useGetAppointmentCalendar<TData = Awaited<ReturnType<typeof getAppointmentCalendar>>, TError = ErrorType<unknown>>(
  params: GetAppointmentCalendarParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAppointmentCalendar>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -12892,7 +12863,7 @@ export type GetAppointmentQueryResult = NonNullable<Awaited<ReturnType<typeof ge
 export type GetAppointmentQueryError = ErrorType<unknown>
 
 
-
+/** Private detail returns the first bounded history page, newest first. Fetch older events with historyNextCursor. */
 export function useGetAppointment<TData = Awaited<ReturnType<typeof getAppointment>>, TError = ErrorType<unknown>>(
  id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAppointment>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -12977,7 +12948,7 @@ export type GetAppointmentHistoryQueryResult = NonNullable<Awaited<ReturnType<ty
 export type GetAppointmentHistoryQueryError = ErrorType<unknown>
 
 
-
+/** Private exact-visit history, newest first; cursor preserves equal-time recorded order. Requires the same permissions as the appointment detail. */
 export function useGetAppointmentHistory<TData = Awaited<ReturnType<typeof getAppointmentHistory>>, TError = ErrorType<unknown>>(
  id: string,
     params?: GetAppointmentHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAppointmentHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
@@ -13052,7 +13023,7 @@ export type GetAppointmentQrQueryResult = NonNullable<Awaited<ReturnType<typeof 
 export type GetAppointmentQrQueryError = ErrorType<unknown>
 
 
-
+/** Returns a signed, appointment-specific QR payload to the appointment owner or authorized scoped staff. */
 export function useGetAppointmentQr<TData = Awaited<ReturnType<typeof getAppointmentQr>>, TError = ErrorType<unknown>>(
  id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAppointmentQr>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -13145,7 +13116,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ResolveAppointmentQrMutationError = ErrorType<unknown>
     export type ResolveAppointmentQrMutationVariables = {data: BodyType<AppointmentQrPayload>}
 
-    export const useResolveAppointmentQr = <TError = ErrorType<unknown>,
+    /** Resolves an appointment QR for authorized operational staff without changing appointment state. */
+export const useResolveAppointmentQr = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveAppointmentQr>>, TError,ResolveAppointmentQrMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof resolveAppointmentQr>>,
@@ -13230,7 +13202,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CheckInAppointmentQrMutationError = ErrorType<unknown>
     export type CheckInAppointmentQrMutationVariables = {data: BodyType<AppointmentQrPayload>}
 
-    export const useCheckInAppointmentQr = <TError = ErrorType<unknown>,
+    /** After explicit staff confirmation, enters consultation for the called or first pending reservation. Stamps checkedInAt and consultationStartedAt. Repeated scans of a current consultation are idempotent; never enqueues or bypasses reservation order. */
+export const useCheckInAppointmentQr = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkInAppointmentQr>>, TError,CheckInAppointmentQrMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof checkInAppointmentQr>>,
@@ -13295,7 +13268,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetDoctorDurationQueryResult = NonNullable<Awaited<ReturnType<typeof getDoctorDuration>>>
 export type GetDoctorDurationQueryError = ErrorType<unknown>
-
 
 
 export function useGetDoctorDuration<TData = Awaited<ReturnType<typeof getDoctorDuration>>, TError = ErrorType<unknown>>(
@@ -13452,7 +13424,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetAppointmentMovementQueryResult = NonNullable<Awaited<ReturnType<typeof getAppointmentMovement>>>
 export type GetAppointmentMovementQueryError = ErrorType<unknown>
-
 
 
 export function useGetAppointmentMovement<TData = Awaited<ReturnType<typeof getAppointmentMovement>>, TError = ErrorType<unknown>>(
@@ -13723,7 +13694,20 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type TransitionAppointmentMutationError = ErrorType<ErrorResponse>
     export type TransitionAppointmentMutationVariables = {id: string;data: BodyType<AppointmentAction>}
 
-    export const useTransitionAppointment = <TError = ErrorType<ErrorResponse>,
+    /**
+ * New bookings immediately enter waiting with a stable token.
+ * checkIn called (or first pending with no current patient)→inConsultation,
+ * stamping checkedInAt and consultationStartedAt.
+ * complete inConsultation→completed and atomically calls the next pending reservation.
+ * Legacy booked/checkedIn reservations remain usable without migration.
+ * Compatibility enqueue normalizes legacy pending to waiting; call pending→called; start called→inConsultation.
+ * noShow pending/called→noShow requires reason; requeue noShow→waiting requires reason, position and fresh versions.
+ * cancel booked/checkedIn/waiting/called→cancelled only before checkedInAt and within cutoff.
+ * Queue actions are appointment-date-only, serialized per session, and never automatically skip patients.
+ * Patients may cancel only self. All other actions require scoped staff.
+ * Concurrent state conflicts return 409. Every transition is audited.
+ */
+export const useTransitionAppointment = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof transitionAppointment>>, TError,TransitionAppointmentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof transitionAppointment>>,
@@ -13796,7 +13780,7 @@ export type GetQueueQueryResult = NonNullable<Awaited<ReturnType<typeof getQueue
 export type GetQueueQueryError = ErrorType<unknown>
 
 
-
+/** Poll every 30 seconds. Patients get aggregate tokens/counts and own entry only; identifiable entries and staff listing metadata are omitted. Staff receive scoped identifiable entries. Explicit page or pageSize enables database-backed staff pagination; omission preserves the legacy full-list response. Staff search, sort, status and statusGroup filters apply before pagination. Listing counts never replace the session-wide queue aggregates. */
 export function useGetQueue<TData = Awaited<ReturnType<typeof getQueue>>, TError = ErrorType<unknown>>(
  params: GetQueueParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQueue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -13889,7 +13873,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CallNextMutationError = ErrorType<ErrorResponse>
     export type CallNextMutationVariables = {data: BodyType<QueueSelection>}
 
-    export const useCallNext = <TError = ErrorType<ErrorResponse>,
+    /** Scoped staff only. Locks doctor/branch/date queue; calls oldest waiting entry, rejecting another active consultation. Empty queue returns appointment null. */
+export const useCallNext = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof callNext>>, TError,CallNextMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof callNext>>,
@@ -13957,7 +13942,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type ListQrsQueryResult = NonNullable<Awaited<ReturnType<typeof listQrs>>>
 export type ListQrsQueryError = ErrorType<unknown>
-
 
 
 export function useListQrs<TData = Awaited<ReturnType<typeof listQrs>>, TError = ErrorType<unknown>>(
@@ -14110,7 +14094,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetQrQueryResult = NonNullable<Awaited<ReturnType<typeof getQr>>>
 export type GetQrQueryError = ErrorType<unknown>
-
 
 
 export function useGetQr<TData = Awaited<ReturnType<typeof getQr>>, TError = ErrorType<unknown>>(
@@ -14342,7 +14325,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type RegenerateQrMutationError = ErrorType<unknown>
     export type RegenerateQrMutationVariables = {id: string}
 
-    export const useRegenerateQr = <TError = ErrorType<unknown>,
+    /** Revokes previous reference and generates a cryptographically random replacement. */
+export const useRegenerateQr = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof regenerateQr>>, TError,RegenerateQrMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof regenerateQr>>,
@@ -14410,7 +14394,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboard>>>
 export type GetDashboardQueryError = ErrorType<unknown>
-
 
 
 export function useGetDashboard<TData = Awaited<ReturnType<typeof getDashboard>>, TError = ErrorType<unknown>>(
@@ -14488,7 +14471,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetReportsQueryResult = NonNullable<Awaited<ReturnType<typeof getReports>>>
 export type GetReportsQueryError = ErrorType<unknown>
-
 
 
 export function useGetReports<TData = Awaited<ReturnType<typeof getReports>>, TError = ErrorType<unknown>>(
@@ -14571,7 +14553,7 @@ export type ListAuditLogsQueryResult = NonNullable<Awaited<ReturnType<typeof lis
 export type ListAuditLogsQueryError = ErrorType<unknown>
 
 
-
+/** Admin-only scoped summaries; sensitive old/new values are redacted. */
 export function useListAuditLogs<TData = Awaited<ReturnType<typeof listAuditLogs>>, TError = ErrorType<unknown>>(
  params?: ListAuditLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAuditLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -14645,7 +14627,7 @@ export type GetSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getSe
 export type GetSettingsQueryError = ErrorType<unknown>
 
 
-
+/** Authenticated safe configuration only; provider credentials never returned. */
 export function useGetSettings<TData = Awaited<ReturnType<typeof getSettings>>, TError = ErrorType<unknown>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -14738,7 +14720,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UpdateSettingsMutationError = ErrorType<unknown>
     export type UpdateSettingsMutationVariables = {data: BodyType<SettingsInput>}
 
-    export const useUpdateSettings = <TError = ErrorType<unknown>,
+    /** Super admin only. */
+export const useUpdateSettings = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSettings>>, TError,UpdateSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof updateSettings>>,
@@ -14811,7 +14794,7 @@ export type ListNotificationsQueryResult = NonNullable<Awaited<ReturnType<typeof
 export type ListNotificationsQueryError = ErrorType<unknown>
 
 
-
+/** In-app events derived from real scoped appointment status history and, for administrators, operational audit records from the last 30 days. Per-user persistent read state. No email is sent. */
 export function useListNotifications<TData = Awaited<ReturnType<typeof listNotifications>>, TError = ErrorType<unknown>>(
  params?: ListNotificationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -14889,7 +14872,6 @@ export type GetCommunicationUsageQueryResult = NonNullable<Awaited<ReturnType<ty
 export type GetCommunicationUsageQueryError = ErrorType<unknown>
 
 
-
 export function useGetCommunicationUsage<TData = Awaited<ReturnType<typeof getCommunicationUsage>>, TError = ErrorType<unknown>>(
  params?: GetCommunicationUsageParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCommunicationUsage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -14958,7 +14940,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetCommunicationUsageDetailQueryResult = NonNullable<Awaited<ReturnType<typeof getCommunicationUsageDetail>>>
 export type GetCommunicationUsageDetailQueryError = ErrorType<unknown>
-
 
 
 export function useGetCommunicationUsageDetail<TData = Awaited<ReturnType<typeof getCommunicationUsageDetail>>, TError = ErrorType<unknown>>(
@@ -15038,7 +15019,6 @@ export type ListNotificationLogsQueryResult = NonNullable<Awaited<ReturnType<typ
 export type ListNotificationLogsQueryError = ErrorType<unknown>
 
 
-
 export function useListNotificationLogs<TData = Awaited<ReturnType<typeof listNotificationLogs>>, TError = ErrorType<unknown>>(
  params?: ListNotificationLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotificationLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -15107,7 +15087,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetNotificationLogQueryResult = NonNullable<Awaited<ReturnType<typeof getNotificationLog>>>
 export type GetNotificationLogQueryError = ErrorType<unknown>
-
 
 
 export function useGetNotificationLog<TData = Awaited<ReturnType<typeof getNotificationLog>>, TError = ErrorType<unknown>>(
@@ -15190,7 +15169,7 @@ export type ListBookingMailOutcomesQueryResult = NonNullable<Awaited<ReturnType<
 export type ListBookingMailOutcomesQueryError = ErrorType<void>
 
 
-
+/** Read-only durable booking email outcomes for the selected clinic's current owning Clinic Admin. No recipient details or message content. Reading never dispatches or retries mail. */
 export function useListBookingMailOutcomes<TData = Awaited<ReturnType<typeof listBookingMailOutcomes>>, TError = ErrorType<void>>(
  params: ListBookingMailOutcomesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBookingMailOutcomes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -15346,7 +15325,7 @@ export type ListWorkspacesQueryResult = NonNullable<Awaited<ReturnType<typeof li
 export type ListWorkspacesQueryError = ErrorType<unknown>
 
 
-
+/** Clinic memberships of the signed-in staff user and the active workspace. Switching only narrows scope to one assigned clinic. */
 export function useListWorkspaces<TData = Awaited<ReturnType<typeof listWorkspaces>>, TError = ErrorType<unknown>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWorkspaces>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -15499,7 +15478,6 @@ export type ListPatientDocumentsQueryResult = NonNullable<Awaited<ReturnType<typ
 export type ListPatientDocumentsQueryError = ErrorType<unknown>
 
 
-
 export function useListPatientDocuments<TData = Awaited<ReturnType<typeof listPatientDocuments>>, TError = ErrorType<unknown>>(
  id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPatientDocuments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -15602,7 +15580,8 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UploadPatientDocumentMutationError = ErrorType<unknown>
     export type UploadPatientDocumentMutationVariables = {id: string;data: BodyType<Blob>;params: UploadPatientDocumentParams}
 
-    export const useUploadPatientDocument = <TError = ErrorType<unknown>,
+    /** Private upload (PDF, PNG, JPEG, WebP or plain text, at most 10 MB). Requires CSRF header. Stored privately; never publicly addressable. */
+export const useUploadPatientDocument = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadPatientDocument>>, TError,UploadPatientDocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof uploadPatientDocument>>,
@@ -15663,7 +15642,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type DownloadPatientDocumentQueryResult = NonNullable<Awaited<ReturnType<typeof downloadPatientDocument>>>
 export type DownloadPatientDocumentQueryError = ErrorType<unknown>
-
 
 
 export function useDownloadPatientDocument<TData = Awaited<ReturnType<typeof downloadPatientDocument>>, TError = ErrorType<unknown>>(
@@ -15818,7 +15796,7 @@ export type ListPatientActivityQueryResult = NonNullable<Awaited<ReturnType<type
 export type ListPatientActivityQueryError = ErrorType<unknown>
 
 
-
+/** All recorded appointment status changes for this patient within your scope, newest first. */
 export function useListPatientActivity<TData = Awaited<ReturnType<typeof listPatientActivity>>, TError = ErrorType<unknown>>(
  id: string,
     params?: ListPatientActivityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPatientActivity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
@@ -15900,7 +15878,7 @@ export type GetReportAnalyticsQueryResult = NonNullable<Awaited<ReturnType<typeo
 export type GetReportAnalyticsQueryError = ErrorType<unknown>
 
 
-
+/** Live report families, full-scope KPIs and equal-length prior-period comparison in one read snapshot. Available denotes a computed live summary, never a completed report job. Export returns every matching aggregate row. */
 export function useGetReportAnalytics<TData = Awaited<ReturnType<typeof getReportAnalytics>>, TError = ErrorType<unknown>>(
  params?: GetReportAnalyticsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReportAnalytics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -15976,7 +15954,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type GetReportTrendsQueryResult = NonNullable<Awaited<ReturnType<typeof getReportTrends>>>
 export type GetReportTrendsQueryError = ErrorType<unknown>
-
 
 
 export function useGetReportTrends<TData = Awaited<ReturnType<typeof getReportTrends>>, TError = ErrorType<unknown>>(
@@ -16059,7 +16036,7 @@ export type SearchRecordsQueryResult = NonNullable<Awaited<ReturnType<typeof sea
 export type SearchRecordsQueryError = ErrorType<unknown>
 
 
-
+/** Scoped queue and appointment record search by token, reference or patient name. Search text is never stored. */
 export function useSearchRecords<TData = Awaited<ReturnType<typeof searchRecords>>, TError = ErrorType<unknown>>(
  params: SearchRecordsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchRecords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
@@ -16135,7 +16112,6 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type ListSavedViewsQueryResult = NonNullable<Awaited<ReturnType<typeof listSavedViews>>>
 export type ListSavedViewsQueryError = ErrorType<unknown>
-
 
 
 export function useListSavedViews<TData = Awaited<ReturnType<typeof listSavedViews>>, TError = ErrorType<unknown>>(

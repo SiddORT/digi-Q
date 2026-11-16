@@ -238,6 +238,16 @@ test("native default sessions survive optional JWT key replacement without mode 
     if (savedKey === undefined) delete process.env.JWT_SIGNING_KEY; else process.env.JWT_SIGNING_KEY = savedKey;
   }
 });
+test("password policy retains ASCII composition, minimum characters and maximum UTF-8 bytes", () => {
+  for (const value of ["abcde123", "a1" + "x".repeat(1022), "a1" + "é".repeat(511)]) {
+    assert.doesNotThrow(() => api.passwordInput(value));
+  }
+  for (const value of [null, 12345678, "", "abc1234", "abcdefgh", "12345678", "é".repeat(8) + "1",
+    "a1" + "x".repeat(1023), "a1" + "é".repeat(512)]) {
+    assert.throws(() => api.passwordInput(value), error => error.status === 400 && error.code === "INVALID_PASSWORD");
+  }
+});
+
 test("unknown email has no session, bad tokens avoid hash work, and absent SMTP fails explicitly", async () => {
   await assert.rejects(() => route("/auth/login", { email: "unknown@example.test", password: "disposable password 123" }),
     /Invalid email or password/);

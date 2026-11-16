@@ -22,6 +22,6 @@
  */
 
 export type GetPublicBookingContextParams = {
-doctorId: string;
-branchId: string;
+  doctorId: string;
+  branchId: string;
 };

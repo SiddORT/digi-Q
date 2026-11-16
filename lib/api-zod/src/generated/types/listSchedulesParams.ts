@@ -29,32 +29,28 @@ import type { SearchParameter } from './searchParameter';
 import type { SortParameter } from './sortParameter';
 
 export type ListSchedulesParams = {
-search?: SearchParameter;
-/**
- * Allowlisted field with optional minus prefix for descending order
- */
-sort?: SortParameter;
-/**
- * @minimum 0
- * @maximum 6
- */
-dayOfWeek?: number;
-/**
- * Alias for dayOfWeek
- * @minimum 0
- * @maximum 6
- */
-weekday?: number;
-doctorId?: DoctorIdParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
+  search?: SearchParameter;
+  /** Allowlisted field with optional minus prefix for descending order */
+  sort?: SortParameter;
+  /**
+   * @minimum 0
+   * @maximum 6
+   */
+  dayOfWeek?: number;
+  /**
+   * Alias for dayOfWeek
+   * @minimum 0
+   * @maximum 6
+   */
+  weekday?: number;
+  doctorId?: DoctorIdParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
 };

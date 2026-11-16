@@ -23,5 +23,5 @@
 import type { ListNotificationsKind } from './listNotificationsKind';
 
 export type ListNotificationsParams = {
-kind?: ListNotificationsKind;
+  kind?: ListNotificationsKind;
 };

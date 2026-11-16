@@ -22,8 +22,8 @@
  */
 
 export type GetDoctorPresenceParams = {
-branchId: string;
-date: Date;
-sessionId?: string;
-startTime?: string;
+  branchId: string;
+  date: Date;
+  sessionId?: string;
+  startTime?: string;
 };

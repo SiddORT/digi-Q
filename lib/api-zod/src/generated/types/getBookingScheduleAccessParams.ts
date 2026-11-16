@@ -22,6 +22,6 @@
  */
 
 export type GetBookingScheduleAccessParams = {
-doctorId: string;
-branchId: string;
+  doctorId: string;
+  branchId: string;
 };

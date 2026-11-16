@@ -22,5 +22,6 @@
  */
 
 export interface WorkspaceSelect {
+  /** @nullable */
   clinicId: string | null;
 }

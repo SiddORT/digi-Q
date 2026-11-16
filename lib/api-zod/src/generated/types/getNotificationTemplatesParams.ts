@@ -24,7 +24,7 @@ import type { GetNotificationTemplatesChannel } from './getNotificationTemplates
 import type { GetNotificationTemplatesRecipient } from './getNotificationTemplatesRecipient';
 
 export type GetNotificationTemplatesParams = {
-clinicId?: string;
-recipient?: GetNotificationTemplatesRecipient;
-channel?: GetNotificationTemplatesChannel;
+  clinicId?: string;
+  recipient?: GetNotificationTemplatesRecipient;
+  channel?: GetNotificationTemplatesChannel;
 };

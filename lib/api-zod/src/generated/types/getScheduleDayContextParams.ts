@@ -22,6 +22,6 @@
  */
 
 export type GetScheduleDayContextParams = {
-doctorId: string;
-branchId: string;
+  doctorId: string;
+  branchId: string;
 };

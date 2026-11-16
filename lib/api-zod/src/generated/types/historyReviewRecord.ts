@@ -29,7 +29,11 @@ export interface HistoryReviewRecord {
   event: string;
   envelopeCount: number;
   status: HistoryReviewRecordStatus;
+  /** @nullable */
   unresolvedReason: string | null;
-  /** Unix time in milliseconds */
+  /**
+     * Unix time in milliseconds
+     * @nullable
+     */
   reviewedAt: number | null;
 }

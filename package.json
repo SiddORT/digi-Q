@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "test:zod-migration": "node --test scripts/zod-migration.test.mjs",
     "test:qr-validation": "playwright test --config artifacts/clinicflow/workspace-regression/qr-validation.config.ts",
     "test:dependency-security": "node --test --test-concurrency=1 artifacts/api-server/src/dependency-security.test.mjs scripts/security-browser.test.mjs",
     "build:selfhost": "pnpm run typecheck && PORT=3000 BASE_PATH=/ pnpm --filter @workspace/clinicflow run build && pnpm --filter @workspace/api-server run build",

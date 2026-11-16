@@ -22,7 +22,7 @@
  */
 
 export type GetPublicAvailabilitySessionsParams = {
-doctorId: string;
-branchId: string;
-date: Date;
+  doctorId: string;
+  branchId: string;
+  date: Date;
 };

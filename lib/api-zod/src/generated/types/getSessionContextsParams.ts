@@ -22,7 +22,7 @@
  */
 
 export type GetSessionContextsParams = {
-doctorId: string;
-branchId: string;
-date: Date;
+  doctorId: string;
+  branchId: string;
+  date: Date;
 };

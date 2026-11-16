@@ -23,8 +23,12 @@
 import type { BookingMailOutcomeStatus } from './bookingMailOutcomeStatus';
 
 export interface BookingMailOutcome {
+  /** @nullable */
   reference: string | null;
   status: BookingMailOutcomeStatus;
-  /** Recorded event time in milliseconds since epoch */
+  /**
+     * Recorded event time in milliseconds since epoch
+     * @nullable
+     */
   createdAt: number | null;
 }

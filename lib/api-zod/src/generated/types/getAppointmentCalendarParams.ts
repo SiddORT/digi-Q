@@ -22,11 +22,11 @@
  */
 
 export type GetAppointmentCalendarParams = {
-from: Date;
-to: Date;
-clinicId?: string;
-branchId?: string;
-doctorId?: string;
-status?: string;
-search?: string;
+  from: Date;
+  to: Date;
+  clinicId?: string;
+  branchId?: string;
+  doctorId?: string;
+  status?: string;
+  search?: string;
 };

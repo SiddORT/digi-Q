@@ -27,9 +27,9 @@ import type { FromParameter } from './fromParameter';
 import type { ToParameter } from './toParameter';
 
 export type GetReportTrendsParams = {
-from?: FromParameter;
-to?: ToParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-doctorId?: DoctorIdParameter;
+  from?: FromParameter;
+  to?: ToParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  doctorId?: DoctorIdParameter;
 };

@@ -23,21 +23,13 @@
 import type { SearchPublicGeographyKind } from './searchPublicGeographyKind';
 
 export type SearchPublicGeographyParams = {
-kind: SearchPublicGeographyKind;
-/**
- * @maxLength 100
- */
-search?: string;
-/**
- * @maxLength 100
- */
-country?: string;
-/**
- * @maxLength 100
- */
-state?: string;
-/**
- * @maxLength 100
- */
-city?: string;
+  kind: SearchPublicGeographyKind;
+  /** @maxLength 100 */
+  search?: string;
+  /** @maxLength 100 */
+  country?: string;
+  /** @maxLength 100 */
+  state?: string;
+  /** @maxLength 100 */
+  city?: string;
 };

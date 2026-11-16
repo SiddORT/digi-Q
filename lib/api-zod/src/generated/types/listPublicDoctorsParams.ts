@@ -28,22 +28,20 @@ import type { SearchParameter } from './searchParameter';
 import type { SelectedIdsParameter } from './selectedIdsParameter';
 
 export type ListPublicDoctorsParams = {
-/**
- * Comma-separated exact IDs within existing scope (maximum 100).
- * @maxLength 10000
- */
-selectedIds?: SelectedIdsParameter;
-search?: SearchParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-specializationId?: string;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
+  /**
+   * Comma-separated exact IDs within existing scope (maximum 100).
+   * @maxLength 10000
+   */
+  selectedIds?: SelectedIdsParameter;
+  search?: SearchParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  specializationId?: string;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
 };

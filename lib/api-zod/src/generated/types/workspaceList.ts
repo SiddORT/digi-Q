@@ -23,6 +23,7 @@
 import type { WorkspaceOption } from './workspaceOption';
 
 export interface WorkspaceList {
+  /** @nullable */
   activeClinicId?: string | null;
   switchable: boolean;
   workspaces: WorkspaceOption[];

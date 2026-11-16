@@ -64,7 +64,7 @@ export const eventTestInput=z.object({
   clinicId:z.string().min(1).max(100).optional(),revision:z.number().int().min(0),
   content:z.union([templateContent,smsTemplateContent]),
   values:z.record(z.string(),z.string().max(1500)),recipient:z.string().max(254).optional(),
-  confirmed:z.boolean().optional(),requestId:z.string().uuid().optional(),
+  confirmed:z.boolean().optional(),requestId:z.guid().optional(),
 }).strict();
 export const outcomeMessages:Record<SmsOutcome,string>={
   provider_accepted:"The provider accepted the message. Handset or inbox delivery is not confirmed.",

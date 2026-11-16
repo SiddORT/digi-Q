@@ -24,33 +24,25 @@ import type { ListNotificationLogsChannel } from './listNotificationLogsChannel'
 import type { ListNotificationLogsSource } from './listNotificationLogsSource';
 
 export type ListNotificationLogsParams = {
-from?: Date;
-to?: Date;
-channel?: ListNotificationLogsChannel;
-event?: string;
-status?: string;
-clinicId?: string;
-recipientGroup?: string;
-source?: ListNotificationLogsSource;
-/**
- * @maxLength 254
- */
-sender?: string;
-/**
- * @maxLength 254
- */
-recipient?: string;
-/**
- * @maxLength 100
- */
-reference?: string;
-/**
- * @maxLength 1000
- */
-cursor?: string;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
+  from?: Date;
+  to?: Date;
+  channel?: ListNotificationLogsChannel;
+  event?: string;
+  status?: string;
+  clinicId?: string;
+  recipientGroup?: string;
+  source?: ListNotificationLogsSource;
+  /** @maxLength 254 */
+  sender?: string;
+  /** @maxLength 254 */
+  recipient?: string;
+  /** @maxLength 100 */
+  reference?: string;
+  /** @maxLength 1000 */
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
 };

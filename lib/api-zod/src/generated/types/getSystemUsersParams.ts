@@ -22,9 +22,9 @@
  */
 
 export type GetSystemUsersParams = {
-page?: number;
-search?: string;
-role?: string;
-status?: string;
-clinicId?: string;
+  page?: number;
+  search?: string;
+  role?: string;
+  status?: string;
+  clinicId?: string;
 };

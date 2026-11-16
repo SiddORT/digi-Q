@@ -24,6 +24,7 @@ import type { HistoryReviewRecord } from './historyReviewRecord';
 
 export interface HistoryReviewPage {
   items: HistoryReviewRecord[];
+  /** @nullable */
   nextCursor: string | null;
   scannedCount: number;
 }

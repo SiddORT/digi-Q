@@ -32,5 +32,6 @@ export interface HistoryEvidenceReview {
   envelopeCount: number;
   sourceCount: number;
   subjectCount: number;
+  /** @nullable */
   reviewToken: string | null;
 }

@@ -26,26 +26,24 @@ import type { SessionIdParameter } from './sessionIdParameter';
 import type { StartTimeParameter } from './startTimeParameter';
 
 export type ListGuestRequestsParams = {
-/**
- * @maxLength 200
- */
-search?: string;
-sort?: ListGuestRequestsSort;
-sessionId?: SessionIdParameter;
-startTime?: StartTimeParameter;
-clinicId?: string;
-branchId?: string;
-doctorId?: string;
-date?: Date;
-status?: ListGuestRequestsStatus;
-/**
- * @minimum 1
- * @maximum 100000
- */
-page?: number;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
+  /** @maxLength 200 */
+  search?: string;
+  sort?: ListGuestRequestsSort;
+  sessionId?: SessionIdParameter;
+  startTime?: StartTimeParameter;
+  clinicId?: string;
+  branchId?: string;
+  doctorId?: string;
+  date?: Date;
+  status?: ListGuestRequestsStatus;
+  /**
+   * @minimum 1
+   * @maximum 100000
+   */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
 };

@@ -22,5 +22,5 @@
  */
 
 export type GetManagedNotificationSettingsParams = {
-clinicId?: string;
+  clinicId?: string;
 };

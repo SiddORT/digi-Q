@@ -27,23 +27,19 @@ import type { PublicDirectorySearchParameter } from './publicDirectorySearchPara
 import type { PublicDirectorySortParameter } from './publicDirectorySortParameter';
 
 export type ResolveClinicSlugParams = {
-/**
- * Opt in to scoped server pagination; omitted preserves the legacy context arrays.
- */
-directory?: PublicDirectoryParameter;
-/**
- * @minimum 1
- * @maximum 1000000
- */
-page?: PublicDirectoryPageParameter;
-pageSize?: PublicDirectoryPageSizeParameter;
-/**
- * Matches public clinic name/address/city or doctor name/specialization only.
- * @maxLength 200
- */
-search?: PublicDirectorySearchParameter;
-/**
- * Public name with optional minus prefix; sorting never uses private fields.
- */
-sort?: PublicDirectorySortParameter;
+  /** Opt in to scoped server pagination; omitted preserves the legacy context arrays. */
+  directory?: PublicDirectoryParameter;
+  /**
+   * @minimum 1
+   * @maximum 1000000
+   */
+  page?: PublicDirectoryPageParameter;
+  pageSize?: PublicDirectoryPageSizeParameter;
+  /**
+   * Matches public clinic name/address/city or doctor name/specialization only.
+   * @maxLength 200
+   */
+  search?: PublicDirectorySearchParameter;
+  /** Public name with optional minus prefix; sorting never uses private fields. */
+  sort?: PublicDirectorySortParameter;
 };

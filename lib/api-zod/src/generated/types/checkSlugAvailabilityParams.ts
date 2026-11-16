@@ -22,10 +22,10 @@
  */
 
 export type CheckSlugAvailabilityParams = {
-/**
- * @minLength 3
- * @maxLength 63
- */
-slug: string;
-clinicId?: string;
+  /**
+   * @minLength 3
+   * @maxLength 63
+   */
+  slug: string;
+  clinicId?: string;
 };

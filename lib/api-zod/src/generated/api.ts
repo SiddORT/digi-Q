@@ -69,8 +69,8 @@ export const ReadLiveTicketResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -95,8 +95,8 @@ export const ReadLiveTicketResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -109,10 +109,10 @@ export const ReadLiveTicketResponse = zod.object({
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
-  "tokenNumber": zod.number().int().optional(),
+  "tokenNumber": zod.int().optional(),
   "queueRank": zod.number().optional(),
-  "revision": zod.number().int().optional(),
-  "expectedDurationMinutes": zod.number().int().nullish(),
+  "revision": zod.int().optional(),
+  "expectedDurationMinutes": zod.int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -121,7 +121,7 @@ export const ReadLiveTicketResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().int().nullish(),
+  "age": zod.int().nullish(),
   "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
@@ -142,7 +142,7 @@ export const ReadLiveTicketResponse = zod.object({
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
   "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
-  "bookingDetailsRevision": zod.number().int().min(readLiveTicketResponseAppointmentTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
+  "bookingDetailsRevision": zod.int().min(readLiveTicketResponseAppointmentTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -152,7 +152,7 @@ export const ReadLiveTicketResponse = zod.object({
   "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
   "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
-  "position": zod.number().int().optional(),
+  "position": zod.int().optional(),
   "from": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
   "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
@@ -164,7 +164,7 @@ export const ReadLiveTicketResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional(),
   "to": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
@@ -177,7 +177,7 @@ export const ReadLiveTicketResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional()
 })).optional(),
   "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
@@ -210,7 +210,7 @@ export const RequestStaffContactCodeBody = zod.object({
 export const RequestStaffContactCodeResponse = zod.object({
   "challengeId": zod.string(),
   "expiresAt": zod.coerce.date(),
-  "resendAfterSeconds": zod.number().int()
+  "resendAfterSeconds": zod.int()
 })
 
 
@@ -236,12 +236,12 @@ export const DeferStaffVerificationResponse = zod.object({
 
 
 export const GetPublicWebsiteConfigResponse = zod.object({
-  "publicOrigin": zod.string().url()
+  "publicOrigin": zod.url()
 })
 
 
 export const GetMyNotificationSettingsResponse = zod.object({
-  "revision": zod.number().int(),
+  "revision": zod.int(),
   "items": zod.array(zod.object({
   "key": zod.string(),
   "event": zod.string(),
@@ -270,7 +270,7 @@ export const saveMyNotificationSettingsBodyChoicesMax = 100;
 
 
 export const SaveMyNotificationSettingsBody = zod.object({
-  "revision": zod.number().int().min(saveMyNotificationSettingsBodyRevisionMin),
+  "revision": zod.int().min(saveMyNotificationSettingsBodyRevisionMin),
   "choices": zod.array(zod.object({
   "key": zod.string().max(saveMyNotificationSettingsBodyChoicesItemKeyMax),
   "enabled": zod.boolean().nullable()
@@ -278,7 +278,7 @@ export const SaveMyNotificationSettingsBody = zod.object({
 })
 
 export const SaveMyNotificationSettingsResponse = zod.object({
-  "revision": zod.number().int(),
+  "revision": zod.int(),
   "items": zod.array(zod.object({
   "key": zod.string(),
   "event": zod.string(),
@@ -303,7 +303,7 @@ export const GetManagedNotificationSettingsQueryParams = zod.object({
 })
 
 export const GetManagedNotificationSettingsResponse = zod.object({
-  "revision": zod.number().int(),
+  "revision": zod.int(),
   "scopeName": zod.string(),
   "notificationsEnabled": zod.boolean(),
   "inherited": zod.boolean(),
@@ -311,7 +311,7 @@ export const GetManagedNotificationSettingsResponse = zod.object({
   "events": zod.array(zod.object({
   "id": zod.string(),
   "label": zod.string(),
-  "order": zod.number().int(),
+  "order": zod.int(),
   "clinicApplicable": zod.boolean(),
   "explanation": zod.string()
 })),
@@ -321,7 +321,7 @@ export const GetManagedNotificationSettingsResponse = zod.object({
   "channel": zod.enum(['email', 'sms']),
   "event": zod.string(),
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
-  "revision": zod.number().int(),
+  "revision": zod.int(),
   "enabled": zod.boolean(),
   "source": zod.string(),
   "ready": zod.boolean(),
@@ -344,20 +344,20 @@ export const saveManagedNotificationSettingsBodyChangesMax = 200;
 
 export const SaveManagedNotificationSettingsBody = zod.object({
   "clinicId": zod.string().min(1).max(saveManagedNotificationSettingsBodyClinicIdMax).optional(),
-  "revision": zod.number().int().min(saveManagedNotificationSettingsBodyRevisionMin),
+  "revision": zod.int().min(saveManagedNotificationSettingsBodyRevisionMin),
   "notificationsEnabled": zod.boolean().optional(),
   "confirmed": zod.boolean().optional(),
   "changes": zod.array(zod.object({
   "channel": zod.enum(['email', 'sms']),
   "event": zod.string(),
   "recipient": zod.string(),
-  "revision": zod.number().int().min(saveManagedNotificationSettingsBodyChangesItemRevisionMin),
+  "revision": zod.int().min(saveManagedNotificationSettingsBodyChangesItemRevisionMin),
   "enabled": zod.boolean()
 })).max(saveManagedNotificationSettingsBodyChangesMax)
 })
 
 export const SaveManagedNotificationSettingsResponse = zod.object({
-  "revision": zod.number().int(),
+  "revision": zod.int(),
   "scopeName": zod.string(),
   "notificationsEnabled": zod.boolean(),
   "inherited": zod.boolean(),
@@ -365,7 +365,7 @@ export const SaveManagedNotificationSettingsResponse = zod.object({
   "events": zod.array(zod.object({
   "id": zod.string(),
   "label": zod.string(),
-  "order": zod.number().int(),
+  "order": zod.int(),
   "clinicApplicable": zod.boolean(),
   "explanation": zod.string()
 })),
@@ -375,7 +375,7 @@ export const SaveManagedNotificationSettingsResponse = zod.object({
   "channel": zod.enum(['email', 'sms']),
   "event": zod.string(),
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
-  "revision": zod.number().int(),
+  "revision": zod.int(),
   "enabled": zod.boolean(),
   "source": zod.string(),
   "ready": zod.boolean(),
@@ -497,9 +497,9 @@ export const GetSystemUsersResponse = zod.object({
   "name": zod.string()
 }))
 })),
-  "total": zod.number().int(),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "total": zod.int(),
+  "page": zod.int(),
+  "pageSize": zod.int()
 })
 
 
@@ -527,7 +527,7 @@ export const GetStaffDeletionImpactResponse = zod.object({
   "source": zod.string(),
   "action": zod.string(),
   "ids": zod.array(zod.string()),
-  "count": zod.number().int().min(getStaffDeletionImpactResponseGroupsItemCountMin)
+  "count": zod.int().min(getStaffDeletionImpactResponseGroupsItemCountMin)
 })),
   "blockers": zod.array(zod.object({
   "code": zod.string(),
@@ -555,13 +555,13 @@ export const GetStaffHistoryReviewResponse = zod.object({
   "version": zod.string(),
   "channel": zod.string(),
   "event": zod.string(),
-  "envelopeCount": zod.number().int(),
+  "envelopeCount": zod.int(),
   "status": zod.enum(['blocked', 'unresolved']),
   "unresolvedReason": zod.string().nullable(),
-  "reviewedAt": zod.number().int().nullable().describe('Unix time in milliseconds')
+  "reviewedAt": zod.int().nullable().describe('Unix time in milliseconds')
 })),
   "nextCursor": zod.string().nullable(),
-  "scannedCount": zod.number().int()
+  "scannedCount": zod.int()
 })
 
 
@@ -582,13 +582,13 @@ export const ScanStaffHistoryReviewResponse = zod.object({
   "version": zod.string(),
   "channel": zod.string(),
   "event": zod.string(),
-  "envelopeCount": zod.number().int(),
+  "envelopeCount": zod.int(),
   "status": zod.enum(['blocked', 'unresolved']),
   "unresolvedReason": zod.string().nullable(),
-  "reviewedAt": zod.number().int().nullable().describe('Unix time in milliseconds')
+  "reviewedAt": zod.int().nullable().describe('Unix time in milliseconds')
 })),
   "nextCursor": zod.string().nullable(),
-  "scannedCount": zod.number().int()
+  "scannedCount": zod.int()
 })
 
 
@@ -612,9 +612,9 @@ export const PreviewStaffHistoryEvidenceResponse = zod.object({
   "version": zod.string(),
   "reason": zod.string(),
   "ownership": zod.enum(['includes_target', 'excludes_target', 'unknown']),
-  "envelopeCount": zod.number().int(),
-  "sourceCount": zod.number().int(),
-  "subjectCount": zod.number().int(),
+  "envelopeCount": zod.int(),
+  "sourceCount": zod.int(),
+  "subjectCount": zod.int(),
   "reviewToken": zod.string().nullable()
 })
 
@@ -684,14 +684,17 @@ export const PermanentlyRemoveStaffResponse = zod.object({
   "operationId": zod.string(),
   "accountRemoved": zod.literal(true),
   "state": zod.enum(['complete', 'cleanup_pending']),
-  "files": zod.number().int().min(permanentlyRemoveStaffResponseFilesMin),
-  "verifiedFiles": zod.number().int().min(permanentlyRemoveStaffResponseVerifiedFilesMin),
+  "files": zod.int().min(permanentlyRemoveStaffResponseFilesMin),
+  "verifiedFiles": zod.int().min(permanentlyRemoveStaffResponseVerifiedFilesMin),
   "pendingReasons": zod.array(zod.string())
 })
 
 
+export const getStaffRemovalReceiptPathOperationIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+
+
 export const GetStaffRemovalReceiptParams = zod.object({
-  "operationId": zod.coerce.string().uuid()
+  "operationId": zod.coerce.string().regex(getStaffRemovalReceiptPathOperationIdRegExp)
 })
 
 export const getStaffRemovalReceiptResponseFilesMin = 0;
@@ -704,14 +707,17 @@ export const GetStaffRemovalReceiptResponse = zod.object({
   "operationId": zod.string(),
   "accountRemoved": zod.literal(true),
   "state": zod.enum(['complete', 'cleanup_pending']),
-  "files": zod.number().int().min(getStaffRemovalReceiptResponseFilesMin),
-  "verifiedFiles": zod.number().int().min(getStaffRemovalReceiptResponseVerifiedFilesMin),
+  "files": zod.int().min(getStaffRemovalReceiptResponseFilesMin),
+  "verifiedFiles": zod.int().min(getStaffRemovalReceiptResponseVerifiedFilesMin),
   "pendingReasons": zod.array(zod.string())
 })
 
 
+export const retryStaffRemovalCleanupPathOperationIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+
+
 export const RetryStaffRemovalCleanupParams = zod.object({
-  "operationId": zod.coerce.string().uuid()
+  "operationId": zod.coerce.string().regex(retryStaffRemovalCleanupPathOperationIdRegExp)
 })
 
 export const retryStaffRemovalCleanupResponseFilesMin = 0;
@@ -724,8 +730,8 @@ export const RetryStaffRemovalCleanupResponse = zod.object({
   "operationId": zod.string(),
   "accountRemoved": zod.literal(true),
   "state": zod.enum(['complete', 'cleanup_pending']),
-  "files": zod.number().int().min(retryStaffRemovalCleanupResponseFilesMin),
-  "verifiedFiles": zod.number().int().min(retryStaffRemovalCleanupResponseVerifiedFilesMin),
+  "files": zod.int().min(retryStaffRemovalCleanupResponseFilesMin),
+  "verifiedFiles": zod.int().min(retryStaffRemovalCleanupResponseVerifiedFilesMin),
   "pendingReasons": zod.array(zod.string())
 })
 
@@ -762,7 +768,7 @@ export const ReviewStaffHandoffBody = zod.union([zod.object({
   "doctorId": zod.string(),
   "branchId": zod.string(),
   "date": zod.string().regex(reviewStaffHandoffBodyOneMovesItemDateRegExp),
-  "expectedRevision": zod.number().int().min(reviewStaffHandoffBodyOneMovesItemExpectedRevisionMin),
+  "expectedRevision": zod.int().min(reviewStaffHandoffBodyOneMovesItemExpectedRevisionMin),
   "sessionId": zod.string().optional(),
   "startTime": zod.string().regex(reviewStaffHandoffBodyOneMovesItemStartTimeRegExp).optional(),
   "reason": zod.string().max(reviewStaffHandoffBodyOneMovesItemReasonMax).optional()
@@ -798,17 +804,17 @@ export const CommitStaffHandoffBody = zod.object({
 
 export const CommitStaffHandoffResponse = zod.object({
   "operationId": zod.string(),
-  "count": zod.number().int().optional(),
+  "count": zod.int().optional(),
   "appointmentIds": zod.array(zod.string()).optional(),
-  "clinicCount": zod.number().int().optional(),
-  "staffCount": zod.number().int().optional(),
-  "doctorCount": zod.number().int().optional(),
+  "clinicCount": zod.int().optional(),
+  "staffCount": zod.int().optional(),
+  "doctorCount": zod.int().optional(),
   "accountRemoved": zod.boolean().optional()
 })
 
 
 export const GetCustomRolesResponse = zod.object({
-  "revision": zod.number().int(),
+  "revision": zod.int(),
   "roles": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
@@ -824,7 +830,7 @@ export const GetCustomRolesResponse = zod.object({
 
 
 export const SaveCustomRolesBody = zod.object({
-  "revision": zod.number().int(),
+  "revision": zod.int(),
   "roles": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
@@ -839,7 +845,7 @@ export const SaveCustomRolesBody = zod.object({
 })
 
 export const SaveCustomRolesResponse = zod.object({
-  "revision": zod.number().int(),
+  "revision": zod.int(),
   "roles": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
@@ -855,7 +861,7 @@ export const SaveCustomRolesResponse = zod.object({
 
 
 export const GetPermissionPolicyResponse = zod.object({
-  "revision": zod.number().int(),
+  "revision": zod.int(),
   "denied": zod.array(zod.string())
 }).and(zod.object({
   "modules": zod.array(zod.string()),
@@ -865,12 +871,12 @@ export const GetPermissionPolicyResponse = zod.object({
 
 
 export const SavePermissionPolicyBody = zod.object({
-  "revision": zod.number().int(),
+  "revision": zod.int(),
   "denied": zod.array(zod.string())
 })
 
 export const SavePermissionPolicyResponse = zod.object({
-  "revision": zod.number().int(),
+  "revision": zod.int(),
   "denied": zod.array(zod.string())
 }).and(zod.object({
   "modules": zod.array(zod.string()),
@@ -881,7 +887,7 @@ export const SavePermissionPolicyResponse = zod.object({
 
 export const RequestLogoUploadBody = zod.object({
   "name": zod.string(),
-  "size": zod.number().int(),
+  "size": zod.int(),
   "contentType": zod.string(),
   "clinicId": zod.string().optional()
 })
@@ -958,7 +964,7 @@ export const GetNotificationTemplatesResponse = zod.object({
   "event": zod.string(),
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']).optional(),
   "title": zod.string(),
-  "revision": zod.number().int(),
+  "revision": zod.int(),
   "source": zod.string(),
   "content": zod.object({
   "enabled": zod.boolean().optional(),
@@ -1016,7 +1022,7 @@ export const SaveNotificationTemplateBody = zod.object({
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']).optional(),
   "clinicId": zod.string().optional(),
   "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'booking_status_link', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete', 'staff_email_otp', 'staff_mobile_otp', 'staff_created_admin', 'staff_welcome']),
-  "revision": zod.number().int().min(saveNotificationTemplateBodyRevisionMin),
+  "revision": zod.int().min(saveNotificationTemplateBodyRevisionMin),
   "mode": zod.enum(['draft', 'publish', 'reset']),
   "content": zod.object({
   "enabled": zod.boolean().optional(),
@@ -1072,7 +1078,7 @@ export const SaveNotificationTemplateResponse = zod.object({
   "event": zod.string(),
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']).optional(),
   "title": zod.string(),
-  "revision": zod.number().int(),
+  "revision": zod.int(),
   "source": zod.string(),
   "content": zod.object({
   "enabled": zod.boolean().optional(),
@@ -1127,6 +1133,7 @@ export const previewEventTemplateBodyValuesMaxOne = 1500;
 
 export const previewEventTemplateBodyRecipientMax = 254;
 
+export const previewEventTemplateBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 
 
 export const PreviewEventTemplateBody = zod.object({
@@ -1134,7 +1141,7 @@ export const PreviewEventTemplateBody = zod.object({
   "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'booking_status_link', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete', 'staff_email_otp', 'staff_mobile_otp', 'staff_created_admin', 'staff_welcome']),
   "recipientGroup": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
   "clinicId": zod.string().optional(),
-  "revision": zod.number().int().min(previewEventTemplateBodyRevisionMin),
+  "revision": zod.int().min(previewEventTemplateBodyRevisionMin),
   "content": zod.object({
   "enabled": zod.boolean().optional(),
   "senderId": zod.string().max(previewEventTemplateBodyContentSenderIdMax).optional(),
@@ -1149,7 +1156,7 @@ export const PreviewEventTemplateBody = zod.object({
   "values": zod.record(zod.string(), zod.string().max(previewEventTemplateBodyValuesMaxOne)),
   "recipient": zod.string().max(previewEventTemplateBodyRecipientMax).optional(),
   "confirmed": zod.boolean().optional(),
-  "requestId": zod.string().uuid().optional()
+  "requestId": zod.string().regex(previewEventTemplateBodyRequestIdRegExp).optional()
 })
 
 export const PreviewEventTemplateResponse = zod.object({
@@ -1183,6 +1190,7 @@ export const testEventTemplateBodyValuesMaxOne = 1500;
 
 export const testEventTemplateBodyRecipientMax = 254;
 
+export const testEventTemplateBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 
 
 export const TestEventTemplateBody = zod.object({
@@ -1190,7 +1198,7 @@ export const TestEventTemplateBody = zod.object({
   "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'booking_status_link', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete', 'staff_email_otp', 'staff_mobile_otp', 'staff_created_admin', 'staff_welcome']),
   "recipientGroup": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
   "clinicId": zod.string().optional(),
-  "revision": zod.number().int().min(testEventTemplateBodyRevisionMin),
+  "revision": zod.int().min(testEventTemplateBodyRevisionMin),
   "content": zod.object({
   "enabled": zod.boolean().optional(),
   "senderId": zod.string().max(testEventTemplateBodyContentSenderIdMax).optional(),
@@ -1205,7 +1213,7 @@ export const TestEventTemplateBody = zod.object({
   "values": zod.record(zod.string(), zod.string().max(testEventTemplateBodyValuesMaxOne)),
   "recipient": zod.string().max(testEventTemplateBodyRecipientMax).optional(),
   "confirmed": zod.boolean().optional(),
-  "requestId": zod.string().uuid().optional()
+  "requestId": zod.string().regex(testEventTemplateBodyRequestIdRegExp).optional()
 })
 
 export const TestEventTemplateResponse = zod.object({
@@ -1231,7 +1239,7 @@ export const GetEventControlsResponse = zod.object({
   "channel": zod.enum(['email', 'sms']),
   "event": zod.string(),
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
-  "revision": zod.number().int(),
+  "revision": zod.int(),
   "enabled": zod.boolean(),
   "source": zod.string(),
   "ready": zod.boolean(),
@@ -1251,7 +1259,7 @@ export const UpdateEventControlBody = zod.object({
   "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'booking_status_link', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete', 'staff_email_otp', 'staff_mobile_otp', 'staff_created_admin', 'staff_welcome']),
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
   "clinicId": zod.string().optional(),
-  "revision": zod.number().int().min(updateEventControlBodyRevisionMin),
+  "revision": zod.int().min(updateEventControlBodyRevisionMin),
   "enabled": zod.boolean(),
   "confirmed": zod.boolean()
 })
@@ -1266,7 +1274,7 @@ export const UpdateEventControlResponse = zod.object({
   "channel": zod.enum(['email', 'sms']),
   "event": zod.string(),
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
-  "revision": zod.number().int(),
+  "revision": zod.int(),
   "enabled": zod.boolean(),
   "source": zod.string(),
   "ready": zod.boolean(),
@@ -1305,7 +1313,7 @@ export const UpdateIntegrationSettingsResponse = zod.object({
   "customApiUrl": zod.string().optional(),
   "keepInTouchApiUrl": zod.string().optional(),
   "smtpHost": zod.string().optional(),
-  "smtpPort": zod.number().int().optional(),
+  "smtpPort": zod.int().optional(),
   "fromEmail": zod.string().optional(),
   "fromName": zod.string().optional(),
   "useTls": zod.boolean().optional(),
@@ -1327,7 +1335,7 @@ export const UpdateIntegrationSettingsResponse = zod.object({
   "customApiUrl": zod.string().optional(),
   "keepInTouchApiUrl": zod.string().optional(),
   "smtpHost": zod.string().optional(),
-  "smtpPort": zod.number().int().optional(),
+  "smtpPort": zod.int().optional(),
   "fromEmail": zod.string().optional(),
   "fromName": zod.string().optional(),
   "useTls": zod.boolean().optional(),
@@ -1349,7 +1357,7 @@ export const UpdateIntegrationSettingsResponse = zod.object({
   "customApiUrl": zod.string().optional(),
   "keepInTouchApiUrl": zod.string().optional(),
   "smtpHost": zod.string().optional(),
-  "smtpPort": zod.number().int().optional(),
+  "smtpPort": zod.int().optional(),
   "fromEmail": zod.string().optional(),
   "fromName": zod.string().optional(),
   "useTls": zod.boolean().optional(),
@@ -1379,7 +1387,7 @@ export const GetIntegrationSettingsResponse = zod.object({
   "customApiUrl": zod.string().optional(),
   "keepInTouchApiUrl": zod.string().optional(),
   "smtpHost": zod.string().optional(),
-  "smtpPort": zod.number().int().optional(),
+  "smtpPort": zod.int().optional(),
   "fromEmail": zod.string().optional(),
   "fromName": zod.string().optional(),
   "useTls": zod.boolean().optional(),
@@ -1401,7 +1409,7 @@ export const GetIntegrationSettingsResponse = zod.object({
   "customApiUrl": zod.string().optional(),
   "keepInTouchApiUrl": zod.string().optional(),
   "smtpHost": zod.string().optional(),
-  "smtpPort": zod.number().int().optional(),
+  "smtpPort": zod.int().optional(),
   "fromEmail": zod.string().optional(),
   "fromName": zod.string().optional(),
   "useTls": zod.boolean().optional(),
@@ -1423,7 +1431,7 @@ export const GetIntegrationSettingsResponse = zod.object({
   "customApiUrl": zod.string().optional(),
   "keepInTouchApiUrl": zod.string().optional(),
   "smtpHost": zod.string().optional(),
-  "smtpPort": zod.number().int().optional(),
+  "smtpPort": zod.int().optional(),
   "fromEmail": zod.string().optional(),
   "fromName": zod.string().optional(),
   "useTls": zod.boolean().optional(),
@@ -1450,8 +1458,11 @@ export const GetSmtpTestReceiptResponse = zod.object({
 })
 
 
+export const confirmSmtpTestReceiptBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+
+
 export const ConfirmSmtpTestReceiptBody = zod.object({
-  "requestId": zod.string().uuid(),
+  "requestId": zod.string().regex(confirmSmtpTestReceiptBodyRequestIdRegExp),
   "received": zod.literal(true)
 })
 
@@ -1469,14 +1480,15 @@ export const ConfirmSmtpTestReceiptResponse = zod.object({
 /**
  * Super Admin only. Sends a fixed DigiQ Doctors test message. Rate limited by user and IP.
  */
+export const sendSmtpTestEmailBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const sendSmtpTestEmailBodyRecipientMax = 254;
 
 
 
 export const SendSmtpTestEmailBody = zod.object({
   "confirmed": zod.literal(true),
-  "requestId": zod.string().uuid(),
-  "recipient": zod.string().email().max(sendSmtpTestEmailBodyRecipientMax)
+  "requestId": zod.string().regex(sendSmtpTestEmailBodyRequestIdRegExp),
+  "recipient": zod.email().max(sendSmtpTestEmailBodyRecipientMax)
 })
 
 export const SendSmtpTestEmailResponse = zod.object({
@@ -1488,6 +1500,7 @@ export const SendSmtpTestEmailResponse = zod.object({
 /**
  * Super Admin only. Explicitly sends one test using saved notification SMS configuration, without activating clinic notifications.
  */
+export const sendNotificationSmsTestMessageBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const sendNotificationSmsTestMessageBodyRecipientMax = 16;
 
 
@@ -1504,7 +1517,7 @@ export const sendNotificationSmsTestMessageBodyDltTemplateIdMax = 50;
 
 export const SendNotificationSmsTestMessageBody = zod.object({
   "confirmed": zod.literal(true),
-  "requestId": zod.string().uuid(),
+  "requestId": zod.string().regex(sendNotificationSmsTestMessageBodyRequestIdRegExp),
   "recipient": zod.string().max(sendNotificationSmsTestMessageBodyRecipientMax).regex(sendNotificationSmsTestMessageBodyRecipientRegExp),
   "message": zod.string().min(1).max(sendNotificationSmsTestMessageBodyMessageMax),
   "senderId": zod.string().max(sendNotificationSmsTestMessageBodySenderIdMax).optional(),
@@ -1642,15 +1655,15 @@ export const ListQueueSessionsResponse = zod.object({
   "endTime": zod.string().nullable(),
   "snapshotOnly": zod.boolean(),
   "available": zod.boolean().describe('Open session template only; not booking availability or action authority'),
-  "total": zod.number().int(),
-  "waiting": zod.number().int(),
-  "inConsultation": zod.number().int(),
-  "completed": zod.number().int(),
-  "cancelled": zod.number().int()
+  "total": zod.int(),
+  "waiting": zod.int(),
+  "inConsultation": zod.int(),
+  "completed": zod.int(),
+  "cancelled": zod.int()
 })),
-  "total": zod.number().int(),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "total": zod.int(),
+  "page": zod.int(),
+  "pageSize": zod.int()
 })
 
 
@@ -1679,10 +1692,10 @@ export const GetSessionContextsResponseItem = zod.object({
   "breakStart": zod.string().nullish(),
   "breakEnd": zod.string().nullish(),
   "timezone": zod.string().optional(),
-  "maxTokens": zod.number().int(),
-  "bookedTokens": zod.number().int(),
-  "remainingTokens": zod.number().int(),
-  "consultationMinutes": zod.number().int().optional(),
+  "maxTokens": zod.int(),
+  "bookedTokens": zod.int(),
+  "remainingTokens": zod.int(),
+  "consultationMinutes": zod.int().optional(),
   "tokenPrefix": zod.string().optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional(),
   "queueOpenTime": zod.string().optional(),
@@ -1709,6 +1722,7 @@ export const GetRegistrationOptionsResponse = zod.object({
 })
 
 
+export const registerClinicBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const registerClinicBodyFullNameMax = 150;
 
 export const registerClinicBodyPasswordMax = 1024;
@@ -1782,7 +1796,7 @@ export const registerClinicBodyOwnerCustomScheduleSessionsMax = 500;
 
 
 export const RegisterClinicBody = zod.object({
-  "requestId": zod.string().uuid().optional().describe('Stable non-secret retry identity; changed payloads cannot replay a committed request.'),
+  "requestId": zod.string().regex(registerClinicBodyRequestIdRegExp).optional().describe('Stable non-secret retry identity; changed payloads cannot replay a committed request.'),
   "fullName": zod.string().min(1).max(registerClinicBodyFullNameMax),
   "mobile": zod.string().optional(),
   "password": zod.string().min(1).max(registerClinicBodyPasswordMax),
@@ -1791,7 +1805,7 @@ export const RegisterClinicBody = zod.object({
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "name": zod.string().min(1).optional(),
   "address": zod.string().optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "phone": zod.string().nullish(),
   "slug": zod.string().min(registerClinicBodyClinicSlugMin).max(registerClinicBodyClinicSlugMax).optional(),
   "categoryId": zod.string().nullish(),
@@ -1809,51 +1823,51 @@ export const RegisterClinicBody = zod.object({
   "pincode": zod.string().optional(),
   "country": zod.string().optional(),
   "timezone": zod.string().optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "phone": zod.string().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "slug": zod.string().min(registerClinicBodyBranchesItemSlugMin).max(registerClinicBodyBranchesItemSlugMax).optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(registerClinicBodyBranchesItemOpeningHoursItemDayOfWeekMin).max(registerClinicBodyBranchesItemOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(registerClinicBodyBranchesItemOpeningHoursItemDayOfWeekMin).max(registerClinicBodyBranchesItemOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(registerClinicBodyBranchesItemOpeningHoursMax).nullish().describe('Null or absent preserves legacy unrestricted hours. An explicit empty array closes all days.'),
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(registerClinicBodyBranchesItemLinkedScheduleMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(registerClinicBodyBranchesItemLinkedScheduleConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(registerClinicBodyBranchesItemLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(registerClinicBodyBranchesItemLinkedScheduleConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(registerClinicBodyBranchesItemLinkedScheduleTokenPrefixRegExp).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
 }).optional()
 })).min(1).max(registerClinicBodyBranchesMax),
   "policies": zod.object({
-  "bookingHorizonDays": zod.number().int().min(1).max(registerClinicBodyPoliciesBookingHorizonDaysMax).optional(),
-  "cancellationCutoffMinutes": zod.number().int().min(registerClinicBodyPoliciesCancellationCutoffMinutesMin).max(registerClinicBodyPoliciesCancellationCutoffMinutesMax).optional()
+  "bookingHorizonDays": zod.int().min(1).max(registerClinicBodyPoliciesBookingHorizonDaysMax).optional(),
+  "cancellationCutoffMinutes": zod.int().min(registerClinicBodyPoliciesCancellationCutoffMinutesMin).max(registerClinicBodyPoliciesCancellationCutoffMinutesMax).optional()
 }).optional(),
   "ownDoctor": zod.boolean().default(registerClinicBodyOwnDoctorDefault),
   "ownerSchedule": zod.object({
-  "maxTokens": zod.number().int().min(1).max(registerClinicBodyOwnerScheduleMaxTokensMax),
-  "consultationMinutes": zod.number().int().min(1).max(registerClinicBodyOwnerScheduleConsultationMinutesMax),
+  "maxTokens": zod.int().min(1).max(registerClinicBodyOwnerScheduleMaxTokensMax),
+  "consultationMinutes": zod.int().min(1).max(registerClinicBodyOwnerScheduleConsultationMinutesMax),
   "tokenPrefix": zod.string().regex(registerClinicBodyOwnerScheduleTokenPrefixRegExp),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly'])
 }).optional(),
   "ownerCustomSchedule": zod.object({
-  "maxTokens": zod.number().int().min(1).max(registerClinicBodyOwnerCustomScheduleMaxTokensMax),
-  "consultationMinutes": zod.number().int().min(1).max(registerClinicBodyOwnerCustomScheduleConsultationMinutesMax),
+  "maxTokens": zod.int().min(1).max(registerClinicBodyOwnerCustomScheduleMaxTokensMax),
+  "consultationMinutes": zod.int().min(1).max(registerClinicBodyOwnerCustomScheduleConsultationMinutesMax),
   "tokenPrefix": zod.string().regex(registerClinicBodyOwnerCustomScheduleTokenPrefixRegExp),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']),
   "sessions": zod.array(zod.object({
-  "branchIndex": zod.number().int().min(registerClinicBodyOwnerCustomScheduleSessionsItemBranchIndexMin).max(registerClinicBodyOwnerCustomScheduleSessionsItemBranchIndexMax),
-  "dayOfWeek": zod.number().int().min(registerClinicBodyOwnerCustomScheduleSessionsItemDayOfWeekMin).max(registerClinicBodyOwnerCustomScheduleSessionsItemDayOfWeekMax),
+  "branchIndex": zod.int().min(registerClinicBodyOwnerCustomScheduleSessionsItemBranchIndexMin).max(registerClinicBodyOwnerCustomScheduleSessionsItemBranchIndexMax),
+  "dayOfWeek": zod.int().min(registerClinicBodyOwnerCustomScheduleSessionsItemDayOfWeekMin).max(registerClinicBodyOwnerCustomScheduleSessionsItemDayOfWeekMax),
   "startTime": zod.string().regex(registerClinicBodyOwnerCustomScheduleSessionsItemStartTimeRegExp),
   "endTime": zod.string().regex(registerClinicBodyOwnerCustomScheduleSessionsItemEndTimeRegExp),
   "timezone": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(registerClinicBodyOwnerCustomScheduleSessionsItemMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(registerClinicBodyOwnerCustomScheduleSessionsItemConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(registerClinicBodyOwnerCustomScheduleSessionsItemMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(registerClinicBodyOwnerCustomScheduleSessionsItemConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(registerClinicBodyOwnerCustomScheduleSessionsItemTokenPrefixRegExp).optional(),
-  "bufferMinutes": zod.number().int().min(registerClinicBodyOwnerCustomScheduleSessionsItemBufferMinutesMin).max(registerClinicBodyOwnerCustomScheduleSessionsItemBufferMinutesMax).optional(),
+  "bufferMinutes": zod.int().min(registerClinicBodyOwnerCustomScheduleSessionsItemBufferMinutesMin).max(registerClinicBodyOwnerCustomScheduleSessionsItemBufferMinutesMax).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional(),
   "breakStart": zod.string().regex(registerClinicBodyOwnerCustomScheduleSessionsItemBreakStartRegExp).nullish(),
   "breakEnd": zod.string().regex(registerClinicBodyOwnerCustomScheduleSessionsItemBreakEndRegExp).nullish(),
@@ -1915,7 +1929,7 @@ export const RegisterClinicResponse = zod.object({
   "area": zod.string().optional(),
   "pincode": zod.string().optional(),
   "phone": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
@@ -1929,16 +1943,16 @@ export const RegisterClinicResponse = zod.object({
   "categoryName": zod.string().nullish(),
   "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
-  "doctorCount": zod.number().int().optional(),
-  "branchCount": zod.number().int().optional()
+  "doctorCount": zod.int().optional(),
+  "branchCount": zod.int().optional()
 })),
   "branches": zod.array(zod.object({
   "slug": zod.string().min(registerClinicResponseBranchesItemOneSlugMin).max(registerClinicResponseBranchesItemOneSlugMax).optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(registerClinicResponseBranchesItemOneOpeningHoursItemDayOfWeekMin).max(registerClinicResponseBranchesItemOneOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(registerClinicResponseBranchesItemOneOpeningHoursItemDayOfWeekMin).max(registerClinicResponseBranchesItemOneOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(registerClinicResponseBranchesItemOneOpeningHoursMax).nullish().describe('Null or absent is legacy unrestricted; empty array means closed all days.'),
@@ -1957,8 +1971,8 @@ export const RegisterClinicResponse = zod.object({
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(registerClinicResponseBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(registerClinicResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(registerClinicResponseBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(registerClinicResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(registerClinicResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
 }).optional(),
@@ -1970,15 +1984,18 @@ export const RegisterClinicResponse = zod.object({
   "createdAt": zod.coerce.date().nullable()
 }))),
   "policies": zod.object({
-  "bookingHorizonDays": zod.number().int().min(1).max(registerClinicResponsePoliciesBookingHorizonDaysMax).optional(),
-  "cancellationCutoffMinutes": zod.number().int().min(registerClinicResponsePoliciesCancellationCutoffMinutesMin).max(registerClinicResponsePoliciesCancellationCutoffMinutesMax).optional()
+  "bookingHorizonDays": zod.int().min(1).max(registerClinicResponsePoliciesBookingHorizonDaysMax).optional(),
+  "cancellationCutoffMinutes": zod.int().min(registerClinicResponsePoliciesCancellationCutoffMinutesMin).max(registerClinicResponsePoliciesCancellationCutoffMinutesMax).optional()
 }),
   "doctorId": zod.string().nullish()
 })
 
 
+export const getClinicRegistrationCompletionQueryRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+
+
 export const GetClinicRegistrationCompletionQueryParams = zod.object({
-  "requestId": zod.coerce.string().uuid()
+  "requestId": zod.coerce.string().regex(getClinicRegistrationCompletionQueryRequestIdRegExp)
 })
 
 export const getClinicRegistrationCompletionResponseResultOneClinicOneSlugMin = 3;
@@ -2032,7 +2049,7 @@ export const GetClinicRegistrationCompletionResponse = zod.object({
   "area": zod.string().optional(),
   "pincode": zod.string().optional(),
   "phone": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
@@ -2046,16 +2063,16 @@ export const GetClinicRegistrationCompletionResponse = zod.object({
   "categoryName": zod.string().nullish(),
   "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
-  "doctorCount": zod.number().int().optional(),
-  "branchCount": zod.number().int().optional()
+  "doctorCount": zod.int().optional(),
+  "branchCount": zod.int().optional()
 })),
   "branches": zod.array(zod.object({
   "slug": zod.string().min(getClinicRegistrationCompletionResponseResultOneBranchesItemOneSlugMin).max(getClinicRegistrationCompletionResponseResultOneBranchesItemOneSlugMax).optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(getClinicRegistrationCompletionResponseResultOneBranchesItemOneOpeningHoursItemDayOfWeekMin).max(getClinicRegistrationCompletionResponseResultOneBranchesItemOneOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(getClinicRegistrationCompletionResponseResultOneBranchesItemOneOpeningHoursItemDayOfWeekMin).max(getClinicRegistrationCompletionResponseResultOneBranchesItemOneOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(getClinicRegistrationCompletionResponseResultOneBranchesItemOneOpeningHoursMax).nullish().describe('Null or absent is legacy unrestricted; empty array means closed all days.'),
@@ -2074,8 +2091,8 @@ export const GetClinicRegistrationCompletionResponse = zod.object({
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(getClinicRegistrationCompletionResponseResultOneBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(getClinicRegistrationCompletionResponseResultOneBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(getClinicRegistrationCompletionResponseResultOneBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(getClinicRegistrationCompletionResponseResultOneBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(getClinicRegistrationCompletionResponseResultOneBranchesItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
 }).optional(),
@@ -2087,16 +2104,19 @@ export const GetClinicRegistrationCompletionResponse = zod.object({
   "createdAt": zod.coerce.date().nullable()
 }))),
   "policies": zod.object({
-  "bookingHorizonDays": zod.number().int().min(1).max(getClinicRegistrationCompletionResponseResultOnePoliciesBookingHorizonDaysMax).optional(),
-  "cancellationCutoffMinutes": zod.number().int().min(getClinicRegistrationCompletionResponseResultOnePoliciesCancellationCutoffMinutesMin).max(getClinicRegistrationCompletionResponseResultOnePoliciesCancellationCutoffMinutesMax).optional()
+  "bookingHorizonDays": zod.int().min(1).max(getClinicRegistrationCompletionResponseResultOnePoliciesBookingHorizonDaysMax).optional(),
+  "cancellationCutoffMinutes": zod.int().min(getClinicRegistrationCompletionResponseResultOnePoliciesCancellationCutoffMinutesMin).max(getClinicRegistrationCompletionResponseResultOnePoliciesCancellationCutoffMinutesMax).optional()
 }),
   "doctorId": zod.string().nullish()
 }),zod.null()])
 })
 
 
+export const getClinicAdminSetupCompletionQueryRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+
+
 export const GetClinicAdminSetupCompletionQueryParams = zod.object({
-  "requestId": zod.coerce.string().uuid()
+  "requestId": zod.coerce.string().regex(getClinicAdminSetupCompletionQueryRequestIdRegExp)
 })
 
 export const getClinicAdminSetupCompletionResponseResultOneBranchesItemOneSlugMin = 3;
@@ -2114,6 +2134,7 @@ export const getClinicAdminSetupCompletionResponseResultOneBranchesItemTwoLinked
 export const getClinicAdminSetupCompletionResponseResultOneBranchesItemTwoLinkedScheduleConsultationMinutesMax = 240;
 
 export const getClinicAdminSetupCompletionResponseResultOneBranchesItemTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+export const getClinicAdminSetupCompletionResponseResultOneAdminOneRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const getClinicAdminSetupCompletionResponseResultOneAdminOnePasswordMin = 8;
 export const getClinicAdminSetupCompletionResponseResultOneAdminOnePasswordMax = 1024;
 
@@ -2149,11 +2170,11 @@ export const GetClinicAdminSetupCompletionResponse = zod.object({
   "result": zod.union([zod.object({
   "branches": zod.array(zod.object({
   "slug": zod.string().min(getClinicAdminSetupCompletionResponseResultOneBranchesItemOneSlugMin).max(getClinicAdminSetupCompletionResponseResultOneBranchesItemOneSlugMax).optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(getClinicAdminSetupCompletionResponseResultOneBranchesItemOneOpeningHoursItemDayOfWeekMin).max(getClinicAdminSetupCompletionResponseResultOneBranchesItemOneOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(getClinicAdminSetupCompletionResponseResultOneBranchesItemOneOpeningHoursItemDayOfWeekMin).max(getClinicAdminSetupCompletionResponseResultOneBranchesItemOneOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(getClinicAdminSetupCompletionResponseResultOneBranchesItemOneOpeningHoursMax).nullish().describe('Null or absent is legacy unrestricted; empty array means closed all days.'),
@@ -2172,8 +2193,8 @@ export const GetClinicAdminSetupCompletionResponse = zod.object({
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(getClinicAdminSetupCompletionResponseResultOneBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(getClinicAdminSetupCompletionResponseResultOneBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(getClinicAdminSetupCompletionResponseResultOneBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(getClinicAdminSetupCompletionResponseResultOneBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(getClinicAdminSetupCompletionResponseResultOneBranchesItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
 }).optional(),
@@ -2186,7 +2207,7 @@ export const GetClinicAdminSetupCompletionResponse = zod.object({
 }))).optional(),
   "doctorId": zod.string().nullish(),
   "admin": zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(getClinicAdminSetupCompletionResponseResultOneAdminOneRequestIdRegExp).optional(),
   "password": zod.string().min(getClinicAdminSetupCompletionResponseResultOneAdminOnePasswordMin).max(getClinicAdminSetupCompletionResponseResultOneAdminOnePasswordMax).optional(),
   "confirmPassword": zod.string().max(getClinicAdminSetupCompletionResponseResultOneAdminOneConfirmPasswordMax).optional(),
   "country": zod.string().max(getClinicAdminSetupCompletionResponseResultOneAdminOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -2195,7 +2216,7 @@ export const GetClinicAdminSetupCompletionResponse = zod.object({
   "pincode": zod.string().max(getClinicAdminSetupCompletionResponseResultOneAdminOnePincodeMax).optional(),
   "address": zod.string().max(getClinicAdminSetupCompletionResponseResultOneAdminOneAddressMax).optional(),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
@@ -2240,7 +2261,7 @@ export const GetClinicAdminSetupCompletionResponse = zod.object({
   "area": zod.string().optional(),
   "pincode": zod.string().optional(),
   "phone": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
@@ -2254,8 +2275,8 @@ export const GetClinicAdminSetupCompletionResponse = zod.object({
   "categoryName": zod.string().nullish(),
   "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
-  "doctorCount": zod.number().int().optional(),
-  "branchCount": zod.number().int().optional()
+  "doctorCount": zod.int().optional(),
+  "branchCount": zod.int().optional()
 }))
 }),zod.null()])
 })
@@ -2315,7 +2336,7 @@ export const GetClinicSettingsResponse = zod.object({
   "area": zod.string().optional(),
   "pincode": zod.string().optional(),
   "phone": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
@@ -2329,16 +2350,16 @@ export const GetClinicSettingsResponse = zod.object({
   "categoryName": zod.string().nullish(),
   "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
-  "doctorCount": zod.number().int().optional(),
-  "branchCount": zod.number().int().optional()
+  "doctorCount": zod.int().optional(),
+  "branchCount": zod.int().optional()
 })),
   "branches": zod.array(zod.object({
   "slug": zod.string().min(getClinicSettingsResponseBranchesItemOneSlugMin).max(getClinicSettingsResponseBranchesItemOneSlugMax).optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(getClinicSettingsResponseBranchesItemOneOpeningHoursItemDayOfWeekMin).max(getClinicSettingsResponseBranchesItemOneOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(getClinicSettingsResponseBranchesItemOneOpeningHoursItemDayOfWeekMin).max(getClinicSettingsResponseBranchesItemOneOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(getClinicSettingsResponseBranchesItemOneOpeningHoursMax).nullish().describe('Null or absent is legacy unrestricted; empty array means closed all days.'),
@@ -2357,8 +2378,8 @@ export const GetClinicSettingsResponse = zod.object({
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(getClinicSettingsResponseBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(getClinicSettingsResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(getClinicSettingsResponseBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(getClinicSettingsResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(getClinicSettingsResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
 }).optional(),
@@ -2370,8 +2391,8 @@ export const GetClinicSettingsResponse = zod.object({
   "createdAt": zod.coerce.date().nullable()
 }))),
   "policies": zod.object({
-  "bookingHorizonDays": zod.number().int().min(1).max(getClinicSettingsResponsePoliciesBookingHorizonDaysMax).optional(),
-  "cancellationCutoffMinutes": zod.number().int().min(getClinicSettingsResponsePoliciesCancellationCutoffMinutesMin).max(getClinicSettingsResponsePoliciesCancellationCutoffMinutesMax).optional()
+  "bookingHorizonDays": zod.int().min(1).max(getClinicSettingsResponsePoliciesBookingHorizonDaysMax).optional(),
+  "cancellationCutoffMinutes": zod.int().min(getClinicSettingsResponsePoliciesCancellationCutoffMinutesMin).max(getClinicSettingsResponsePoliciesCancellationCutoffMinutesMax).optional()
 }),
   "doctorId": zod.string().nullish()
 })
@@ -2422,7 +2443,7 @@ export const UpdateClinicSettingsBody = zod.object({
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "name": zod.string().min(1).optional(),
   "address": zod.string().optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "phone": zod.string().nullish(),
   "slug": zod.string().min(updateClinicSettingsBodyClinicSlugMin).max(updateClinicSettingsBodyClinicSlugMax).optional(),
   "categoryId": zod.string().nullish(),
@@ -2440,28 +2461,28 @@ export const UpdateClinicSettingsBody = zod.object({
   "pincode": zod.string().optional(),
   "country": zod.string().optional(),
   "timezone": zod.string().optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "phone": zod.string().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "slug": zod.string().min(updateClinicSettingsBodyBranchesItemSlugMin).max(updateClinicSettingsBodyBranchesItemSlugMax).optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(updateClinicSettingsBodyBranchesItemOpeningHoursItemDayOfWeekMin).max(updateClinicSettingsBodyBranchesItemOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(updateClinicSettingsBodyBranchesItemOpeningHoursItemDayOfWeekMin).max(updateClinicSettingsBodyBranchesItemOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(updateClinicSettingsBodyBranchesItemOpeningHoursMax).nullish().describe('Null or absent preserves legacy unrestricted hours. An explicit empty array closes all days.'),
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(updateClinicSettingsBodyBranchesItemLinkedScheduleMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(updateClinicSettingsBodyBranchesItemLinkedScheduleConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(updateClinicSettingsBodyBranchesItemLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(updateClinicSettingsBodyBranchesItemLinkedScheduleConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(updateClinicSettingsBodyBranchesItemLinkedScheduleTokenPrefixRegExp).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
 }).optional()
 })).max(updateClinicSettingsBodyBranchesMax).optional(),
   "policies": zod.object({
-  "bookingHorizonDays": zod.number().int().min(1).max(updateClinicSettingsBodyPoliciesBookingHorizonDaysMax).optional(),
-  "cancellationCutoffMinutes": zod.number().int().min(updateClinicSettingsBodyPoliciesCancellationCutoffMinutesMin).max(updateClinicSettingsBodyPoliciesCancellationCutoffMinutesMax).optional()
+  "bookingHorizonDays": zod.int().min(1).max(updateClinicSettingsBodyPoliciesBookingHorizonDaysMax).optional(),
+  "cancellationCutoffMinutes": zod.int().min(updateClinicSettingsBodyPoliciesCancellationCutoffMinutesMin).max(updateClinicSettingsBodyPoliciesCancellationCutoffMinutesMax).optional()
 }).optional()
 })
 
@@ -2515,7 +2536,7 @@ export const UpdateClinicSettingsResponse = zod.object({
   "area": zod.string().optional(),
   "pincode": zod.string().optional(),
   "phone": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
@@ -2529,16 +2550,16 @@ export const UpdateClinicSettingsResponse = zod.object({
   "categoryName": zod.string().nullish(),
   "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
-  "doctorCount": zod.number().int().optional(),
-  "branchCount": zod.number().int().optional()
+  "doctorCount": zod.int().optional(),
+  "branchCount": zod.int().optional()
 })),
   "branches": zod.array(zod.object({
   "slug": zod.string().min(updateClinicSettingsResponseBranchesItemOneSlugMin).max(updateClinicSettingsResponseBranchesItemOneSlugMax).optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(updateClinicSettingsResponseBranchesItemOneOpeningHoursItemDayOfWeekMin).max(updateClinicSettingsResponseBranchesItemOneOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(updateClinicSettingsResponseBranchesItemOneOpeningHoursItemDayOfWeekMin).max(updateClinicSettingsResponseBranchesItemOneOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(updateClinicSettingsResponseBranchesItemOneOpeningHoursMax).nullish().describe('Null or absent is legacy unrestricted; empty array means closed all days.'),
@@ -2557,8 +2578,8 @@ export const UpdateClinicSettingsResponse = zod.object({
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(updateClinicSettingsResponseBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(updateClinicSettingsResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(updateClinicSettingsResponseBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(updateClinicSettingsResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(updateClinicSettingsResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
 }).optional(),
@@ -2570,8 +2591,8 @@ export const UpdateClinicSettingsResponse = zod.object({
   "createdAt": zod.coerce.date().nullable()
 }))),
   "policies": zod.object({
-  "bookingHorizonDays": zod.number().int().min(1).max(updateClinicSettingsResponsePoliciesBookingHorizonDaysMax).optional(),
-  "cancellationCutoffMinutes": zod.number().int().min(updateClinicSettingsResponsePoliciesCancellationCutoffMinutesMin).max(updateClinicSettingsResponsePoliciesCancellationCutoffMinutesMax).optional()
+  "bookingHorizonDays": zod.int().min(1).max(updateClinicSettingsResponsePoliciesBookingHorizonDaysMax).optional(),
+  "cancellationCutoffMinutes": zod.int().min(updateClinicSettingsResponsePoliciesCancellationCutoffMinutesMin).max(updateClinicSettingsResponsePoliciesCancellationCutoffMinutesMax).optional()
 }),
   "doctorId": zod.string().nullish()
 })
@@ -2622,7 +2643,7 @@ export const PreviewClinicSettingsBody = zod.object({
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "name": zod.string().min(1).optional(),
   "address": zod.string().optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "phone": zod.string().nullish(),
   "slug": zod.string().min(previewClinicSettingsBodyClinicSlugMin).max(previewClinicSettingsBodyClinicSlugMax).optional(),
   "categoryId": zod.string().nullish(),
@@ -2640,28 +2661,28 @@ export const PreviewClinicSettingsBody = zod.object({
   "pincode": zod.string().optional(),
   "country": zod.string().optional(),
   "timezone": zod.string().optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "phone": zod.string().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "slug": zod.string().min(previewClinicSettingsBodyBranchesItemSlugMin).max(previewClinicSettingsBodyBranchesItemSlugMax).optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(previewClinicSettingsBodyBranchesItemOpeningHoursItemDayOfWeekMin).max(previewClinicSettingsBodyBranchesItemOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(previewClinicSettingsBodyBranchesItemOpeningHoursItemDayOfWeekMin).max(previewClinicSettingsBodyBranchesItemOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(previewClinicSettingsBodyBranchesItemOpeningHoursMax).nullish().describe('Null or absent preserves legacy unrestricted hours. An explicit empty array closes all days.'),
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(previewClinicSettingsBodyBranchesItemLinkedScheduleMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(previewClinicSettingsBodyBranchesItemLinkedScheduleConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(previewClinicSettingsBodyBranchesItemLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(previewClinicSettingsBodyBranchesItemLinkedScheduleConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(previewClinicSettingsBodyBranchesItemLinkedScheduleTokenPrefixRegExp).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
 }).optional()
 })).max(previewClinicSettingsBodyBranchesMax).optional(),
   "policies": zod.object({
-  "bookingHorizonDays": zod.number().int().min(1).max(previewClinicSettingsBodyPoliciesBookingHorizonDaysMax).optional(),
-  "cancellationCutoffMinutes": zod.number().int().min(previewClinicSettingsBodyPoliciesCancellationCutoffMinutesMin).max(previewClinicSettingsBodyPoliciesCancellationCutoffMinutesMax).optional()
+  "bookingHorizonDays": zod.int().min(1).max(previewClinicSettingsBodyPoliciesBookingHorizonDaysMax).optional(),
+  "cancellationCutoffMinutes": zod.int().min(previewClinicSettingsBodyPoliciesCancellationCutoffMinutesMin).max(previewClinicSettingsBodyPoliciesCancellationCutoffMinutesMax).optional()
 }).optional()
 })
 
@@ -2670,9 +2691,9 @@ export const PreviewClinicSettingsResponse = zod.object({
   "conflicts": zod.array(zod.string()),
   "impacts": zod.array(zod.object({
   "branchId": zod.string(),
-  "create": zod.number().int(),
-  "update": zod.number().int(),
-  "retire": zod.number().int(),
+  "create": zod.int(),
+  "update": zod.int(),
+  "retire": zod.int(),
   "unlink": zod.boolean()
 }))
 })
@@ -2690,6 +2711,7 @@ export const AttachOwnDoctorProfileBody = zod.object({
   "about": zod.string().optional()
 })
 
+export const attachOwnDoctorProfileResponseOneRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const attachOwnDoctorProfileResponseOnePasswordMin = 8;
 export const attachOwnDoctorProfileResponseOnePasswordMax = 1024;
 
@@ -2714,7 +2736,7 @@ export const attachOwnDoctorProfileResponseOneConsultationFeeMin = 0;
 
 
 export const AttachOwnDoctorProfileResponse = zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(attachOwnDoctorProfileResponseOneRequestIdRegExp).optional(),
   "password": zod.string().min(attachOwnDoctorProfileResponseOnePasswordMin).max(attachOwnDoctorProfileResponseOnePasswordMax).optional(),
   "confirmPassword": zod.string().max(attachOwnDoctorProfileResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(attachOwnDoctorProfileResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -2724,7 +2746,7 @@ export const AttachOwnDoctorProfileResponse = zod.object({
   "address": zod.string().max(attachOwnDoctorProfileResponseOneAddressMax).optional(),
   "ownerAdminId": zod.string().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "photoUrl": zod.string().optional(),
   "gender": zod.string().optional(),
@@ -2732,7 +2754,7 @@ export const AttachOwnDoctorProfileResponse = zod.object({
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "registrationNumber": zod.string().optional(),
-  "experienceYears": zod.number().int().min(attachOwnDoctorProfileResponseOneExperienceYearsMin).optional(),
+  "experienceYears": zod.int().min(attachOwnDoctorProfileResponseOneExperienceYearsMin).optional(),
   "about": zod.string().optional(),
   "consultationFee": zod.number().min(attachOwnDoctorProfileResponseOneConsultationFeeMin).optional(),
   "languages": zod.array(zod.string()).optional(),
@@ -2816,17 +2838,17 @@ export const resolveClinicSlugResponseBranchOneOpeningHoursItemDayOfWeekMax = 6;
 
 export const ResolveClinicSlugResponse = zod.object({
   "directoryPagination": zod.object({
-  "total": zod.number().int().min(resolveClinicSlugResponseDirectoryPaginationTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(resolveClinicSlugResponseDirectoryPaginationTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).optional(),
-  "branchCount": zod.number().int().min(resolveClinicSlugResponseBranchCountMin).optional().describe('Active clinic count before directory search.'),
-  "branchDoctorCount": zod.number().int().min(resolveClinicSlugResponseBranchDoctorCountMin).optional().describe('Active doctors at the resolved clinic before directory search.'),
+  "branchCount": zod.int().min(resolveClinicSlugResponseBranchCountMin).optional().describe('Active clinic count before directory search.'),
+  "branchDoctorCount": zod.int().min(resolveClinicSlugResponseBranchDoctorCountMin).optional().describe('Active doctors at the resolved clinic before directory search.'),
   "clinic": zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
-  "doctorCount": zod.number().int().optional(),
+  "doctorCount": zod.int().optional(),
   "averageConsultationMinutes": zod.number().nullish(),
   "id": zod.string(),
   "name": zod.string(),
@@ -2847,7 +2869,7 @@ export const ResolveClinicSlugResponse = zod.object({
   "effectiveEmail": zod.string().nullish(),
   "effectivePhone": zod.string().nullish(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(resolveClinicSlugResponseBranchesItemOpeningHoursItemDayOfWeekMin).max(resolveClinicSlugResponseBranchesItemOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(resolveClinicSlugResponseBranchesItemOpeningHoursItemDayOfWeekMin).max(resolveClinicSlugResponseBranchesItemOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).nullish()
@@ -2864,7 +2886,7 @@ export const ResolveClinicSlugResponse = zod.object({
   "effectiveEmail": zod.string().nullish(),
   "effectivePhone": zod.string().nullish(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(resolveClinicSlugResponseBranchOneOpeningHoursItemDayOfWeekMin).max(resolveClinicSlugResponseBranchOneOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(resolveClinicSlugResponseBranchOneOpeningHoursItemDayOfWeekMin).max(resolveClinicSlugResponseBranchOneOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).nullish()
@@ -2872,14 +2894,14 @@ export const ResolveClinicSlugResponse = zod.object({
   "qrReference": zod.string().nullable(),
   "doctors": zod.array(zod.object({
   "averageConsultationMinutes": zod.number().nullish().describe('Actual mean of valid completed consultation timestamps'),
-  "expectedDurationMinutes": zod.number().int().nullish().describe('Explicit clinic duration configuration'),
+  "expectedDurationMinutes": zod.int().nullish().describe('Explicit clinic duration configuration'),
   "id": zod.string(),
   "fullName": zod.string(),
   "photoUrl": zod.string().optional(),
   "specializationName": zod.string().optional(),
   "qualificationNames": zod.array(zod.string()).optional(),
   "about": zod.string().optional(),
-  "experienceYears": zod.number().int().optional(),
+  "experienceYears": zod.int().optional(),
   "consultationFee": zod.number().optional(),
   "clinicIds": zod.array(zod.string()),
   "branchIds": zod.array(zod.string())
@@ -2922,17 +2944,17 @@ export const resolveBranchSlugResponseBranchOneOpeningHoursItemDayOfWeekMax = 6;
 
 export const ResolveBranchSlugResponse = zod.object({
   "directoryPagination": zod.object({
-  "total": zod.number().int().min(resolveBranchSlugResponseDirectoryPaginationTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(resolveBranchSlugResponseDirectoryPaginationTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).optional(),
-  "branchCount": zod.number().int().min(resolveBranchSlugResponseBranchCountMin).optional().describe('Active clinic count before directory search.'),
-  "branchDoctorCount": zod.number().int().min(resolveBranchSlugResponseBranchDoctorCountMin).optional().describe('Active doctors at the resolved clinic before directory search.'),
+  "branchCount": zod.int().min(resolveBranchSlugResponseBranchCountMin).optional().describe('Active clinic count before directory search.'),
+  "branchDoctorCount": zod.int().min(resolveBranchSlugResponseBranchDoctorCountMin).optional().describe('Active doctors at the resolved clinic before directory search.'),
   "clinic": zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
-  "doctorCount": zod.number().int().optional(),
+  "doctorCount": zod.int().optional(),
   "averageConsultationMinutes": zod.number().nullish(),
   "id": zod.string(),
   "name": zod.string(),
@@ -2953,7 +2975,7 @@ export const ResolveBranchSlugResponse = zod.object({
   "effectiveEmail": zod.string().nullish(),
   "effectivePhone": zod.string().nullish(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(resolveBranchSlugResponseBranchesItemOpeningHoursItemDayOfWeekMin).max(resolveBranchSlugResponseBranchesItemOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(resolveBranchSlugResponseBranchesItemOpeningHoursItemDayOfWeekMin).max(resolveBranchSlugResponseBranchesItemOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).nullish()
@@ -2970,7 +2992,7 @@ export const ResolveBranchSlugResponse = zod.object({
   "effectiveEmail": zod.string().nullish(),
   "effectivePhone": zod.string().nullish(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(resolveBranchSlugResponseBranchOneOpeningHoursItemDayOfWeekMin).max(resolveBranchSlugResponseBranchOneOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(resolveBranchSlugResponseBranchOneOpeningHoursItemDayOfWeekMin).max(resolveBranchSlugResponseBranchOneOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).nullish()
@@ -2978,14 +3000,14 @@ export const ResolveBranchSlugResponse = zod.object({
   "qrReference": zod.string().nullable(),
   "doctors": zod.array(zod.object({
   "averageConsultationMinutes": zod.number().nullish().describe('Actual mean of valid completed consultation timestamps'),
-  "expectedDurationMinutes": zod.number().int().nullish().describe('Explicit clinic duration configuration'),
+  "expectedDurationMinutes": zod.int().nullish().describe('Explicit clinic duration configuration'),
   "id": zod.string(),
   "fullName": zod.string(),
   "photoUrl": zod.string().optional(),
   "specializationName": zod.string().optional(),
   "qualificationNames": zod.array(zod.string()).optional(),
   "about": zod.string().optional(),
-  "experienceYears": zod.number().int().optional(),
+  "experienceYears": zod.int().optional(),
   "consultationFee": zod.number().optional(),
   "clinicIds": zod.array(zod.string()),
   "branchIds": zod.array(zod.string())
@@ -3064,7 +3086,7 @@ export const GetPublicBookingContextResponse = zod.object({
   "today": zod.coerce.date(),
   "lastBookableDate": zod.coerce.date(),
   "requireMobileVerification": zod.boolean().optional().describe('Applies to account-linked patient verification. Guest bookings require mobile contact without claiming account verification.'),
-  "cancellationCutoffMinutes": zod.number().int().min(getPublicBookingContextResponseCancellationCutoffMinutesMin).optional()
+  "cancellationCutoffMinutes": zod.int().min(getPublicBookingContextResponseCancellationCutoffMinutesMin).optional()
 })
 
 
@@ -3090,10 +3112,10 @@ export const GetPublicAvailabilitySessionsResponseItem = zod.object({
   "breakStart": zod.string().nullish(),
   "breakEnd": zod.string().nullish(),
   "timezone": zod.string().optional(),
-  "maxTokens": zod.number().int(),
-  "bookedTokens": zod.number().int(),
-  "remainingTokens": zod.number().int(),
-  "consultationMinutes": zod.number().int().optional(),
+  "maxTokens": zod.int(),
+  "bookedTokens": zod.int(),
+  "remainingTokens": zod.int(),
+  "consultationMinutes": zod.int().optional(),
   "tokenPrefix": zod.string().optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional(),
   "queueOpenTime": zod.string().optional(),
@@ -3117,6 +3139,7 @@ export const createGuestRequestBodyBranchIdMax = 100;
 export const createGuestRequestBodyDoctorIdMax = 100;
 
 export const createGuestRequestBodyDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const createGuestRequestBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const createGuestRequestBodyReceiptSecretRegExp = new RegExp('^[a-f0-9]{64}$');
 
 
@@ -3125,12 +3148,12 @@ export const CreateGuestRequestBody = zod.object({
   "startTime": zod.string().optional(),
   "qrReference": zod.string().min(1).max(createGuestRequestBodyQrReferenceMax),
   "fullName": zod.string().min(1).max(createGuestRequestBodyFullNameMax),
-  "email": zod.string().email().max(createGuestRequestBodyEmailMax).nullish(),
+  "email": zod.email().max(createGuestRequestBodyEmailMax).nullish(),
   "mobile": zod.string().max(createGuestRequestBodyMobileMax).regex(createGuestRequestBodyMobileRegExp),
   "branchId": zod.string().min(1).max(createGuestRequestBodyBranchIdMax),
   "doctorId": zod.string().min(1).max(createGuestRequestBodyDoctorIdMax),
   "date": zod.string().regex(createGuestRequestBodyDateRegExp),
-  "requestId": zod.string().uuid(),
+  "requestId": zod.string().regex(createGuestRequestBodyRequestIdRegExp),
   "receiptSecret": zod.string().regex(createGuestRequestBodyReceiptSecretRegExp)
 })
 
@@ -3139,8 +3162,8 @@ export const CreateGuestRequestResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -3165,7 +3188,7 @@ export const CreateGuestRequestResponse = zod.object({
   "reference": zod.string().nullable(),
   "branchAddress": zod.string().nullable(),
   "appointmentStatus": zod.string().nullable(),
-  "revision": zod.number().int().nullable(),
+  "revision": zod.int().nullable(),
   "checkInUrl": zod.string().nullable().describe('Personal signed check-in QR URL. Keep private like receiptSecret; only returned via booking or receipt capability.')
 })
 
@@ -3182,8 +3205,8 @@ export const GetGuestReceiptResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -3208,7 +3231,7 @@ export const GetGuestReceiptResponse = zod.object({
   "reference": zod.string().nullable(),
   "branchAddress": zod.string().nullable(),
   "appointmentStatus": zod.string().nullable(),
-  "revision": zod.number().int().nullable(),
+  "revision": zod.int().nullable(),
   "checkInUrl": zod.string().nullable().describe('Personal signed check-in QR URL. Keep private like receiptSecret; only returned via booking or receipt capability.')
 })
 
@@ -3242,8 +3265,8 @@ export const ListGuestRequestsResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -3268,7 +3291,7 @@ export const ListGuestRequestsResponse = zod.object({
   "reference": zod.string().nullable(),
   "branchAddress": zod.string().nullable(),
   "appointmentStatus": zod.string().nullable(),
-  "revision": zod.number().int().nullable(),
+  "revision": zod.int().nullable(),
   "checkInUrl": zod.string().nullable().describe('Personal signed check-in QR URL. Keep private like receiptSecret; only returned via booking or receipt capability.')
 }).and(zod.object({
   "clinicId": zod.string(),
@@ -3279,9 +3302,9 @@ export const ListGuestRequestsResponse = zod.object({
   "appointmentId": zod.string().nullable(),
   "createdAt": zod.coerce.date()
 }))),
-  "total": zod.number().int(),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "total": zod.int(),
+  "page": zod.int(),
+  "pageSize": zod.int()
 })
 
 
@@ -3303,8 +3326,8 @@ export const DecideGuestRequestResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -3329,7 +3352,7 @@ export const DecideGuestRequestResponse = zod.object({
   "reference": zod.string().nullable(),
   "branchAddress": zod.string().nullable(),
   "appointmentStatus": zod.string().nullable(),
-  "revision": zod.number().int().nullable(),
+  "revision": zod.int().nullable(),
   "checkInUrl": zod.string().nullable().describe('Personal signed check-in QR URL. Keep private like receiptSecret; only returned via booking or receipt capability.')
 }).and(zod.object({
   "clinicId": zod.string(),
@@ -3360,7 +3383,7 @@ export const nativeStaffLoginBodyPasswordMax = 1024;
 
 
 export const NativeStaffLoginBody = zod.object({
-  "email": zod.string().email(),
+  "email": zod.email(),
   "password": zod.string().min(1).max(nativeStaffLoginBodyPasswordMax)
 })
 
@@ -3368,7 +3391,7 @@ export const NativeStaffLoginResponse = zod.object({
   "authenticated": zod.literal(true),
   "user": zod.object({
   "id": zod.string(),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "fullName": zod.string(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist']),
   "status": zod.enum(['active'])
@@ -3402,7 +3425,7 @@ export const startPatientEmailBodyTwoMobileRegExp = new RegExp('^\\+[1-9][0-9]{6
 
 export const StartPatientEmailBody = zod.union([zod.object({
   "channel": zod.enum(['email']).optional(),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().regex(startPatientEmailBodyOneMobileRegExp).optional().describe('Optional mobile for new email registration. Separate SMS proof never replaces email proof or updates an existing account.')
 }),zod.object({
   "channel": zod.enum(['sms']),
@@ -3518,7 +3541,7 @@ export const startClinicRegistrationBodyPasswordRegExp = new RegExp('^(?=[\\s\\S
 
 
 export const StartClinicRegistrationBody = zod.object({
-  "email": zod.string().email(),
+  "email": zod.email(),
   "fullName": zod.string().min(1).max(startClinicRegistrationBodyFullNameMax),
   "mobile": zod.string().regex(startClinicRegistrationBodyMobileRegExp).optional(),
   "password": zod.string().min(startClinicRegistrationBodyPasswordMin).max(startClinicRegistrationBodyPasswordMax).regex(startClinicRegistrationBodyPasswordRegExp).describe('Requires letters and numbers; maximum 1024 UTF-8 bytes, enforced by server.')
@@ -3556,7 +3579,7 @@ export const ResendClinicRegistrationResponse = zod.object({
  * Resumes a matching unexpired verification challenge from an HttpOnly cookie; the temporary account draft has no challenge reference.
  */
 export const ResumeClinicRegistrationBody = zod.object({
-  "email": zod.string().email(),
+  "email": zod.email(),
   "fullName": zod.string()
 })
 
@@ -3596,7 +3619,7 @@ export const requestPasswordRecoveryBodyEmailMax = 254;
 
 
 export const RequestPasswordRecoveryBody = zod.object({
-  "email": zod.string().email().max(requestPasswordRecoveryBodyEmailMax)
+  "email": zod.email().max(requestPasswordRecoveryBodyEmailMax)
 })
 
 export const RequestPasswordRecoveryResponse = zod.object({
@@ -3713,6 +3736,7 @@ export const completeProfileFieldsResponseOneOnePincodeMax = 12;
 export const completeProfileFieldsResponseOneOneAgeMin = 0;
 export const completeProfileFieldsResponseOneOneAgeMax = 130;
 
+export const completeProfileFieldsResponseTwoOneRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const completeProfileFieldsResponseTwoOnePasswordMin = 8;
 export const completeProfileFieldsResponseTwoOnePasswordMax = 1024;
 
@@ -3734,6 +3758,7 @@ export const completeProfileFieldsResponseTwoOneExperienceYearsMin = 0;
 export const completeProfileFieldsResponseTwoOneConsultationFeeMin = 0;
 
 
+export const completeProfileFieldsResponseThreeOneRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const completeProfileFieldsResponseThreeOnePasswordMin = 8;
 export const completeProfileFieldsResponseThreeOnePasswordMax = 1024;
 
@@ -3760,9 +3785,9 @@ export const CompleteProfileFieldsResponse = zod.union([zod.object({
   "pincode": zod.string().max(completeProfileFieldsResponseOneOnePincodeMax).optional(),
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "dateOfBirth": zod.coerce.date().nullish(),
-  "age": zod.number().int().min(completeProfileFieldsResponseOneOneAgeMin).max(completeProfileFieldsResponseOneOneAgeMax).optional(),
+  "age": zod.int().min(completeProfileFieldsResponseOneOneAgeMin).max(completeProfileFieldsResponseOneOneAgeMax).optional(),
   "ageReferenceDate": zod.coerce.date().nullish().describe('Date an approximate age was entered; absent on legacy estimates. Never an exact DOB.'),
   "gender": zod.string().optional(),
   "address": zod.string().optional(),
@@ -3778,7 +3803,7 @@ export const CompleteProfileFieldsResponse = zod.union([zod.object({
   "mobileVerified": zod.boolean(),
   "createdAt": zod.coerce.date()
 })),zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(completeProfileFieldsResponseTwoOneRequestIdRegExp).optional(),
   "password": zod.string().min(completeProfileFieldsResponseTwoOnePasswordMin).max(completeProfileFieldsResponseTwoOnePasswordMax).optional(),
   "confirmPassword": zod.string().max(completeProfileFieldsResponseTwoOneConfirmPasswordMax).optional(),
   "country": zod.string().max(completeProfileFieldsResponseTwoOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -3788,7 +3813,7 @@ export const CompleteProfileFieldsResponse = zod.union([zod.object({
   "address": zod.string().max(completeProfileFieldsResponseTwoOneAddressMax).optional(),
   "ownerAdminId": zod.string().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "photoUrl": zod.string().optional(),
   "gender": zod.string().optional(),
@@ -3796,7 +3821,7 @@ export const CompleteProfileFieldsResponse = zod.union([zod.object({
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "registrationNumber": zod.string().optional(),
-  "experienceYears": zod.number().int().min(completeProfileFieldsResponseTwoOneExperienceYearsMin).optional(),
+  "experienceYears": zod.int().min(completeProfileFieldsResponseTwoOneExperienceYearsMin).optional(),
   "about": zod.string().optional(),
   "consultationFee": zod.number().min(completeProfileFieldsResponseTwoOneConsultationFeeMin).optional(),
   "languages": zod.array(zod.string()).optional(),
@@ -3828,7 +3853,7 @@ export const CompleteProfileFieldsResponse = zod.union([zod.object({
   "specializationName": zod.string().optional(),
   "qualificationNames": zod.array(zod.string()).optional()
 })),zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(completeProfileFieldsResponseThreeOneRequestIdRegExp).optional(),
   "password": zod.string().min(completeProfileFieldsResponseThreeOnePasswordMin).max(completeProfileFieldsResponseThreeOnePasswordMax).optional(),
   "confirmPassword": zod.string().max(completeProfileFieldsResponseThreeOneConfirmPasswordMax).optional(),
   "country": zod.string().max(completeProfileFieldsResponseThreeOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -3837,7 +3862,7 @@ export const CompleteProfileFieldsResponse = zod.union([zod.object({
   "pincode": zod.string().max(completeProfileFieldsResponseThreeOnePincodeMax).optional(),
   "address": zod.string().max(completeProfileFieldsResponseThreeOneAddressMax).optional(),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
@@ -3872,6 +3897,7 @@ export const CompleteProfileFieldsResponse = zod.union([zod.object({
 /**
  * Returns database identity; user is null before onboarding. Never accepts a role from the client.
  */
+export const getMeResponseUserOneOneRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const getMeResponseUserOneOnePasswordMin = 8;
 export const getMeResponseUserOneOnePasswordMax = 1024;
 
@@ -3894,7 +3920,7 @@ export const getMeResponseUserOneOneAddressMax = 500;
 export const GetMeResponse = zod.object({
   "userId": zod.string(),
   "user": zod.union([zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(getMeResponseUserOneOneRequestIdRegExp).optional(),
   "password": zod.string().min(getMeResponseUserOneOnePasswordMin).max(getMeResponseUserOneOnePasswordMax).optional(),
   "confirmPassword": zod.string().max(getMeResponseUserOneOneConfirmPasswordMax).optional(),
   "country": zod.string().max(getMeResponseUserOneOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -3903,7 +3929,7 @@ export const GetMeResponse = zod.object({
   "pincode": zod.string().max(getMeResponseUserOneOnePincodeMax).optional(),
   "address": zod.string().max(getMeResponseUserOneOneAddressMax).optional(),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
@@ -3948,6 +3974,7 @@ export const UpdateMeBody = zod.object({
   "photoUrl": zod.string().optional()
 })
 
+export const updateMeResponseOneRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const updateMeResponseOnePasswordMin = 8;
 export const updateMeResponseOnePasswordMax = 1024;
 
@@ -3968,7 +3995,7 @@ export const updateMeResponseOneAddressMax = 500;
 
 
 export const UpdateMeResponse = zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(updateMeResponseOneRequestIdRegExp).optional(),
   "password": zod.string().min(updateMeResponseOnePasswordMin).max(updateMeResponseOnePasswordMax).optional(),
   "confirmPassword": zod.string().max(updateMeResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(updateMeResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -3977,7 +4004,7 @@ export const UpdateMeResponse = zod.object({
   "pincode": zod.string().max(updateMeResponseOnePincodeMax).optional(),
   "address": zod.string().max(updateMeResponseOneAddressMax).optional(),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
@@ -4022,6 +4049,7 @@ export const OnboardBody = zod.object({
   "termsAccepted": zod.boolean().describe('Must be true to consent to appointment management and complete the patient profile.')
 })
 
+export const onboardResponseUserOneOneRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const onboardResponseUserOneOnePasswordMin = 8;
 export const onboardResponseUserOneOnePasswordMax = 1024;
 
@@ -4044,7 +4072,7 @@ export const onboardResponseUserOneOneAddressMax = 500;
 export const OnboardResponse = zod.object({
   "userId": zod.string(),
   "user": zod.union([zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(onboardResponseUserOneOneRequestIdRegExp).optional(),
   "password": zod.string().min(onboardResponseUserOneOnePasswordMin).max(onboardResponseUserOneOnePasswordMax).optional(),
   "confirmPassword": zod.string().max(onboardResponseUserOneOneConfirmPasswordMax).optional(),
   "country": zod.string().max(onboardResponseUserOneOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -4053,7 +4081,7 @@ export const OnboardResponse = zod.object({
   "pincode": zod.string().max(onboardResponseUserOneOnePincodeMax).optional(),
   "address": zod.string().max(onboardResponseUserOneOneAddressMax).optional(),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
@@ -4102,7 +4130,7 @@ export const RequestOtpBody = zod.object({
 export const RequestOtpResponse = zod.object({
   "challengeId": zod.string(),
   "expiresAt": zod.coerce.date(),
-  "resendAfterSeconds": zod.number().int(),
+  "resendAfterSeconds": zod.int(),
   "provider": zod.enum(['sms', 'development']),
   "developmentCode": zod.string().optional().describe('Returned only by the explicitly enabled development provider when NODE_ENV=development. Never present in production.')
 })
@@ -4156,10 +4184,10 @@ export const listPublicClinicsResponseTwoItemsItemOneCustomSpecialitiesMax = 30;
 
 
 export const ListPublicClinicsResponse = zod.object({
-  "total": zod.number().int().min(listPublicClinicsResponseOneTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(listPublicClinicsResponseOneTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
@@ -4176,7 +4204,7 @@ export const ListPublicClinicsResponse = zod.object({
   "area": zod.string().optional(),
   "pincode": zod.string().optional(),
   "phone": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
@@ -4190,8 +4218,8 @@ export const ListPublicClinicsResponse = zod.object({
   "categoryName": zod.string().nullish(),
   "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
-  "doctorCount": zod.number().int().optional(),
-  "branchCount": zod.number().int().optional()
+  "doctorCount": zod.int().optional(),
+  "branchCount": zod.int().optional()
 })))
 }))
 
@@ -4234,18 +4262,18 @@ export const listPublicBranchesResponseTwoItemsItemTwoLinkedScheduleTokenPrefixR
 
 
 export const ListPublicBranchesResponse = zod.object({
-  "total": zod.number().int().min(listPublicBranchesResponseOneTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(listPublicBranchesResponseOneTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "slug": zod.string().min(listPublicBranchesResponseTwoItemsItemOneSlugMin).max(listPublicBranchesResponseTwoItemsItemOneSlugMax).optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(listPublicBranchesResponseTwoItemsItemOneOpeningHoursItemDayOfWeekMin).max(listPublicBranchesResponseTwoItemsItemOneOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(listPublicBranchesResponseTwoItemsItemOneOpeningHoursItemDayOfWeekMin).max(listPublicBranchesResponseTwoItemsItemOneOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(listPublicBranchesResponseTwoItemsItemOneOpeningHoursMax).nullish().describe('Null or absent is legacy unrestricted; empty array means closed all days.'),
@@ -4264,8 +4292,8 @@ export const ListPublicBranchesResponse = zod.object({
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(listPublicBranchesResponseTwoItemsItemTwoLinkedScheduleMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(listPublicBranchesResponseTwoItemsItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(listPublicBranchesResponseTwoItemsItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(listPublicBranchesResponseTwoItemsItemTwoLinkedScheduleConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(listPublicBranchesResponseTwoItemsItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
 }).optional(),
@@ -4303,21 +4331,21 @@ export const listPublicDoctorsResponseOneTotalMin = 0;
 
 
 export const ListPublicDoctorsResponse = zod.object({
-  "total": zod.number().int().min(listPublicDoctorsResponseOneTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(listPublicDoctorsResponseOneTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "averageConsultationMinutes": zod.number().nullish().describe('Actual mean of valid completed consultation timestamps'),
-  "expectedDurationMinutes": zod.number().int().nullish().describe('Explicit clinic duration configuration'),
+  "expectedDurationMinutes": zod.int().nullish().describe('Explicit clinic duration configuration'),
   "id": zod.string(),
   "fullName": zod.string(),
   "photoUrl": zod.string().optional(),
   "specializationName": zod.string().optional(),
   "qualificationNames": zod.array(zod.string()).optional(),
   "about": zod.string().optional(),
-  "experienceYears": zod.number().int().optional(),
+  "experienceYears": zod.int().optional(),
   "consultationFee": zod.number().optional(),
   "clinicIds": zod.array(zod.string()),
   "branchIds": zod.array(zod.string())
@@ -4349,10 +4377,10 @@ export const GetPublicAvailabilityResponse = zod.object({
   "breakStart": zod.string().nullish(),
   "breakEnd": zod.string().nullish(),
   "timezone": zod.string().optional(),
-  "maxTokens": zod.number().int(),
-  "bookedTokens": zod.number().int(),
-  "remainingTokens": zod.number().int(),
-  "consultationMinutes": zod.number().int().optional(),
+  "maxTokens": zod.int(),
+  "bookedTokens": zod.int(),
+  "remainingTokens": zod.int(),
+  "consultationMinutes": zod.int().optional(),
   "tokenPrefix": zod.string().optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional(),
   "queueOpenTime": zod.string().optional(),
@@ -4391,8 +4419,8 @@ export const GetPublicDisplayResponse = zod.object({
   "currentStatus": zod.union([zod.literal('called'),zod.literal('inConsultation'),zod.literal(null)]).nullable(),
   "nextToken": zod.string().nullable(),
   "waitingTokens": zod.array(zod.string()),
-  "waitingCount": zod.number().int(),
-  "completedCount": zod.number().int()
+  "waitingCount": zod.int(),
+  "completedCount": zod.int()
 }))
 })
 
@@ -4456,10 +4484,10 @@ export const listClinicsResponseTwoItemsItemOneCustomSpecialitiesMax = 30;
 
 
 export const ListClinicsResponse = zod.object({
-  "total": zod.number().int().min(listClinicsResponseOneTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(listClinicsResponseOneTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
@@ -4476,7 +4504,7 @@ export const ListClinicsResponse = zod.object({
   "area": zod.string().optional(),
   "pincode": zod.string().optional(),
   "phone": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
@@ -4490,8 +4518,8 @@ export const ListClinicsResponse = zod.object({
   "categoryName": zod.string().nullish(),
   "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
-  "doctorCount": zod.number().int().optional(),
-  "branchCount": zod.number().int().optional()
+  "doctorCount": zod.int().optional(),
+  "branchCount": zod.int().optional()
 })))
 }))
 
@@ -4525,7 +4553,7 @@ export const CreateClinicBody = zod.object({
   "area": zod.string().optional(),
   "pincode": zod.string().optional(),
   "phone": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
@@ -4563,7 +4591,7 @@ export const CreateClinicResponse = zod.object({
   "area": zod.string().optional(),
   "pincode": zod.string().optional(),
   "phone": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
@@ -4577,8 +4605,8 @@ export const CreateClinicResponse = zod.object({
   "categoryName": zod.string().nullish(),
   "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
-  "doctorCount": zod.number().int().optional(),
-  "branchCount": zod.number().int().optional()
+  "doctorCount": zod.int().optional(),
+  "branchCount": zod.int().optional()
 }))
 
 
@@ -4615,7 +4643,7 @@ export const GetClinicResponse = zod.object({
   "area": zod.string().optional(),
   "pincode": zod.string().optional(),
   "phone": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
@@ -4629,8 +4657,8 @@ export const GetClinicResponse = zod.object({
   "categoryName": zod.string().nullish(),
   "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
-  "doctorCount": zod.number().int().optional(),
-  "branchCount": zod.number().int().optional()
+  "doctorCount": zod.int().optional(),
+  "branchCount": zod.int().optional()
 }))
 
 
@@ -4667,7 +4695,7 @@ export const UpdateClinicBody = zod.object({
   "area": zod.string().optional(),
   "pincode": zod.string().optional(),
   "phone": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
@@ -4705,7 +4733,7 @@ export const UpdateClinicResponse = zod.object({
   "area": zod.string().optional(),
   "pincode": zod.string().optional(),
   "phone": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
@@ -4719,8 +4747,8 @@ export const UpdateClinicResponse = zod.object({
   "categoryName": zod.string().nullish(),
   "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
-  "doctorCount": zod.number().int().optional(),
-  "branchCount": zod.number().int().optional()
+  "doctorCount": zod.int().optional(),
+  "branchCount": zod.int().optional()
 }))
 
 
@@ -4771,18 +4799,18 @@ export const listBranchesResponseTwoItemsItemTwoLinkedScheduleTokenPrefixRegExp 
 
 
 export const ListBranchesResponse = zod.object({
-  "total": zod.number().int().min(listBranchesResponseOneTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(listBranchesResponseOneTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "slug": zod.string().min(listBranchesResponseTwoItemsItemOneSlugMin).max(listBranchesResponseTwoItemsItemOneSlugMax).optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(listBranchesResponseTwoItemsItemOneOpeningHoursItemDayOfWeekMin).max(listBranchesResponseTwoItemsItemOneOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(listBranchesResponseTwoItemsItemOneOpeningHoursItemDayOfWeekMin).max(listBranchesResponseTwoItemsItemOneOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(listBranchesResponseTwoItemsItemOneOpeningHoursMax).nullish().describe('Null or absent is legacy unrestricted; empty array means closed all days.'),
@@ -4801,8 +4829,8 @@ export const ListBranchesResponse = zod.object({
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(listBranchesResponseTwoItemsItemTwoLinkedScheduleMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(listBranchesResponseTwoItemsItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(listBranchesResponseTwoItemsItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(listBranchesResponseTwoItemsItemTwoLinkedScheduleConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(listBranchesResponseTwoItemsItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
 }).optional(),
@@ -4829,11 +4857,11 @@ export const createBranchBodyTimezoneDefault = `Asia/Kolkata`;
 
 export const CreateBranchBody = zod.object({
   "slug": zod.string().min(createBranchBodySlugMin).max(createBranchBodySlugMax).optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(createBranchBodyOpeningHoursItemDayOfWeekMin).max(createBranchBodyOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(createBranchBodyOpeningHoursItemDayOfWeekMin).max(createBranchBodyOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(createBranchBodyOpeningHoursMax).nullish().describe('Null or absent is legacy unrestricted; empty array means closed all days.'),
@@ -4867,11 +4895,11 @@ export const createBranchResponseTwoLinkedScheduleTokenPrefixRegExp = new RegExp
 
 export const CreateBranchResponse = zod.object({
   "slug": zod.string().min(createBranchResponseOneSlugMin).max(createBranchResponseOneSlugMax).optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(createBranchResponseOneOpeningHoursItemDayOfWeekMin).max(createBranchResponseOneOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(createBranchResponseOneOpeningHoursItemDayOfWeekMin).max(createBranchResponseOneOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(createBranchResponseOneOpeningHoursMax).nullish().describe('Null or absent is legacy unrestricted; empty array means closed all days.'),
@@ -4890,8 +4918,8 @@ export const CreateBranchResponse = zod.object({
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(createBranchResponseTwoLinkedScheduleMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(createBranchResponseTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(createBranchResponseTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(createBranchResponseTwoLinkedScheduleConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(createBranchResponseTwoLinkedScheduleTokenPrefixRegExp).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
 }).optional(),
@@ -4927,11 +4955,11 @@ export const getBranchResponseTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^
 
 export const GetBranchResponse = zod.object({
   "slug": zod.string().min(getBranchResponseOneSlugMin).max(getBranchResponseOneSlugMax).optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(getBranchResponseOneOpeningHoursItemDayOfWeekMin).max(getBranchResponseOneOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(getBranchResponseOneOpeningHoursItemDayOfWeekMin).max(getBranchResponseOneOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(getBranchResponseOneOpeningHoursMax).nullish().describe('Null or absent is legacy unrestricted; empty array means closed all days.'),
@@ -4950,8 +4978,8 @@ export const GetBranchResponse = zod.object({
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(getBranchResponseTwoLinkedScheduleMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(getBranchResponseTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(getBranchResponseTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(getBranchResponseTwoLinkedScheduleConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(getBranchResponseTwoLinkedScheduleTokenPrefixRegExp).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
 }).optional(),
@@ -4981,11 +5009,11 @@ export const updateBranchBodyTimezoneDefault = `Asia/Kolkata`;
 
 export const UpdateBranchBody = zod.object({
   "slug": zod.string().min(updateBranchBodySlugMin).max(updateBranchBodySlugMax).optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(updateBranchBodyOpeningHoursItemDayOfWeekMin).max(updateBranchBodyOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(updateBranchBodyOpeningHoursItemDayOfWeekMin).max(updateBranchBodyOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(updateBranchBodyOpeningHoursMax).nullish().describe('Null or absent is legacy unrestricted; empty array means closed all days.'),
@@ -5019,11 +5047,11 @@ export const updateBranchResponseTwoLinkedScheduleTokenPrefixRegExp = new RegExp
 
 export const UpdateBranchResponse = zod.object({
   "slug": zod.string().min(updateBranchResponseOneSlugMin).max(updateBranchResponseOneSlugMax).optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(updateBranchResponseOneOpeningHoursItemDayOfWeekMin).max(updateBranchResponseOneOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(updateBranchResponseOneOpeningHoursItemDayOfWeekMin).max(updateBranchResponseOneOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(updateBranchResponseOneOpeningHoursMax).nullish().describe('Null or absent is legacy unrestricted; empty array means closed all days.'),
@@ -5042,8 +5070,8 @@ export const UpdateBranchResponse = zod.object({
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(updateBranchResponseTwoLinkedScheduleMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(updateBranchResponseTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(updateBranchResponseTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(updateBranchResponseTwoLinkedScheduleConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(updateBranchResponseTwoLinkedScheduleTokenPrefixRegExp).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
 }).optional(),
@@ -5087,6 +5115,7 @@ export const ListDoctorsQueryParams = zod.object({
 
 export const listDoctorsResponseOneTotalMin = 0;
 
+export const listDoctorsResponseTwoItemsItemOneRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const listDoctorsResponseTwoItemsItemOnePasswordMin = 8;
 export const listDoctorsResponseTwoItemsItemOnePasswordMax = 1024;
 
@@ -5111,13 +5140,13 @@ export const listDoctorsResponseTwoItemsItemOneConsultationFeeMin = 0;
 
 
 export const ListDoctorsResponse = zod.object({
-  "total": zod.number().int().min(listDoctorsResponseOneTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(listDoctorsResponseOneTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(listDoctorsResponseTwoItemsItemOneRequestIdRegExp).optional(),
   "password": zod.string().min(listDoctorsResponseTwoItemsItemOnePasswordMin).max(listDoctorsResponseTwoItemsItemOnePasswordMax).optional(),
   "confirmPassword": zod.string().max(listDoctorsResponseTwoItemsItemOneConfirmPasswordMax).optional(),
   "country": zod.string().max(listDoctorsResponseTwoItemsItemOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -5127,7 +5156,7 @@ export const ListDoctorsResponse = zod.object({
   "address": zod.string().max(listDoctorsResponseTwoItemsItemOneAddressMax).optional(),
   "ownerAdminId": zod.string().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "photoUrl": zod.string().optional(),
   "gender": zod.string().optional(),
@@ -5135,7 +5164,7 @@ export const ListDoctorsResponse = zod.object({
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "registrationNumber": zod.string().optional(),
-  "experienceYears": zod.number().int().min(listDoctorsResponseTwoItemsItemOneExperienceYearsMin).optional(),
+  "experienceYears": zod.int().min(listDoctorsResponseTwoItemsItemOneExperienceYearsMin).optional(),
   "about": zod.string().optional(),
   "consultationFee": zod.number().min(listDoctorsResponseTwoItemsItemOneConsultationFeeMin).optional(),
   "languages": zod.array(zod.string()).optional(),
@@ -5173,6 +5202,7 @@ export const ListDoctorsResponse = zod.object({
 /**
  * Authorized administrator creates doctor and identity invitation; never silently promotes an unrelated existing patient.
  */
+export const createDoctorBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const createDoctorBodyPasswordMin = 8;
 export const createDoctorBodyPasswordMax = 1024;
 
@@ -5197,7 +5227,7 @@ export const createDoctorBodyConsultationFeeMin = 0;
 
 
 export const CreateDoctorBody = zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(createDoctorBodyRequestIdRegExp).optional(),
   "password": zod.string().min(createDoctorBodyPasswordMin).max(createDoctorBodyPasswordMax).optional(),
   "confirmPassword": zod.string().max(createDoctorBodyConfirmPasswordMax).optional(),
   "country": zod.string().max(createDoctorBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -5207,7 +5237,7 @@ export const CreateDoctorBody = zod.object({
   "address": zod.string().max(createDoctorBodyAddressMax).optional(),
   "ownerAdminId": zod.string().optional().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "photoUrl": zod.string().optional(),
   "gender": zod.string().optional(),
@@ -5215,7 +5245,7 @@ export const CreateDoctorBody = zod.object({
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "registrationNumber": zod.string().optional(),
-  "experienceYears": zod.number().int().min(createDoctorBodyExperienceYearsMin).optional(),
+  "experienceYears": zod.int().min(createDoctorBodyExperienceYearsMin).optional(),
   "about": zod.string().optional(),
   "consultationFee": zod.number().min(createDoctorBodyConsultationFeeMin).optional(),
   "languages": zod.array(zod.string()).optional(),
@@ -5224,6 +5254,7 @@ export const CreateDoctorBody = zod.object({
   "status": zod.enum(['active', 'inactive']).optional()
 })
 
+export const createDoctorResponseOneRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const createDoctorResponseOnePasswordMin = 8;
 export const createDoctorResponseOnePasswordMax = 1024;
 
@@ -5248,7 +5279,7 @@ export const createDoctorResponseOneConsultationFeeMin = 0;
 
 
 export const CreateDoctorResponse = zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(createDoctorResponseOneRequestIdRegExp).optional(),
   "password": zod.string().min(createDoctorResponseOnePasswordMin).max(createDoctorResponseOnePasswordMax).optional(),
   "confirmPassword": zod.string().max(createDoctorResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(createDoctorResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -5258,7 +5289,7 @@ export const CreateDoctorResponse = zod.object({
   "address": zod.string().max(createDoctorResponseOneAddressMax).optional(),
   "ownerAdminId": zod.string().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "photoUrl": zod.string().optional(),
   "gender": zod.string().optional(),
@@ -5266,7 +5297,7 @@ export const CreateDoctorResponse = zod.object({
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "registrationNumber": zod.string().optional(),
-  "experienceYears": zod.number().int().min(createDoctorResponseOneExperienceYearsMin).optional(),
+  "experienceYears": zod.int().min(createDoctorResponseOneExperienceYearsMin).optional(),
   "about": zod.string().optional(),
   "consultationFee": zod.number().min(createDoctorResponseOneConsultationFeeMin).optional(),
   "languages": zod.array(zod.string()).optional(),
@@ -5304,6 +5335,7 @@ export const GetDoctorParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const getDoctorResponseOneRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const getDoctorResponseOnePasswordMin = 8;
 export const getDoctorResponseOnePasswordMax = 1024;
 
@@ -5328,7 +5360,7 @@ export const getDoctorResponseOneConsultationFeeMin = 0;
 
 
 export const GetDoctorResponse = zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(getDoctorResponseOneRequestIdRegExp).optional(),
   "password": zod.string().min(getDoctorResponseOnePasswordMin).max(getDoctorResponseOnePasswordMax).optional(),
   "confirmPassword": zod.string().max(getDoctorResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(getDoctorResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -5338,7 +5370,7 @@ export const GetDoctorResponse = zod.object({
   "address": zod.string().max(getDoctorResponseOneAddressMax).optional(),
   "ownerAdminId": zod.string().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "photoUrl": zod.string().optional(),
   "gender": zod.string().optional(),
@@ -5346,7 +5378,7 @@ export const GetDoctorResponse = zod.object({
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "registrationNumber": zod.string().optional(),
-  "experienceYears": zod.number().int().min(getDoctorResponseOneExperienceYearsMin).optional(),
+  "experienceYears": zod.int().min(getDoctorResponseOneExperienceYearsMin).optional(),
   "about": zod.string().optional(),
   "consultationFee": zod.number().min(getDoctorResponseOneConsultationFeeMin).optional(),
   "languages": zod.array(zod.string()).optional(),
@@ -5387,6 +5419,7 @@ export const UpdateDoctorParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const updateDoctorBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const updateDoctorBodyPasswordMin = 8;
 export const updateDoctorBodyPasswordMax = 1024;
 
@@ -5411,7 +5444,7 @@ export const updateDoctorBodyConsultationFeeMin = 0;
 
 
 export const UpdateDoctorBody = zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(updateDoctorBodyRequestIdRegExp).optional(),
   "password": zod.string().min(updateDoctorBodyPasswordMin).max(updateDoctorBodyPasswordMax).optional(),
   "confirmPassword": zod.string().max(updateDoctorBodyConfirmPasswordMax).optional(),
   "country": zod.string().max(updateDoctorBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -5421,7 +5454,7 @@ export const UpdateDoctorBody = zod.object({
   "address": zod.string().max(updateDoctorBodyAddressMax).optional(),
   "ownerAdminId": zod.string().optional().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "photoUrl": zod.string().optional(),
   "gender": zod.string().optional(),
@@ -5429,7 +5462,7 @@ export const UpdateDoctorBody = zod.object({
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "registrationNumber": zod.string().optional(),
-  "experienceYears": zod.number().int().min(updateDoctorBodyExperienceYearsMin).optional(),
+  "experienceYears": zod.int().min(updateDoctorBodyExperienceYearsMin).optional(),
   "about": zod.string().optional(),
   "consultationFee": zod.number().min(updateDoctorBodyConsultationFeeMin).optional(),
   "languages": zod.array(zod.string()).optional(),
@@ -5438,6 +5471,7 @@ export const UpdateDoctorBody = zod.object({
   "status": zod.enum(['active', 'inactive']).optional()
 })
 
+export const updateDoctorResponseOneRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const updateDoctorResponseOnePasswordMin = 8;
 export const updateDoctorResponseOnePasswordMax = 1024;
 
@@ -5462,7 +5496,7 @@ export const updateDoctorResponseOneConsultationFeeMin = 0;
 
 
 export const UpdateDoctorResponse = zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(updateDoctorResponseOneRequestIdRegExp).optional(),
   "password": zod.string().min(updateDoctorResponseOnePasswordMin).max(updateDoctorResponseOnePasswordMax).optional(),
   "confirmPassword": zod.string().max(updateDoctorResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(updateDoctorResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -5472,7 +5506,7 @@ export const UpdateDoctorResponse = zod.object({
   "address": zod.string().max(updateDoctorResponseOneAddressMax).optional(),
   "ownerAdminId": zod.string().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "photoUrl": zod.string().optional(),
   "gender": zod.string().optional(),
@@ -5480,7 +5514,7 @@ export const UpdateDoctorResponse = zod.object({
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "registrationNumber": zod.string().optional(),
-  "experienceYears": zod.number().int().min(updateDoctorResponseOneExperienceYearsMin).optional(),
+  "experienceYears": zod.int().min(updateDoctorResponseOneExperienceYearsMin).optional(),
   "about": zod.string().optional(),
   "consultationFee": zod.number().min(updateDoctorResponseOneConsultationFeeMin).optional(),
   "languages": zod.array(zod.string()).optional(),
@@ -5543,6 +5577,7 @@ export const ListUsersQueryParams = zod.object({
 
 export const listUsersResponseOneTotalMin = 0;
 
+export const listUsersResponseTwoItemsItemOneRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const listUsersResponseTwoItemsItemOnePasswordMin = 8;
 export const listUsersResponseTwoItemsItemOnePasswordMax = 1024;
 
@@ -5563,13 +5598,13 @@ export const listUsersResponseTwoItemsItemOneAddressMax = 500;
 
 
 export const ListUsersResponse = zod.object({
-  "total": zod.number().int().min(listUsersResponseOneTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(listUsersResponseOneTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(listUsersResponseTwoItemsItemOneRequestIdRegExp).optional(),
   "password": zod.string().min(listUsersResponseTwoItemsItemOnePasswordMin).max(listUsersResponseTwoItemsItemOnePasswordMax).optional(),
   "confirmPassword": zod.string().max(listUsersResponseTwoItemsItemOneConfirmPasswordMax).optional(),
   "country": zod.string().max(listUsersResponseTwoItemsItemOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -5578,7 +5613,7 @@ export const ListUsersResponse = zod.object({
   "pincode": zod.string().max(listUsersResponseTwoItemsItemOnePincodeMax).optional(),
   "address": zod.string().max(listUsersResponseTwoItemsItemOneAddressMax).optional(),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
@@ -5614,6 +5649,7 @@ export const ListUsersResponse = zod.object({
 /**
  * Admin-only identity invitation and database role assignment; clinic admins cannot grant platform administration.
  */
+export const createUserBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const createUserBodyPasswordMin = 8;
 export const createUserBodyPasswordMax = 1024;
 
@@ -5634,7 +5670,7 @@ export const createUserBodyAddressMax = 500;
 
 
 export const CreateUserBody = zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(createUserBodyRequestIdRegExp).optional(),
   "password": zod.string().min(createUserBodyPasswordMin).max(createUserBodyPasswordMax).optional(),
   "confirmPassword": zod.string().max(createUserBodyConfirmPasswordMax).optional(),
   "country": zod.string().max(createUserBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -5643,7 +5679,7 @@ export const CreateUserBody = zod.object({
   "pincode": zod.string().max(createUserBodyPincodeMax).optional(),
   "address": zod.string().max(createUserBodyAddressMax).optional(),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']).optional(),
@@ -5652,6 +5688,7 @@ export const CreateUserBody = zod.object({
   "managingAdminId": zod.string().optional().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.')
 })
 
+export const createUserResponseOneRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const createUserResponseOnePasswordMin = 8;
 export const createUserResponseOnePasswordMax = 1024;
 
@@ -5672,7 +5709,7 @@ export const createUserResponseOneAddressMax = 500;
 
 
 export const CreateUserResponse = zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(createUserResponseOneRequestIdRegExp).optional(),
   "password": zod.string().min(createUserResponseOnePasswordMin).max(createUserResponseOnePasswordMax).optional(),
   "confirmPassword": zod.string().max(createUserResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(createUserResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -5681,7 +5718,7 @@ export const CreateUserResponse = zod.object({
   "pincode": zod.string().max(createUserResponseOnePincodeMax).optional(),
   "address": zod.string().max(createUserResponseOneAddressMax).optional(),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
@@ -5716,6 +5753,7 @@ export const CreateUserResponse = zod.object({
 /**
  * Super Admin only. Atomically creates an active Clinic Admin and their first active clinic, with ownership persisted through clinic.adminId. Existing clinics and doctor ownership are never changed.
  */
+export const onboardClinicAdminBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 
 export const onboardClinicAdminBodyBranchesItemSlugMin = 3;
 export const onboardClinicAdminBodyBranchesItemSlugMax = 63;
@@ -5790,7 +5828,7 @@ export const onboardClinicAdminBodyClinicReferralCodeMax = 100;
 export const onboardClinicAdminBodyClinicTimezoneDefault = `Asia/Kolkata`;
 
 export const OnboardClinicAdminBody = zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(onboardClinicAdminBodyRequestIdRegExp).optional(),
   "branches": zod.array(zod.object({
   "id": zod.string().optional(),
   "name": zod.string().min(1),
@@ -5800,51 +5838,51 @@ export const OnboardClinicAdminBody = zod.object({
   "pincode": zod.string().optional(),
   "country": zod.string().optional(),
   "timezone": zod.string().optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "phone": zod.string().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "slug": zod.string().min(onboardClinicAdminBodyBranchesItemSlugMin).max(onboardClinicAdminBodyBranchesItemSlugMax).optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(onboardClinicAdminBodyBranchesItemOpeningHoursItemDayOfWeekMin).max(onboardClinicAdminBodyBranchesItemOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(onboardClinicAdminBodyBranchesItemOpeningHoursItemDayOfWeekMin).max(onboardClinicAdminBodyBranchesItemOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(onboardClinicAdminBodyBranchesItemOpeningHoursMax).nullish().describe('Null or absent preserves legacy unrestricted hours. An explicit empty array closes all days.'),
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(onboardClinicAdminBodyBranchesItemLinkedScheduleMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(onboardClinicAdminBodyBranchesItemLinkedScheduleConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(onboardClinicAdminBodyBranchesItemLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(onboardClinicAdminBodyBranchesItemLinkedScheduleConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(onboardClinicAdminBodyBranchesItemLinkedScheduleTokenPrefixRegExp).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
 }).optional()
 })).max(onboardClinicAdminBodyBranchesMax).optional(),
   "policies": zod.object({
-  "bookingHorizonDays": zod.number().int().min(1).max(onboardClinicAdminBodyPoliciesBookingHorizonDaysMax).optional(),
-  "cancellationCutoffMinutes": zod.number().int().min(onboardClinicAdminBodyPoliciesCancellationCutoffMinutesMin).max(onboardClinicAdminBodyPoliciesCancellationCutoffMinutesMax).optional()
+  "bookingHorizonDays": zod.int().min(1).max(onboardClinicAdminBodyPoliciesBookingHorizonDaysMax).optional(),
+  "cancellationCutoffMinutes": zod.int().min(onboardClinicAdminBodyPoliciesCancellationCutoffMinutesMin).max(onboardClinicAdminBodyPoliciesCancellationCutoffMinutesMax).optional()
 }).optional(),
   "ownDoctor": zod.boolean().optional(),
   "ownerSchedule": zod.object({
-  "maxTokens": zod.number().int().min(1).max(onboardClinicAdminBodyOwnerScheduleMaxTokensMax),
-  "consultationMinutes": zod.number().int().min(1).max(onboardClinicAdminBodyOwnerScheduleConsultationMinutesMax),
+  "maxTokens": zod.int().min(1).max(onboardClinicAdminBodyOwnerScheduleMaxTokensMax),
+  "consultationMinutes": zod.int().min(1).max(onboardClinicAdminBodyOwnerScheduleConsultationMinutesMax),
   "tokenPrefix": zod.string().regex(onboardClinicAdminBodyOwnerScheduleTokenPrefixRegExp),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly'])
 }).optional(),
   "ownerCustomSchedule": zod.object({
-  "maxTokens": zod.number().int().min(1).max(onboardClinicAdminBodyOwnerCustomScheduleMaxTokensMax),
-  "consultationMinutes": zod.number().int().min(1).max(onboardClinicAdminBodyOwnerCustomScheduleConsultationMinutesMax),
+  "maxTokens": zod.int().min(1).max(onboardClinicAdminBodyOwnerCustomScheduleMaxTokensMax),
+  "consultationMinutes": zod.int().min(1).max(onboardClinicAdminBodyOwnerCustomScheduleConsultationMinutesMax),
   "tokenPrefix": zod.string().regex(onboardClinicAdminBodyOwnerCustomScheduleTokenPrefixRegExp),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']),
   "sessions": zod.array(zod.object({
-  "branchIndex": zod.number().int().min(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBranchIndexMin).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBranchIndexMax),
-  "dayOfWeek": zod.number().int().min(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemDayOfWeekMin).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemDayOfWeekMax),
+  "branchIndex": zod.int().min(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBranchIndexMin).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBranchIndexMax),
+  "dayOfWeek": zod.int().min(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemDayOfWeekMin).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemDayOfWeekMax),
   "startTime": zod.string().regex(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemStartTimeRegExp),
   "endTime": zod.string().regex(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemEndTimeRegExp),
   "timezone": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemTokenPrefixRegExp).optional(),
-  "bufferMinutes": zod.number().int().min(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBufferMinutesMin).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBufferMinutesMax).optional(),
+  "bufferMinutes": zod.int().min(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBufferMinutesMin).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBufferMinutesMax).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional(),
   "breakStart": zod.string().regex(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBreakStartRegExp).nullish(),
   "breakEnd": zod.string().regex(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBreakEndRegExp).nullish(),
@@ -5858,7 +5896,7 @@ export const OnboardClinicAdminBody = zod.object({
   "password": zod.string().min(onboardClinicAdminBodyAdminPasswordMin).max(onboardClinicAdminBodyAdminPasswordMax).optional(),
   "confirmPassword": zod.string().max(onboardClinicAdminBodyAdminConfirmPasswordMax).optional(),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional()
 }),
   "clinic": zod.object({
@@ -5873,7 +5911,7 @@ export const OnboardClinicAdminBody = zod.object({
   "name": zod.string().min(1),
   "code": zod.string().optional(),
   "phone": zod.string().optional(),
-  "email": zod.string().email().optional(),
+  "email": zod.email().optional(),
   "address": zod.string(),
   "city": zod.string().optional(),
   "state": zod.string().optional(),
@@ -5897,6 +5935,7 @@ export const onboardClinicAdminResponseBranchesItemTwoLinkedScheduleMaxTokensMax
 export const onboardClinicAdminResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax = 240;
 
 export const onboardClinicAdminResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+export const onboardClinicAdminResponseAdminOneRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const onboardClinicAdminResponseAdminOnePasswordMin = 8;
 export const onboardClinicAdminResponseAdminOnePasswordMax = 1024;
 
@@ -5931,11 +5970,11 @@ export const onboardClinicAdminResponseClinicOneCustomSpecialitiesMax = 30;
 export const OnboardClinicAdminResponse = zod.object({
   "branches": zod.array(zod.object({
   "slug": zod.string().min(onboardClinicAdminResponseBranchesItemOneSlugMin).max(onboardClinicAdminResponseBranchesItemOneSlugMax).optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(onboardClinicAdminResponseBranchesItemOneOpeningHoursItemDayOfWeekMin).max(onboardClinicAdminResponseBranchesItemOneOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(onboardClinicAdminResponseBranchesItemOneOpeningHoursItemDayOfWeekMin).max(onboardClinicAdminResponseBranchesItemOneOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(onboardClinicAdminResponseBranchesItemOneOpeningHoursMax).nullish().describe('Null or absent is legacy unrestricted; empty array means closed all days.'),
@@ -5954,8 +5993,8 @@ export const OnboardClinicAdminResponse = zod.object({
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(onboardClinicAdminResponseBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(onboardClinicAdminResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(onboardClinicAdminResponseBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(onboardClinicAdminResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(onboardClinicAdminResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
 }).optional(),
@@ -5968,7 +6007,7 @@ export const OnboardClinicAdminResponse = zod.object({
 }))).optional(),
   "doctorId": zod.string().nullish(),
   "admin": zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(onboardClinicAdminResponseAdminOneRequestIdRegExp).optional(),
   "password": zod.string().min(onboardClinicAdminResponseAdminOnePasswordMin).max(onboardClinicAdminResponseAdminOnePasswordMax).optional(),
   "confirmPassword": zod.string().max(onboardClinicAdminResponseAdminOneConfirmPasswordMax).optional(),
   "country": zod.string().max(onboardClinicAdminResponseAdminOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -5977,7 +6016,7 @@ export const OnboardClinicAdminResponse = zod.object({
   "pincode": zod.string().max(onboardClinicAdminResponseAdminOnePincodeMax).optional(),
   "address": zod.string().max(onboardClinicAdminResponseAdminOneAddressMax).optional(),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
@@ -6022,7 +6061,7 @@ export const OnboardClinicAdminResponse = zod.object({
   "area": zod.string().optional(),
   "pincode": zod.string().optional(),
   "phone": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
@@ -6036,8 +6075,8 @@ export const OnboardClinicAdminResponse = zod.object({
   "categoryName": zod.string().nullish(),
   "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
-  "doctorCount": zod.number().int().optional(),
-  "branchCount": zod.number().int().optional()
+  "doctorCount": zod.int().optional(),
+  "branchCount": zod.int().optional()
 }))
 })
 
@@ -6046,6 +6085,7 @@ export const GetUserParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const getUserResponseOneRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const getUserResponseOnePasswordMin = 8;
 export const getUserResponseOnePasswordMax = 1024;
 
@@ -6066,7 +6106,7 @@ export const getUserResponseOneAddressMax = 500;
 
 
 export const GetUserResponse = zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(getUserResponseOneRequestIdRegExp).optional(),
   "password": zod.string().min(getUserResponseOnePasswordMin).max(getUserResponseOnePasswordMax).optional(),
   "confirmPassword": zod.string().max(getUserResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(getUserResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -6075,7 +6115,7 @@ export const GetUserResponse = zod.object({
   "pincode": zod.string().max(getUserResponseOnePincodeMax).optional(),
   "address": zod.string().max(getUserResponseOneAddressMax).optional(),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
@@ -6111,6 +6151,7 @@ export const UpdateUserParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const updateUserBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const updateUserBodyPasswordMin = 8;
 export const updateUserBodyPasswordMax = 1024;
 
@@ -6131,7 +6172,7 @@ export const updateUserBodyAddressMax = 500;
 
 
 export const UpdateUserBody = zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(updateUserBodyRequestIdRegExp).optional(),
   "password": zod.string().min(updateUserBodyPasswordMin).max(updateUserBodyPasswordMax).optional(),
   "confirmPassword": zod.string().max(updateUserBodyConfirmPasswordMax).optional(),
   "country": zod.string().max(updateUserBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -6140,7 +6181,7 @@ export const UpdateUserBody = zod.object({
   "pincode": zod.string().max(updateUserBodyPincodeMax).optional(),
   "address": zod.string().max(updateUserBodyAddressMax).optional(),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']).optional(),
@@ -6149,6 +6190,7 @@ export const UpdateUserBody = zod.object({
   "managingAdminId": zod.string().optional().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.')
 })
 
+export const updateUserResponseOneRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const updateUserResponseOnePasswordMin = 8;
 export const updateUserResponseOnePasswordMax = 1024;
 
@@ -6169,7 +6211,7 @@ export const updateUserResponseOneAddressMax = 500;
 
 
 export const UpdateUserResponse = zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(updateUserResponseOneRequestIdRegExp).optional(),
   "password": zod.string().min(updateUserResponseOnePasswordMin).max(updateUserResponseOnePasswordMax).optional(),
   "confirmPassword": zod.string().max(updateUserResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(updateUserResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -6178,7 +6220,7 @@ export const UpdateUserResponse = zod.object({
   "pincode": zod.string().max(updateUserResponseOnePincodeMax).optional(),
   "address": zod.string().max(updateUserResponseOneAddressMax).optional(),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
@@ -6236,6 +6278,7 @@ export const ResendUserInvitationParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const resendUserInvitationResponseOneRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const resendUserInvitationResponseOnePasswordMin = 8;
 export const resendUserInvitationResponseOnePasswordMax = 1024;
 
@@ -6256,7 +6299,7 @@ export const resendUserInvitationResponseOneAddressMax = 500;
 
 
 export const ResendUserInvitationResponse = zod.object({
-  "requestId": zod.string().uuid().optional(),
+  "requestId": zod.string().regex(resendUserInvitationResponseOneRequestIdRegExp).optional(),
   "password": zod.string().min(resendUserInvitationResponseOnePasswordMin).max(resendUserInvitationResponseOnePasswordMax).optional(),
   "confirmPassword": zod.string().max(resendUserInvitationResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(resendUserInvitationResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -6265,7 +6308,7 @@ export const ResendUserInvitationResponse = zod.object({
   "pincode": zod.string().max(resendUserInvitationResponseOnePincodeMax).optional(),
   "address": zod.string().max(resendUserInvitationResponseOneAddressMax).optional(),
   "fullName": zod.string().min(1),
-  "email": zod.string().email(),
+  "email": zod.email(),
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
@@ -6373,7 +6416,7 @@ export const GetStaffAssignmentOptionsResponse = zod.object({
   "area": zod.string().optional(),
   "pincode": zod.string().optional(),
   "phone": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
@@ -6387,16 +6430,16 @@ export const GetStaffAssignmentOptionsResponse = zod.object({
   "categoryName": zod.string().nullish(),
   "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
-  "doctorCount": zod.number().int().optional(),
-  "branchCount": zod.number().int().optional()
+  "doctorCount": zod.int().optional(),
+  "branchCount": zod.int().optional()
 }))),
   "branches": zod.array(zod.object({
   "slug": zod.string().min(getStaffAssignmentOptionsResponseBranchesItemOneSlugMin).max(getStaffAssignmentOptionsResponseBranchesItemOneSlugMax).optional(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "inheritEmail": zod.boolean().optional(),
   "inheritPhone": zod.boolean().optional(),
   "openingHours": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(getStaffAssignmentOptionsResponseBranchesItemOneOpeningHoursItemDayOfWeekMin).max(getStaffAssignmentOptionsResponseBranchesItemOneOpeningHoursItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(getStaffAssignmentOptionsResponseBranchesItemOneOpeningHoursItemDayOfWeekMin).max(getStaffAssignmentOptionsResponseBranchesItemOneOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
 })).max(getStaffAssignmentOptionsResponseBranchesItemOneOpeningHoursMax).nullish().describe('Null or absent is legacy unrestricted; empty array means closed all days.'),
@@ -6415,8 +6458,8 @@ export const GetStaffAssignmentOptionsResponse = zod.object({
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
-  "maxTokens": zod.number().int().min(1).max(getStaffAssignmentOptionsResponseBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
-  "consultationMinutes": zod.number().int().min(1).max(getStaffAssignmentOptionsResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "maxTokens": zod.int().min(1).max(getStaffAssignmentOptionsResponseBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.int().min(1).max(getStaffAssignmentOptionsResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
   "tokenPrefix": zod.string().regex(getStaffAssignmentOptionsResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
 }).optional(),
@@ -6433,16 +6476,16 @@ export const GetStaffAssignmentOptionsResponse = zod.object({
 })),
   "pagination": zod.object({
   "clinics": zod.object({
-  "total": zod.number().int().min(getStaffAssignmentOptionsResponsePaginationClinicsTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(getStaffAssignmentOptionsResponsePaginationClinicsTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).optional(),
   "branches": zod.object({
-  "total": zod.number().int().min(getStaffAssignmentOptionsResponsePaginationBranchesTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(getStaffAssignmentOptionsResponsePaginationBranchesTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).optional()
 }).optional()
 })
@@ -6488,10 +6531,10 @@ export const listPatientsResponseTwoItemsItemOneAgeMax = 130;
 
 
 export const ListPatientsResponse = zod.object({
-  "total": zod.number().int().min(listPatientsResponseOneTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(listPatientsResponseOneTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "country": zod.string().max(listPatientsResponseTwoItemsItemOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
@@ -6500,9 +6543,9 @@ export const ListPatientsResponse = zod.object({
   "pincode": zod.string().max(listPatientsResponseTwoItemsItemOnePincodeMax).optional(),
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "dateOfBirth": zod.coerce.date().nullish(),
-  "age": zod.number().int().min(listPatientsResponseTwoItemsItemOneAgeMin).max(listPatientsResponseTwoItemsItemOneAgeMax).optional(),
+  "age": zod.int().min(listPatientsResponseTwoItemsItemOneAgeMin).max(listPatientsResponseTwoItemsItemOneAgeMax).optional(),
   "ageReferenceDate": zod.coerce.date().nullish().describe('Date an approximate age was entered; absent on legacy estimates. Never an exact DOB.'),
   "gender": zod.string().optional(),
   "address": zod.string().optional(),
@@ -6542,9 +6585,9 @@ export const CreatePatientBody = zod.object({
   "pincode": zod.string().max(createPatientBodyPincodeMax).optional(),
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "dateOfBirth": zod.coerce.date().nullish(),
-  "age": zod.number().int().min(createPatientBodyAgeMin).max(createPatientBodyAgeMax).optional(),
+  "age": zod.int().min(createPatientBodyAgeMin).max(createPatientBodyAgeMax).optional(),
   "gender": zod.string().optional(),
   "address": zod.string().optional(),
   "emergencyContactName": zod.string().optional(),
@@ -6575,9 +6618,9 @@ export const CreatePatientResponse = zod.object({
   "pincode": zod.string().max(createPatientResponseOnePincodeMax).optional(),
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "dateOfBirth": zod.coerce.date().nullish(),
-  "age": zod.number().int().min(createPatientResponseOneAgeMin).max(createPatientResponseOneAgeMax).optional(),
+  "age": zod.int().min(createPatientResponseOneAgeMin).max(createPatientResponseOneAgeMax).optional(),
   "ageReferenceDate": zod.coerce.date().nullish().describe('Date an approximate age was entered; absent on legacy estimates. Never an exact DOB.'),
   "gender": zod.string().optional(),
   "address": zod.string().optional(),
@@ -6620,9 +6663,9 @@ export const GetPatientResponse = zod.object({
   "pincode": zod.string().max(getPatientResponseOnePincodeMax).optional(),
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "dateOfBirth": zod.coerce.date().nullish(),
-  "age": zod.number().int().min(getPatientResponseOneAgeMin).max(getPatientResponseOneAgeMax).optional(),
+  "age": zod.int().min(getPatientResponseOneAgeMin).max(getPatientResponseOneAgeMax).optional(),
   "ageReferenceDate": zod.coerce.date().nullish().describe('Date an approximate age was entered; absent on legacy estimates. Never an exact DOB.'),
   "gender": zod.string().optional(),
   "address": zod.string().optional(),
@@ -6665,9 +6708,9 @@ export const UpdatePatientBody = zod.object({
   "pincode": zod.string().max(updatePatientBodyPincodeMax).optional(),
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "dateOfBirth": zod.coerce.date().nullish(),
-  "age": zod.number().int().min(updatePatientBodyAgeMin).max(updatePatientBodyAgeMax).optional(),
+  "age": zod.int().min(updatePatientBodyAgeMin).max(updatePatientBodyAgeMax).optional(),
   "gender": zod.string().optional(),
   "address": zod.string().optional(),
   "emergencyContactName": zod.string().optional(),
@@ -6698,9 +6741,9 @@ export const UpdatePatientResponse = zod.object({
   "pincode": zod.string().max(updatePatientResponseOnePincodeMax).optional(),
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
-  "email": zod.string().email().nullish(),
+  "email": zod.email().nullish(),
   "dateOfBirth": zod.coerce.date().nullish(),
-  "age": zod.number().int().min(updatePatientResponseOneAgeMin).max(updatePatientResponseOneAgeMax).optional(),
+  "age": zod.int().min(updatePatientResponseOneAgeMin).max(updatePatientResponseOneAgeMax).optional(),
   "ageReferenceDate": zod.coerce.date().nullish().describe('Date an approximate age was entered; absent on legacy estimates. Never an exact DOB.'),
   "gender": zod.string().optional(),
   "address": zod.string().optional(),
@@ -6752,17 +6795,17 @@ export const listMastersResponseOneTotalMin = 0;
 
 
 export const ListMastersResponse = zod.object({
-  "total": zod.number().int().min(listMastersResponseOneTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(listMastersResponseOneTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "category": zod.enum(['country', 'state', 'city', 'area', 'pincode', 'clinicType', 'clinicCategory', 'clinicStatus', 'specialization', 'qualification', 'department', 'consultationType', 'appointmentStatus', 'appointmentType', 'bookingSource', 'cancellationReason', 'queueStatus', 'tokenPrefix', 'queueType', 'queuePriority', 'userRole', 'userStatus']),
   "name": zod.string().min(1),
   "code": zod.string().min(1),
   "parentId": zod.string().nullish(),
-  "sortOrder": zod.number().int().optional(),
+  "sortOrder": zod.int().optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
   "id": zod.string()
@@ -6779,7 +6822,7 @@ export const CreateMasterBody = zod.object({
   "name": zod.string().min(1),
   "code": zod.string().min(1),
   "parentId": zod.string().nullish(),
-  "sortOrder": zod.number().int().optional(),
+  "sortOrder": zod.int().optional(),
   "status": zod.enum(['active', 'inactive']).optional()
 })
 
@@ -6792,7 +6835,7 @@ export const CreateMasterResponse = zod.object({
   "name": zod.string().min(1),
   "code": zod.string().min(1),
   "parentId": zod.string().nullish(),
-  "sortOrder": zod.number().int().optional(),
+  "sortOrder": zod.int().optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
   "id": zod.string()
@@ -6812,7 +6855,7 @@ export const GetMasterResponse = zod.object({
   "name": zod.string().min(1),
   "code": zod.string().min(1),
   "parentId": zod.string().nullish(),
-  "sortOrder": zod.number().int().optional(),
+  "sortOrder": zod.int().optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
   "id": zod.string()
@@ -6832,7 +6875,7 @@ export const UpdateMasterBody = zod.object({
   "name": zod.string().min(1),
   "code": zod.string().min(1),
   "parentId": zod.string().nullish(),
-  "sortOrder": zod.number().int().optional(),
+  "sortOrder": zod.int().optional(),
   "status": zod.enum(['active', 'inactive']).optional()
 })
 
@@ -6845,7 +6888,7 @@ export const UpdateMasterResponse = zod.object({
   "name": zod.string().min(1),
   "code": zod.string().min(1),
   "parentId": zod.string().nullish(),
-  "sortOrder": zod.number().int().optional(),
+  "sortOrder": zod.int().optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
   "id": zod.string()
@@ -6892,7 +6935,7 @@ export const GetScheduleDayContextResponse = zod.object({
   "doctorId": zod.string(),
   "clinicId": zod.string(),
   "branchId": zod.string(),
-  "dayOfWeek": zod.number().int().min(getScheduleDayContextResponseItemsItemOneDayOfWeekMin).max(getScheduleDayContextResponseItemsItemOneDayOfWeekMax).describe('Sunday is 0'),
+  "dayOfWeek": zod.int().min(getScheduleDayContextResponseItemsItemOneDayOfWeekMin).max(getScheduleDayContextResponseItemsItemOneDayOfWeekMax).describe('Sunday is 0'),
   "isOpen": zod.boolean(),
   "startTime": zod.string().regex(getScheduleDayContextResponseItemsItemOneStartTimeRegExp),
   "endTime": zod.string(),
@@ -6900,9 +6943,9 @@ export const GetScheduleDayContextResponse = zod.object({
   "breakEnd": zod.string().nullish(),
   "timezone": zod.string().default(getScheduleDayContextResponseItemsItemOneTimezoneDefault),
   "tokenPrefix": zod.string().min(1).max(getScheduleDayContextResponseItemsItemOneTokenPrefixMax),
-  "maxTokens": zod.number().int().min(1).max(getScheduleDayContextResponseItemsItemOneMaxTokensMax),
-  "consultationMinutes": zod.number().int().min(1),
-  "bufferMinutes": zod.number().int().min(getScheduleDayContextResponseItemsItemOneBufferMinutesMin).max(getScheduleDayContextResponseItemsItemOneBufferMinutesMax).default(getScheduleDayContextResponseItemsItemOneBufferMinutesDefault),
+  "maxTokens": zod.int().min(1).max(getScheduleDayContextResponseItemsItemOneMaxTokensMax),
+  "consultationMinutes": zod.int().min(1),
+  "bufferMinutes": zod.int().min(getScheduleDayContextResponseItemsItemOneBufferMinutesMin).max(getScheduleDayContextResponseItemsItemOneBufferMinutesMax).default(getScheduleDayContextResponseItemsItemOneBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(getScheduleDayContextResponseItemsItemOneQueueModeDefault),
   "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
   "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
@@ -6918,7 +6961,7 @@ export const GetScheduleDayContextResponse = zod.object({
   "branchName": zod.string().optional()
 }))),
   "days": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(getScheduleDayContextResponseDaysItemDayOfWeekMin).max(getScheduleDayContextResponseDaysItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(getScheduleDayContextResponseDaysItemDayOfWeekMin).max(getScheduleDayContextResponseDaysItemDayOfWeekMax),
   "following": zod.boolean(),
   "custom": zod.boolean(),
   "snapshot": zod.string()
@@ -6957,7 +7000,7 @@ export const saveScheduleDayOverrideBodySessionsItemSessionQueueModeDefault = `m
 export const SaveScheduleDayOverrideBody = zod.object({
   "doctorId": zod.string(),
   "branchId": zod.string(),
-  "dayOfWeek": zod.number().int().min(saveScheduleDayOverrideBodyDayOfWeekMin).max(saveScheduleDayOverrideBodyDayOfWeekMax),
+  "dayOfWeek": zod.int().min(saveScheduleDayOverrideBodyDayOfWeekMin).max(saveScheduleDayOverrideBodyDayOfWeekMax),
   "isOpen": zod.boolean(),
   "confirmed": zod.literal(true),
   "expectedSnapshot": zod.string().max(saveScheduleDayOverrideBodyExpectedSnapshotMax),
@@ -6970,7 +7013,7 @@ export const SaveScheduleDayOverrideBody = zod.object({
   "doctorId": zod.string(),
   "clinicId": zod.string(),
   "branchId": zod.string(),
-  "dayOfWeek": zod.number().int().min(saveScheduleDayOverrideBodySessionsItemSessionDayOfWeekMin).max(saveScheduleDayOverrideBodySessionsItemSessionDayOfWeekMax).describe('Sunday is 0'),
+  "dayOfWeek": zod.int().min(saveScheduleDayOverrideBodySessionsItemSessionDayOfWeekMin).max(saveScheduleDayOverrideBodySessionsItemSessionDayOfWeekMax).describe('Sunday is 0'),
   "isOpen": zod.boolean(),
   "startTime": zod.string().regex(saveScheduleDayOverrideBodySessionsItemSessionStartTimeRegExp),
   "endTime": zod.string(),
@@ -6978,9 +7021,9 @@ export const SaveScheduleDayOverrideBody = zod.object({
   "breakEnd": zod.string().nullish(),
   "timezone": zod.string().default(saveScheduleDayOverrideBodySessionsItemSessionTimezoneDefault),
   "tokenPrefix": zod.string().min(1).max(saveScheduleDayOverrideBodySessionsItemSessionTokenPrefixMax),
-  "maxTokens": zod.number().int().min(1).max(saveScheduleDayOverrideBodySessionsItemSessionMaxTokensMax),
-  "consultationMinutes": zod.number().int().min(1),
-  "bufferMinutes": zod.number().int().min(saveScheduleDayOverrideBodySessionsItemSessionBufferMinutesMin).max(saveScheduleDayOverrideBodySessionsItemSessionBufferMinutesMax).default(saveScheduleDayOverrideBodySessionsItemSessionBufferMinutesDefault),
+  "maxTokens": zod.int().min(1).max(saveScheduleDayOverrideBodySessionsItemSessionMaxTokensMax),
+  "consultationMinutes": zod.int().min(1),
+  "bufferMinutes": zod.int().min(saveScheduleDayOverrideBodySessionsItemSessionBufferMinutesMin).max(saveScheduleDayOverrideBodySessionsItemSessionBufferMinutesMax).default(saveScheduleDayOverrideBodySessionsItemSessionBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(saveScheduleDayOverrideBodySessionsItemSessionQueueModeDefault),
   "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
   "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
@@ -7016,7 +7059,7 @@ export const SaveScheduleDayOverrideResponse = zod.object({
   "doctorId": zod.string(),
   "clinicId": zod.string(),
   "branchId": zod.string(),
-  "dayOfWeek": zod.number().int().min(saveScheduleDayOverrideResponseItemsItemOneDayOfWeekMin).max(saveScheduleDayOverrideResponseItemsItemOneDayOfWeekMax).describe('Sunday is 0'),
+  "dayOfWeek": zod.int().min(saveScheduleDayOverrideResponseItemsItemOneDayOfWeekMin).max(saveScheduleDayOverrideResponseItemsItemOneDayOfWeekMax).describe('Sunday is 0'),
   "isOpen": zod.boolean(),
   "startTime": zod.string().regex(saveScheduleDayOverrideResponseItemsItemOneStartTimeRegExp),
   "endTime": zod.string(),
@@ -7024,9 +7067,9 @@ export const SaveScheduleDayOverrideResponse = zod.object({
   "breakEnd": zod.string().nullish(),
   "timezone": zod.string().default(saveScheduleDayOverrideResponseItemsItemOneTimezoneDefault),
   "tokenPrefix": zod.string().min(1).max(saveScheduleDayOverrideResponseItemsItemOneTokenPrefixMax),
-  "maxTokens": zod.number().int().min(1).max(saveScheduleDayOverrideResponseItemsItemOneMaxTokensMax),
-  "consultationMinutes": zod.number().int().min(1),
-  "bufferMinutes": zod.number().int().min(saveScheduleDayOverrideResponseItemsItemOneBufferMinutesMin).max(saveScheduleDayOverrideResponseItemsItemOneBufferMinutesMax).default(saveScheduleDayOverrideResponseItemsItemOneBufferMinutesDefault),
+  "maxTokens": zod.int().min(1).max(saveScheduleDayOverrideResponseItemsItemOneMaxTokensMax),
+  "consultationMinutes": zod.int().min(1),
+  "bufferMinutes": zod.int().min(saveScheduleDayOverrideResponseItemsItemOneBufferMinutesMin).max(saveScheduleDayOverrideResponseItemsItemOneBufferMinutesMax).default(saveScheduleDayOverrideResponseItemsItemOneBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(saveScheduleDayOverrideResponseItemsItemOneQueueModeDefault),
   "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
   "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
@@ -7042,7 +7085,7 @@ export const SaveScheduleDayOverrideResponse = zod.object({
   "branchName": zod.string().optional()
 }))),
   "days": zod.array(zod.object({
-  "dayOfWeek": zod.number().int().min(saveScheduleDayOverrideResponseDaysItemDayOfWeekMin).max(saveScheduleDayOverrideResponseDaysItemDayOfWeekMax),
+  "dayOfWeek": zod.int().min(saveScheduleDayOverrideResponseDaysItemDayOfWeekMin).max(saveScheduleDayOverrideResponseDaysItemDayOfWeekMax),
   "following": zod.boolean(),
   "custom": zod.boolean(),
   "snapshot": zod.string()
@@ -7096,17 +7139,17 @@ export const listSchedulesResponseTwoItemsItemOneBufferMinutesMax = 1440;
 export const listSchedulesResponseTwoItemsItemOneQueueModeDefault = `mixed`;
 
 export const ListSchedulesResponse = zod.object({
-  "total": zod.number().int().min(listSchedulesResponseOneTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(listSchedulesResponseOneTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "expectedSnapshot": zod.string().max(listSchedulesResponseTwoItemsItemOneExpectedSnapshotMax).optional().describe('Optional loaded authoring snapshot for updates. Compared under the schedule locks; mismatch returns 409 without writes. Not stored. Older clients may omit it.'),
   "doctorId": zod.string(),
   "clinicId": zod.string(),
   "branchId": zod.string(),
-  "dayOfWeek": zod.number().int().min(listSchedulesResponseTwoItemsItemOneDayOfWeekMin).max(listSchedulesResponseTwoItemsItemOneDayOfWeekMax).describe('Sunday is 0'),
+  "dayOfWeek": zod.int().min(listSchedulesResponseTwoItemsItemOneDayOfWeekMin).max(listSchedulesResponseTwoItemsItemOneDayOfWeekMax).describe('Sunday is 0'),
   "isOpen": zod.boolean(),
   "startTime": zod.string().regex(listSchedulesResponseTwoItemsItemOneStartTimeRegExp),
   "endTime": zod.string(),
@@ -7114,9 +7157,9 @@ export const ListSchedulesResponse = zod.object({
   "breakEnd": zod.string().nullish(),
   "timezone": zod.string().default(listSchedulesResponseTwoItemsItemOneTimezoneDefault),
   "tokenPrefix": zod.string().min(1).max(listSchedulesResponseTwoItemsItemOneTokenPrefixMax),
-  "maxTokens": zod.number().int().min(1).max(listSchedulesResponseTwoItemsItemOneMaxTokensMax),
-  "consultationMinutes": zod.number().int().min(1),
-  "bufferMinutes": zod.number().int().min(listSchedulesResponseTwoItemsItemOneBufferMinutesMin).max(listSchedulesResponseTwoItemsItemOneBufferMinutesMax).default(listSchedulesResponseTwoItemsItemOneBufferMinutesDefault),
+  "maxTokens": zod.int().min(1).max(listSchedulesResponseTwoItemsItemOneMaxTokensMax),
+  "consultationMinutes": zod.int().min(1),
+  "bufferMinutes": zod.int().min(listSchedulesResponseTwoItemsItemOneBufferMinutesMin).max(listSchedulesResponseTwoItemsItemOneBufferMinutesMax).default(listSchedulesResponseTwoItemsItemOneBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(listSchedulesResponseTwoItemsItemOneQueueModeDefault),
   "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
   "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
@@ -7157,7 +7200,7 @@ export const CreateScheduleBody = zod.object({
   "doctorId": zod.string(),
   "clinicId": zod.string(),
   "branchId": zod.string(),
-  "dayOfWeek": zod.number().int().min(createScheduleBodyDayOfWeekMin).max(createScheduleBodyDayOfWeekMax).describe('Sunday is 0'),
+  "dayOfWeek": zod.int().min(createScheduleBodyDayOfWeekMin).max(createScheduleBodyDayOfWeekMax).describe('Sunday is 0'),
   "isOpen": zod.boolean(),
   "startTime": zod.string().regex(createScheduleBodyStartTimeRegExp),
   "endTime": zod.string(),
@@ -7165,9 +7208,9 @@ export const CreateScheduleBody = zod.object({
   "breakEnd": zod.string().nullish(),
   "timezone": zod.string().default(createScheduleBodyTimezoneDefault),
   "tokenPrefix": zod.string().min(1).max(createScheduleBodyTokenPrefixMax),
-  "maxTokens": zod.number().int().min(1).max(createScheduleBodyMaxTokensMax),
-  "consultationMinutes": zod.number().int().min(1),
-  "bufferMinutes": zod.number().int().min(createScheduleBodyBufferMinutesMin).max(createScheduleBodyBufferMinutesMax).default(createScheduleBodyBufferMinutesDefault),
+  "maxTokens": zod.int().min(1).max(createScheduleBodyMaxTokensMax),
+  "consultationMinutes": zod.int().min(1),
+  "bufferMinutes": zod.int().min(createScheduleBodyBufferMinutesMin).max(createScheduleBodyBufferMinutesMax).default(createScheduleBodyBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(createScheduleBodyQueueModeDefault),
   "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
   "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
@@ -7196,7 +7239,7 @@ export const CreateScheduleResponse = zod.object({
   "doctorId": zod.string(),
   "clinicId": zod.string(),
   "branchId": zod.string(),
-  "dayOfWeek": zod.number().int().min(createScheduleResponseOneDayOfWeekMin).max(createScheduleResponseOneDayOfWeekMax).describe('Sunday is 0'),
+  "dayOfWeek": zod.int().min(createScheduleResponseOneDayOfWeekMin).max(createScheduleResponseOneDayOfWeekMax).describe('Sunday is 0'),
   "isOpen": zod.boolean(),
   "startTime": zod.string().regex(createScheduleResponseOneStartTimeRegExp),
   "endTime": zod.string(),
@@ -7204,9 +7247,9 @@ export const CreateScheduleResponse = zod.object({
   "breakEnd": zod.string().nullish(),
   "timezone": zod.string().default(createScheduleResponseOneTimezoneDefault),
   "tokenPrefix": zod.string().min(1).max(createScheduleResponseOneTokenPrefixMax),
-  "maxTokens": zod.number().int().min(1).max(createScheduleResponseOneMaxTokensMax),
-  "consultationMinutes": zod.number().int().min(1),
-  "bufferMinutes": zod.number().int().min(createScheduleResponseOneBufferMinutesMin).max(createScheduleResponseOneBufferMinutesMax).default(createScheduleResponseOneBufferMinutesDefault),
+  "maxTokens": zod.int().min(1).max(createScheduleResponseOneMaxTokensMax),
+  "consultationMinutes": zod.int().min(1),
+  "bufferMinutes": zod.int().min(createScheduleResponseOneBufferMinutesMin).max(createScheduleResponseOneBufferMinutesMax).default(createScheduleResponseOneBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(createScheduleResponseOneQueueModeDefault),
   "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
   "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
@@ -7250,7 +7293,7 @@ export const UpdateScheduleBody = zod.object({
   "doctorId": zod.string(),
   "clinicId": zod.string(),
   "branchId": zod.string(),
-  "dayOfWeek": zod.number().int().min(updateScheduleBodyDayOfWeekMin).max(updateScheduleBodyDayOfWeekMax).describe('Sunday is 0'),
+  "dayOfWeek": zod.int().min(updateScheduleBodyDayOfWeekMin).max(updateScheduleBodyDayOfWeekMax).describe('Sunday is 0'),
   "isOpen": zod.boolean(),
   "startTime": zod.string().regex(updateScheduleBodyStartTimeRegExp),
   "endTime": zod.string(),
@@ -7258,9 +7301,9 @@ export const UpdateScheduleBody = zod.object({
   "breakEnd": zod.string().nullish(),
   "timezone": zod.string().default(updateScheduleBodyTimezoneDefault),
   "tokenPrefix": zod.string().min(1).max(updateScheduleBodyTokenPrefixMax),
-  "maxTokens": zod.number().int().min(1).max(updateScheduleBodyMaxTokensMax),
-  "consultationMinutes": zod.number().int().min(1),
-  "bufferMinutes": zod.number().int().min(updateScheduleBodyBufferMinutesMin).max(updateScheduleBodyBufferMinutesMax).default(updateScheduleBodyBufferMinutesDefault),
+  "maxTokens": zod.int().min(1).max(updateScheduleBodyMaxTokensMax),
+  "consultationMinutes": zod.int().min(1),
+  "bufferMinutes": zod.int().min(updateScheduleBodyBufferMinutesMin).max(updateScheduleBodyBufferMinutesMax).default(updateScheduleBodyBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(updateScheduleBodyQueueModeDefault),
   "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
   "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
@@ -7289,7 +7332,7 @@ export const UpdateScheduleResponse = zod.object({
   "doctorId": zod.string(),
   "clinicId": zod.string(),
   "branchId": zod.string(),
-  "dayOfWeek": zod.number().int().min(updateScheduleResponseOneDayOfWeekMin).max(updateScheduleResponseOneDayOfWeekMax).describe('Sunday is 0'),
+  "dayOfWeek": zod.int().min(updateScheduleResponseOneDayOfWeekMin).max(updateScheduleResponseOneDayOfWeekMax).describe('Sunday is 0'),
   "isOpen": zod.boolean(),
   "startTime": zod.string().regex(updateScheduleResponseOneStartTimeRegExp),
   "endTime": zod.string(),
@@ -7297,9 +7340,9 @@ export const UpdateScheduleResponse = zod.object({
   "breakEnd": zod.string().nullish(),
   "timezone": zod.string().default(updateScheduleResponseOneTimezoneDefault),
   "tokenPrefix": zod.string().min(1).max(updateScheduleResponseOneTokenPrefixMax),
-  "maxTokens": zod.number().int().min(1).max(updateScheduleResponseOneMaxTokensMax),
-  "consultationMinutes": zod.number().int().min(1),
-  "bufferMinutes": zod.number().int().min(updateScheduleResponseOneBufferMinutesMin).max(updateScheduleResponseOneBufferMinutesMax).default(updateScheduleResponseOneBufferMinutesDefault),
+  "maxTokens": zod.int().min(1).max(updateScheduleResponseOneMaxTokensMax),
+  "consultationMinutes": zod.int().min(1),
+  "bufferMinutes": zod.int().min(updateScheduleResponseOneBufferMinutesMin).max(updateScheduleResponseOneBufferMinutesMax).default(updateScheduleResponseOneBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(updateScheduleResponseOneQueueModeDefault),
   "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
   "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
@@ -7357,10 +7400,10 @@ export const listAvailabilityExceptionsResponseTwoItemsItemOneMaxTokensMax = 100
 
 
 export const ListAvailabilityExceptionsResponse = zod.object({
-  "total": zod.number().int().min(listAvailabilityExceptionsResponseOneTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(listAvailabilityExceptionsResponseOneTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "sessionId": zod.string().optional(),
@@ -7374,7 +7417,7 @@ export const ListAvailabilityExceptionsResponse = zod.object({
   "endTime": zod.string().nullish(),
   "breakStart": zod.string().nullish(),
   "breakEnd": zod.string().nullish(),
-  "maxTokens": zod.number().int().min(1).max(listAvailabilityExceptionsResponseTwoItemsItemOneMaxTokensMax).nullish()
+  "maxTokens": zod.int().min(1).max(listAvailabilityExceptionsResponseTwoItemsItemOneMaxTokensMax).nullish()
 }).and(zod.object({
   "id": zod.string()
 })))
@@ -7397,7 +7440,7 @@ export const CreateAvailabilityExceptionBody = zod.object({
   "endTime": zod.string().nullish(),
   "breakStart": zod.string().nullish(),
   "breakEnd": zod.string().nullish(),
-  "maxTokens": zod.number().int().min(1).max(createAvailabilityExceptionBodyMaxTokensMax).nullish()
+  "maxTokens": zod.int().min(1).max(createAvailabilityExceptionBodyMaxTokensMax).nullish()
 })
 
 export const createAvailabilityExceptionResponseOneMaxTokensMax = 1000;
@@ -7416,7 +7459,7 @@ export const CreateAvailabilityExceptionResponse = zod.object({
   "endTime": zod.string().nullish(),
   "breakStart": zod.string().nullish(),
   "breakEnd": zod.string().nullish(),
-  "maxTokens": zod.number().int().min(1).max(createAvailabilityExceptionResponseOneMaxTokensMax).nullish()
+  "maxTokens": zod.int().min(1).max(createAvailabilityExceptionResponseOneMaxTokensMax).nullish()
 }).and(zod.object({
   "id": zod.string()
 }))
@@ -7442,7 +7485,7 @@ export const UpdateAvailabilityExceptionBody = zod.object({
   "endTime": zod.string().nullish(),
   "breakStart": zod.string().nullish(),
   "breakEnd": zod.string().nullish(),
-  "maxTokens": zod.number().int().min(1).max(updateAvailabilityExceptionBodyMaxTokensMax).nullish()
+  "maxTokens": zod.int().min(1).max(updateAvailabilityExceptionBodyMaxTokensMax).nullish()
 })
 
 export const updateAvailabilityExceptionResponseOneMaxTokensMax = 1000;
@@ -7461,7 +7504,7 @@ export const UpdateAvailabilityExceptionResponse = zod.object({
   "endTime": zod.string().nullish(),
   "breakStart": zod.string().nullish(),
   "breakEnd": zod.string().nullish(),
-  "maxTokens": zod.number().int().min(1).max(updateAvailabilityExceptionResponseOneMaxTokensMax).nullish()
+  "maxTokens": zod.int().min(1).max(updateAvailabilityExceptionResponseOneMaxTokensMax).nullish()
 }).and(zod.object({
   "id": zod.string()
 }))
@@ -7509,18 +7552,18 @@ export const listAppointmentsResponseTwoItemsItemTwoBookingDetailsRevisionMin = 
 
 
 export const ListAppointmentsResponse = zod.object({
-  "total": zod.number().int().min(listAppointmentsResponseOneTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(listAppointmentsResponseOneTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).and(zod.object({
   "statusCounts": zod.object({
-  "active": zod.number().int().optional(),
-  "waiting": zod.number().int().optional(),
-  "absent": zod.number().int().optional(),
-  "completed": zod.number().int().optional(),
-  "cancelled": zod.number().int().optional(),
-  "all": zod.number().int().optional()
+  "active": zod.int().optional(),
+  "waiting": zod.int().optional(),
+  "absent": zod.int().optional(),
+  "completed": zod.int().optional(),
+  "cancelled": zod.int().optional(),
+  "all": zod.int().optional()
 }).optional(),
   "items": zod.array(zod.object({
   "sessionId": zod.string().optional(),
@@ -7542,8 +7585,8 @@ export const ListAppointmentsResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -7556,10 +7599,10 @@ export const ListAppointmentsResponse = zod.object({
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
-  "tokenNumber": zod.number().int().optional(),
+  "tokenNumber": zod.int().optional(),
   "queueRank": zod.number().optional(),
-  "revision": zod.number().int().optional(),
-  "expectedDurationMinutes": zod.number().int().nullish(),
+  "revision": zod.int().optional(),
+  "expectedDurationMinutes": zod.int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -7568,7 +7611,7 @@ export const ListAppointmentsResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().int().nullish(),
+  "age": zod.int().nullish(),
   "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
@@ -7589,7 +7632,7 @@ export const ListAppointmentsResponse = zod.object({
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
   "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
-  "bookingDetailsRevision": zod.number().int().min(listAppointmentsResponseTwoItemsItemTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
+  "bookingDetailsRevision": zod.int().min(listAppointmentsResponseTwoItemsItemTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -7599,7 +7642,7 @@ export const ListAppointmentsResponse = zod.object({
   "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
   "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
-  "position": zod.number().int().optional(),
+  "position": zod.int().optional(),
   "from": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
   "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
@@ -7611,7 +7654,7 @@ export const ListAppointmentsResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional(),
   "to": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
@@ -7624,7 +7667,7 @@ export const ListAppointmentsResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional()
 })).optional(),
   "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
@@ -7688,8 +7731,8 @@ export const CreateAppointmentResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -7702,10 +7745,10 @@ export const CreateAppointmentResponse = zod.object({
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
-  "tokenNumber": zod.number().int().optional(),
+  "tokenNumber": zod.int().optional(),
   "queueRank": zod.number().optional(),
-  "revision": zod.number().int().optional(),
-  "expectedDurationMinutes": zod.number().int().nullish(),
+  "revision": zod.int().optional(),
+  "expectedDurationMinutes": zod.int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -7714,7 +7757,7 @@ export const CreateAppointmentResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().int().nullish(),
+  "age": zod.int().nullish(),
   "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
@@ -7735,7 +7778,7 @@ export const CreateAppointmentResponse = zod.object({
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
   "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
-  "bookingDetailsRevision": zod.number().int().min(createAppointmentResponseTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
+  "bookingDetailsRevision": zod.int().min(createAppointmentResponseTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -7745,7 +7788,7 @@ export const CreateAppointmentResponse = zod.object({
   "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
   "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
-  "position": zod.number().int().optional(),
+  "position": zod.int().optional(),
   "from": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
   "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
@@ -7757,7 +7800,7 @@ export const CreateAppointmentResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional(),
   "to": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
@@ -7770,7 +7813,7 @@ export const CreateAppointmentResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional()
 })).optional(),
   "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
@@ -7792,8 +7835,8 @@ export const updateAppointmentBookingBodyNotesMax = 1000;
 
 
 export const UpdateAppointmentBookingBody = zod.object({
-  "expectedRevision": zod.number().int().min(updateAppointmentBookingBodyExpectedRevisionMin),
-  "expectedBookingDetailsRevision": zod.number().int().min(updateAppointmentBookingBodyExpectedBookingDetailsRevisionMin),
+  "expectedRevision": zod.int().min(updateAppointmentBookingBodyExpectedRevisionMin),
+  "expectedBookingDetailsRevision": zod.int().min(updateAppointmentBookingBodyExpectedBookingDetailsRevisionMin),
   "bookingMobile": zod.string().max(updateAppointmentBookingBodyBookingMobileMax),
   "notes": zod.string().max(updateAppointmentBookingBodyNotesMax)
 })
@@ -7824,8 +7867,8 @@ export const UpdateAppointmentBookingResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -7838,10 +7881,10 @@ export const UpdateAppointmentBookingResponse = zod.object({
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
-  "tokenNumber": zod.number().int().optional(),
+  "tokenNumber": zod.int().optional(),
   "queueRank": zod.number().optional(),
-  "revision": zod.number().int().optional(),
-  "expectedDurationMinutes": zod.number().int().nullish(),
+  "revision": zod.int().optional(),
+  "expectedDurationMinutes": zod.int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -7850,7 +7893,7 @@ export const UpdateAppointmentBookingResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().int().nullish(),
+  "age": zod.int().nullish(),
   "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
@@ -7871,7 +7914,7 @@ export const UpdateAppointmentBookingResponse = zod.object({
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
   "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
-  "bookingDetailsRevision": zod.number().int().min(updateAppointmentBookingResponseTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
+  "bookingDetailsRevision": zod.int().min(updateAppointmentBookingResponseTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -7881,7 +7924,7 @@ export const UpdateAppointmentBookingResponse = zod.object({
   "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
   "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
-  "position": zod.number().int().optional(),
+  "position": zod.int().optional(),
   "from": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
   "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
@@ -7893,7 +7936,7 @@ export const UpdateAppointmentBookingResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional(),
   "to": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
@@ -7906,7 +7949,7 @@ export const UpdateAppointmentBookingResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional()
 })).optional(),
   "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
@@ -7930,13 +7973,14 @@ export const SendBookingStatusSmsParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const sendBookingStatusSmsBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 export const sendBookingStatusSmsBodyPreviewTokenMin = 64;
 export const sendBookingStatusSmsBodyPreviewTokenMax = 64;
 
 
 
 export const SendBookingStatusSmsBody = zod.object({
-  "requestId": zod.string().uuid(),
+  "requestId": zod.string().regex(sendBookingStatusSmsBodyRequestIdRegExp),
   "previewToken": zod.string().min(sendBookingStatusSmsBodyPreviewTokenMin).max(sendBookingStatusSmsBodyPreviewTokenMax)
 })
 
@@ -7961,9 +8005,12 @@ export const SendTicketEmailParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const sendTicketEmailBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+
+
 export const SendTicketEmailBody = zod.object({
-  "requestId": zod.string().uuid(),
-  "recipient": zod.string().email()
+  "requestId": zod.string().regex(sendTicketEmailBodyRequestIdRegExp),
+  "recipient": zod.email()
 })
 
 export const SendTicketEmailResponse = zod.object({
@@ -7984,10 +8031,10 @@ export const GetAppointmentCalendarQueryParams = zod.object({
 export const GetAppointmentCalendarResponse = zod.object({
   "days": zod.array(zod.object({
   "date": zod.string(),
-  "total": zod.number().int(),
-  "byStatus": zod.record(zod.string(), zod.number().int())
+  "total": zod.int(),
+  "byStatus": zod.record(zod.string(), zod.int())
 })),
-  "total": zod.number().int()
+  "total": zod.int()
 })
 
 
@@ -8024,8 +8071,8 @@ export const GetAppointmentResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -8038,10 +8085,10 @@ export const GetAppointmentResponse = zod.object({
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
-  "tokenNumber": zod.number().int().optional(),
+  "tokenNumber": zod.int().optional(),
   "queueRank": zod.number().optional(),
-  "revision": zod.number().int().optional(),
-  "expectedDurationMinutes": zod.number().int().nullish(),
+  "revision": zod.int().optional(),
+  "expectedDurationMinutes": zod.int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -8050,7 +8097,7 @@ export const GetAppointmentResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().int().nullish(),
+  "age": zod.int().nullish(),
   "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
@@ -8071,7 +8118,7 @@ export const GetAppointmentResponse = zod.object({
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
   "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
-  "bookingDetailsRevision": zod.number().int().min(getAppointmentResponseTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
+  "bookingDetailsRevision": zod.int().min(getAppointmentResponseTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -8081,7 +8128,7 @@ export const GetAppointmentResponse = zod.object({
   "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
   "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
-  "position": zod.number().int().optional(),
+  "position": zod.int().optional(),
   "from": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
   "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
@@ -8093,7 +8140,7 @@ export const GetAppointmentResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional(),
   "to": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
@@ -8106,7 +8153,7 @@ export const GetAppointmentResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional()
 })).optional(),
   "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
@@ -8133,7 +8180,7 @@ export const GetAppointmentHistoryResponse = zod.object({
   "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
   "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
-  "position": zod.number().int().optional(),
+  "position": zod.int().optional(),
   "from": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
   "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
@@ -8145,7 +8192,7 @@ export const GetAppointmentHistoryResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional(),
   "to": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
@@ -8158,7 +8205,7 @@ export const GetAppointmentHistoryResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional()
 })),zod.null()]).describe('Null for legacy visits without a recorded history; an empty array means no events in this page.'),
   "nextCursor": zod.string().nullable()
@@ -8216,8 +8263,8 @@ export const ResolveAppointmentQrResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -8230,10 +8277,10 @@ export const ResolveAppointmentQrResponse = zod.object({
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
-  "tokenNumber": zod.number().int().optional(),
+  "tokenNumber": zod.int().optional(),
   "queueRank": zod.number().optional(),
-  "revision": zod.number().int().optional(),
-  "expectedDurationMinutes": zod.number().int().nullish(),
+  "revision": zod.int().optional(),
+  "expectedDurationMinutes": zod.int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -8242,7 +8289,7 @@ export const ResolveAppointmentQrResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().int().nullish(),
+  "age": zod.int().nullish(),
   "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
@@ -8263,7 +8310,7 @@ export const ResolveAppointmentQrResponse = zod.object({
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
   "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
-  "bookingDetailsRevision": zod.number().int().min(resolveAppointmentQrResponseAppointmentTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
+  "bookingDetailsRevision": zod.int().min(resolveAppointmentQrResponseAppointmentTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -8273,7 +8320,7 @@ export const ResolveAppointmentQrResponse = zod.object({
   "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
   "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
-  "position": zod.number().int().optional(),
+  "position": zod.int().optional(),
   "from": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
   "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
@@ -8285,7 +8332,7 @@ export const ResolveAppointmentQrResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional(),
   "to": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
@@ -8298,7 +8345,7 @@ export const ResolveAppointmentQrResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional()
 })).optional(),
   "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
@@ -8346,8 +8393,8 @@ export const CheckInAppointmentQrResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -8360,10 +8407,10 @@ export const CheckInAppointmentQrResponse = zod.object({
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
-  "tokenNumber": zod.number().int().optional(),
+  "tokenNumber": zod.int().optional(),
   "queueRank": zod.number().optional(),
-  "revision": zod.number().int().optional(),
-  "expectedDurationMinutes": zod.number().int().nullish(),
+  "revision": zod.int().optional(),
+  "expectedDurationMinutes": zod.int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -8372,7 +8419,7 @@ export const CheckInAppointmentQrResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().int().nullish(),
+  "age": zod.int().nullish(),
   "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
@@ -8393,7 +8440,7 @@ export const CheckInAppointmentQrResponse = zod.object({
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
   "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
-  "bookingDetailsRevision": zod.number().int().min(checkInAppointmentQrResponseAppointmentTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
+  "bookingDetailsRevision": zod.int().min(checkInAppointmentQrResponseAppointmentTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -8403,7 +8450,7 @@ export const CheckInAppointmentQrResponse = zod.object({
   "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
   "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
-  "position": zod.number().int().optional(),
+  "position": zod.int().optional(),
   "from": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
   "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
@@ -8415,7 +8462,7 @@ export const CheckInAppointmentQrResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional(),
   "to": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
@@ -8428,7 +8475,7 @@ export const CheckInAppointmentQrResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional()
 })).optional(),
   "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
@@ -8446,7 +8493,7 @@ export const GetDoctorDurationParams = zod.object({
 export const GetDoctorDurationResponse = zod.object({
   "doctorId": zod.string(),
   "clinicId": zod.string(),
-  "expectedDurationMinutes": zod.number().int().nullable().describe('Existing legacy durations are retained; new selections must be 20/30/60.')
+  "expectedDurationMinutes": zod.int().nullable().describe('Existing legacy durations are retained; new selections must be 20/30/60.')
 })
 
 
@@ -8470,7 +8517,7 @@ export const UpdateDoctorDurationBody = zod.object({
 export const UpdateDoctorDurationResponse = zod.object({
   "doctorId": zod.string(),
   "clinicId": zod.string(),
-  "expectedDurationMinutes": zod.number().int().nullable().describe('Existing legacy durations are retained; new selections must be 20/30/60.')
+  "expectedDurationMinutes": zod.int().nullable().describe('Existing legacy durations are retained; new selections must be 20/30/60.')
 })
 
 
@@ -8505,8 +8552,8 @@ export const GetAppointmentMovementResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -8519,10 +8566,10 @@ export const GetAppointmentMovementResponse = zod.object({
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
-  "tokenNumber": zod.number().int().optional(),
+  "tokenNumber": zod.int().optional(),
   "queueRank": zod.number().optional(),
-  "revision": zod.number().int().optional(),
-  "expectedDurationMinutes": zod.number().int().nullish(),
+  "revision": zod.int().optional(),
+  "expectedDurationMinutes": zod.int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -8531,7 +8578,7 @@ export const GetAppointmentMovementResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().int().nullish(),
+  "age": zod.int().nullish(),
   "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
@@ -8552,7 +8599,7 @@ export const GetAppointmentMovementResponse = zod.object({
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
   "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
-  "bookingDetailsRevision": zod.number().int().min(getAppointmentMovementResponseAppointmentTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
+  "bookingDetailsRevision": zod.int().min(getAppointmentMovementResponseAppointmentTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -8562,7 +8609,7 @@ export const GetAppointmentMovementResponse = zod.object({
   "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
   "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
-  "position": zod.number().int().optional(),
+  "position": zod.int().optional(),
   "from": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
   "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
@@ -8574,7 +8621,7 @@ export const GetAppointmentMovementResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional(),
   "to": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
@@ -8587,15 +8634,15 @@ export const GetAppointmentMovementResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional()
 })).optional(),
   "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
 })),
   "queueVersion": zod.string(),
-  "currentPosition": zod.number().int(),
-  "pendingCount": zod.number().int(),
-  "positions": zod.array(zod.number().int())
+  "currentPosition": zod.int(),
+  "pendingCount": zod.int(),
+  "positions": zod.array(zod.int())
 })
 
 
@@ -8615,9 +8662,9 @@ export const ManageGuestReceiptBody = zod.object({
   "reason": zod.string().optional(),
   "cancellationReasonId": zod.string().optional(),
   "expectedStatus": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']).optional(),
-  "expectedRevision": zod.number().int().min(manageGuestReceiptBodyActionExpectedRevisionMin).optional(),
+  "expectedRevision": zod.int().min(manageGuestReceiptBodyActionExpectedRevisionMin).optional(),
   "expectedQueueVersion": zod.string().optional(),
-  "position": zod.number().int().min(1).optional().describe('Required for requeue. One-based position among pending reservations; current consultation is never displaced.')
+  "position": zod.int().min(1).optional().describe('Required for requeue. One-based position among pending reservations; current consultation is never displaced.')
 }).optional(),
   "destination": zod.object({
   "releaseCallConfirmed": zod.boolean().optional(),
@@ -8626,7 +8673,7 @@ export const ManageGuestReceiptBody = zod.object({
   "doctorId": zod.string(),
   "branchId": zod.string(),
   "date": zod.coerce.date(),
-  "expectedRevision": zod.number().int().min(manageGuestReceiptBodyDestinationExpectedRevisionMin),
+  "expectedRevision": zod.int().min(manageGuestReceiptBodyDestinationExpectedRevisionMin),
   "reason": zod.string().optional()
 }).optional()
 })
@@ -8658,8 +8705,8 @@ export const ManageGuestReceiptResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -8672,10 +8719,10 @@ export const ManageGuestReceiptResponse = zod.object({
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
-  "tokenNumber": zod.number().int().optional(),
+  "tokenNumber": zod.int().optional(),
   "queueRank": zod.number().optional(),
-  "revision": zod.number().int().optional(),
-  "expectedDurationMinutes": zod.number().int().nullish(),
+  "revision": zod.int().optional(),
+  "expectedDurationMinutes": zod.int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -8684,7 +8731,7 @@ export const ManageGuestReceiptResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().int().nullish(),
+  "age": zod.int().nullish(),
   "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
@@ -8705,7 +8752,7 @@ export const ManageGuestReceiptResponse = zod.object({
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
   "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
-  "bookingDetailsRevision": zod.number().int().min(manageGuestReceiptResponseAppointmentTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
+  "bookingDetailsRevision": zod.int().min(manageGuestReceiptResponseAppointmentTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -8715,7 +8762,7 @@ export const ManageGuestReceiptResponse = zod.object({
   "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
   "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
-  "position": zod.number().int().optional(),
+  "position": zod.int().optional(),
   "from": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
   "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
@@ -8727,7 +8774,7 @@ export const ManageGuestReceiptResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional(),
   "to": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
@@ -8740,15 +8787,15 @@ export const ManageGuestReceiptResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional()
 })).optional(),
   "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
 })),
   "queueVersion": zod.string(),
-  "currentPosition": zod.number().int(),
-  "pendingCount": zod.number().int(),
-  "positions": zod.array(zod.number().int())
+  "currentPosition": zod.int(),
+  "pendingCount": zod.int(),
+  "positions": zod.array(zod.int())
 })
 
 
@@ -8767,7 +8814,7 @@ export const RescheduleAppointmentBody = zod.object({
   "doctorId": zod.string(),
   "branchId": zod.string(),
   "date": zod.coerce.date(),
-  "expectedRevision": zod.number().int().min(rescheduleAppointmentBodyExpectedRevisionMin),
+  "expectedRevision": zod.int().min(rescheduleAppointmentBodyExpectedRevisionMin),
   "reason": zod.string().optional()
 })
 
@@ -8797,8 +8844,8 @@ export const RescheduleAppointmentResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -8811,10 +8858,10 @@ export const RescheduleAppointmentResponse = zod.object({
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
-  "tokenNumber": zod.number().int().optional(),
+  "tokenNumber": zod.int().optional(),
   "queueRank": zod.number().optional(),
-  "revision": zod.number().int().optional(),
-  "expectedDurationMinutes": zod.number().int().nullish(),
+  "revision": zod.int().optional(),
+  "expectedDurationMinutes": zod.int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -8823,7 +8870,7 @@ export const RescheduleAppointmentResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().int().nullish(),
+  "age": zod.int().nullish(),
   "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
@@ -8844,7 +8891,7 @@ export const RescheduleAppointmentResponse = zod.object({
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
   "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
-  "bookingDetailsRevision": zod.number().int().min(rescheduleAppointmentResponseTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
+  "bookingDetailsRevision": zod.int().min(rescheduleAppointmentResponseTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -8854,7 +8901,7 @@ export const RescheduleAppointmentResponse = zod.object({
   "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
   "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
-  "position": zod.number().int().optional(),
+  "position": zod.int().optional(),
   "from": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
   "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
@@ -8866,7 +8913,7 @@ export const RescheduleAppointmentResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional(),
   "to": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
@@ -8879,7 +8926,7 @@ export const RescheduleAppointmentResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional()
 })).optional(),
   "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
@@ -8914,9 +8961,9 @@ export const TransitionAppointmentBody = zod.object({
   "reason": zod.string().optional(),
   "cancellationReasonId": zod.string().optional(),
   "expectedStatus": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']).optional(),
-  "expectedRevision": zod.number().int().min(transitionAppointmentBodyExpectedRevisionMin).optional(),
+  "expectedRevision": zod.int().min(transitionAppointmentBodyExpectedRevisionMin).optional(),
   "expectedQueueVersion": zod.string().optional(),
-  "position": zod.number().int().min(1).optional().describe('Required for requeue. One-based position among pending reservations; current consultation is never displaced.')
+  "position": zod.int().min(1).optional().describe('Required for requeue. One-based position among pending reservations; current consultation is never displaced.')
 })
 
 export const transitionAppointmentResponseOneNotesMax = 1000;
@@ -8945,8 +8992,8 @@ export const TransitionAppointmentResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -8959,10 +9006,10 @@ export const TransitionAppointmentResponse = zod.object({
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
-  "tokenNumber": zod.number().int().optional(),
+  "tokenNumber": zod.int().optional(),
   "queueRank": zod.number().optional(),
-  "revision": zod.number().int().optional(),
-  "expectedDurationMinutes": zod.number().int().nullish(),
+  "revision": zod.int().optional(),
+  "expectedDurationMinutes": zod.int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -8971,7 +9018,7 @@ export const TransitionAppointmentResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().int().nullish(),
+  "age": zod.int().nullish(),
   "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
@@ -8992,7 +9039,7 @@ export const TransitionAppointmentResponse = zod.object({
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
   "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
-  "bookingDetailsRevision": zod.number().int().min(transitionAppointmentResponseTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
+  "bookingDetailsRevision": zod.int().min(transitionAppointmentResponseTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -9002,7 +9049,7 @@ export const TransitionAppointmentResponse = zod.object({
   "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
   "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
-  "position": zod.number().int().optional(),
+  "position": zod.int().optional(),
   "from": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
   "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
@@ -9014,7 +9061,7 @@ export const TransitionAppointmentResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional(),
   "to": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
@@ -9027,7 +9074,7 @@ export const TransitionAppointmentResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional()
 })).optional(),
   "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
@@ -9081,32 +9128,32 @@ export const GetQueueResponse = zod.object({
   "doctorId": zod.string(),
   "updatedAt": zod.coerce.date().nullable()
 })).optional(),
-  "page": zod.number().int().optional(),
-  "pageSize": zod.number().int().optional(),
-  "totalPages": zod.number().int().optional(),
-  "entriesTotal": zod.number().int().optional(),
+  "page": zod.int().optional(),
+  "pageSize": zod.int().optional(),
+  "totalPages": zod.int().optional(),
+  "entriesTotal": zod.int().optional(),
   "doctorId": zod.string(),
   "branchId": zod.string(),
   "date": zod.coerce.date(),
   "currentToken": zod.string().nullable(),
   "nextToken": zod.string().nullable(),
-  "waiting": zod.number().int(),
-  "reserved": zod.number().int().optional().describe('All pending booked'),
-  "arrived": zod.number().int().optional().describe('Checked-in'),
+  "waiting": zod.int(),
+  "reserved": zod.int().optional().describe('All pending booked'),
+  "arrived": zod.int().optional().describe('Checked-in'),
   "queueVersion": zod.string().optional(),
-  "expectedDurationMinutes": zod.number().int().nullish(),
+  "expectedDurationMinutes": zod.int().nullish(),
   "blockedByAbsentReservation": zod.boolean().optional(),
-  "inConsultation": zod.number().int(),
-  "completed": zod.number().int(),
-  "noShow": zod.number().int(),
-  "total": zod.number().int(),
+  "inConsultation": zod.int(),
+  "completed": zod.int(),
+  "noShow": zod.int(),
+  "total": zod.int(),
   "ownEntry": zod.union([zod.object({
   "estimate": zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -9116,8 +9163,8 @@ export const GetQueueResponse = zod.object({
   "appointmentId": zod.string(),
   "token": zod.string(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
-  "patientsAhead": zod.number().int(),
-  "estimatedWaitMinutes": zod.number().int().nullable()
+  "patientsAhead": zod.int(),
+  "estimatedWaitMinutes": zod.int().nullable()
 }),zod.null()]).optional(),
   "entries": zod.array(zod.object({
   "sessionId": zod.string().optional(),
@@ -9139,8 +9186,8 @@ export const GetQueueResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -9153,10 +9200,10 @@ export const GetQueueResponse = zod.object({
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
-  "tokenNumber": zod.number().int().optional(),
+  "tokenNumber": zod.int().optional(),
   "queueRank": zod.number().optional(),
-  "revision": zod.number().int().optional(),
-  "expectedDurationMinutes": zod.number().int().nullish(),
+  "revision": zod.int().optional(),
+  "expectedDurationMinutes": zod.int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -9165,7 +9212,7 @@ export const GetQueueResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().int().nullish(),
+  "age": zod.int().nullish(),
   "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
@@ -9186,7 +9233,7 @@ export const GetQueueResponse = zod.object({
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
   "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
-  "bookingDetailsRevision": zod.number().int().min(getQueueResponseEntriesItemTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
+  "bookingDetailsRevision": zod.int().min(getQueueResponseEntriesItemTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -9196,7 +9243,7 @@ export const GetQueueResponse = zod.object({
   "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
   "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
-  "position": zod.number().int().optional(),
+  "position": zod.int().optional(),
   "from": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
   "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
@@ -9208,7 +9255,7 @@ export const GetQueueResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional(),
   "to": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
@@ -9221,18 +9268,18 @@ export const GetQueueResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional()
 })).optional(),
   "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
 }))).optional().describe('Omitted for patients'),
   "statusCounts": zod.object({
-  "active": zod.number().int().optional(),
-  "waiting": zod.number().int().optional(),
-  "absent": zod.number().int().optional(),
-  "completed": zod.number().int().optional(),
-  "cancelled": zod.number().int().optional(),
-  "all": zod.number().int().optional()
+  "active": zod.int().optional(),
+  "waiting": zod.int().optional(),
+  "absent": zod.int().optional(),
+  "completed": zod.int().optional(),
+  "cancelled": zod.int().optional(),
+  "all": zod.int().optional()
 }).optional(),
   "pollIntervalSeconds": zod.literal(30),
   "updatedAt": zod.coerce.date()
@@ -9277,8 +9324,8 @@ export const CallNextResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -9291,10 +9338,10 @@ export const CallNextResponse = zod.object({
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
-  "tokenNumber": zod.number().int().optional(),
+  "tokenNumber": zod.int().optional(),
   "queueRank": zod.number().optional(),
-  "revision": zod.number().int().optional(),
-  "expectedDurationMinutes": zod.number().int().nullish(),
+  "revision": zod.int().optional(),
+  "expectedDurationMinutes": zod.int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -9303,7 +9350,7 @@ export const CallNextResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().int().nullish(),
+  "age": zod.int().nullish(),
   "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
@@ -9324,7 +9371,7 @@ export const CallNextResponse = zod.object({
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
   "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
-  "bookingDetailsRevision": zod.number().int().min(callNextResponseAppointmentOneTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
+  "bookingDetailsRevision": zod.int().min(callNextResponseAppointmentOneTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -9334,7 +9381,7 @@ export const CallNextResponse = zod.object({
   "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
   "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
-  "position": zod.number().int().optional(),
+  "position": zod.int().optional(),
   "from": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
   "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
@@ -9346,7 +9393,7 @@ export const CallNextResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional(),
   "to": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
@@ -9359,7 +9406,7 @@ export const CallNextResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional()
 })).optional(),
   "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
@@ -9390,10 +9437,10 @@ export const listQrsResponseOneTotalMin = 0;
 
 
 export const ListQrsResponse = zod.object({
-  "total": zod.number().int().min(listQrsResponseOneTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(listQrsResponseOneTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "name": zod.string(),
@@ -9518,17 +9565,17 @@ export const getDashboardResponseRecentAppointmentsItemTwoBookingDetailsRevision
 
 
 export const GetDashboardResponse = zod.object({
-  "totalDoctors": zod.number().int().optional(),
-  "totalClinics": zod.number().int().optional(),
-  "totalBranches": zod.number().int().optional(),
-  "totalPatients": zod.number().int().optional(),
-  "todayAppointments": zod.number().int(),
-  "activeQueues": zod.number().int().optional(),
-  "waiting": zod.number().int(),
-  "checkedIn": zod.number().int(),
-  "completed": zod.number().int(),
-  "cancelled": zod.number().int(),
-  "noShow": zod.number().int(),
+  "totalDoctors": zod.int().optional(),
+  "totalClinics": zod.int().optional(),
+  "totalBranches": zod.int().optional(),
+  "totalPatients": zod.int().optional(),
+  "todayAppointments": zod.int(),
+  "activeQueues": zod.int().optional(),
+  "waiting": zod.int(),
+  "checkedIn": zod.int(),
+  "completed": zod.int(),
+  "cancelled": zod.int(),
+  "noShow": zod.int(),
   "averageWaitMinutes": zod.number(),
   "currentToken": zod.string().nullish(),
   "recentAppointments": zod.array(zod.object({
@@ -9551,8 +9598,8 @@ export const GetDashboardResponse = zod.object({
   "state": zod.enum(['ready', 'paused', 'unavailable', 'ended', 'terminal']),
   "basis": zod.enum(['sessionStart', 'remainingQueue']),
   "asOf": zod.string(),
-  "patientsAhead": zod.number().int().nullable(),
-  "waitMinutes": zod.number().int().nullable(),
+  "patientsAhead": zod.int().nullable(),
+  "waitMinutes": zod.int().nullable(),
   "suggestedArrival": zod.string().nullable().describe('Session-local HH:mm; not an appointment time'),
   "beyondSessionEnd": zod.boolean(),
   "guidance": zod.string()
@@ -9565,10 +9612,10 @@ export const GetDashboardResponse = zod.object({
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
-  "tokenNumber": zod.number().int().optional(),
+  "tokenNumber": zod.int().optional(),
   "queueRank": zod.number().optional(),
-  "revision": zod.number().int().optional(),
-  "expectedDurationMinutes": zod.number().int().nullish(),
+  "revision": zod.int().optional(),
+  "expectedDurationMinutes": zod.int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -9577,7 +9624,7 @@ export const GetDashboardResponse = zod.object({
   "code": zod.string().nullish(),
   "gender": zod.string().nullish(),
   "dateOfBirth": zod.string().nullish(),
-  "age": zod.number().int().nullish(),
+  "age": zod.int().nullish(),
   "ageReferenceDate": zod.string().nullish(),
   "mobile": zod.string().nullish(),
   "email": zod.string().nullish(),
@@ -9598,7 +9645,7 @@ export const GetDashboardResponse = zod.object({
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
   "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
-  "bookingDetailsRevision": zod.number().int().min(getDashboardResponseRecentAppointmentsItemTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
+  "bookingDetailsRevision": zod.int().min(getDashboardResponseRecentAppointmentsItemTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -9608,7 +9655,7 @@ export const GetDashboardResponse = zod.object({
   "actorDisplayName": zod.string().nullish().describe('Authorized current display name, never an identity snapshot or raw ID.'),
   "actorRecordedRole": zod.string().nullish().describe('Role recorded on this event, never inferred from the current account role.'),
   "actorState": zod.enum(['named', 'system', 'receipt', 'unknown', 'deleted', 'unavailable']).optional(),
-  "position": zod.number().int().optional(),
+  "position": zod.int().optional(),
   "from": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
   "branchName": zod.string().optional().describe('Private detail only. Location name recorded at the move.'),
@@ -9620,7 +9667,7 @@ export const GetDashboardResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional(),
   "to": zod.object({
   "doctorName": zod.string().optional().describe('Private detail only. Display name recorded at the move, never reconstructed from the current directory.'),
@@ -9633,7 +9680,7 @@ export const GetDashboardResponse = zod.object({
   "endTime": zod.string().optional(),
   "timezone": zod.string().optional(),
   "token": zod.string().optional(),
-  "tokenNumber": zod.number().int().optional()
+  "tokenNumber": zod.int().optional()
 }).optional()
 })).optional(),
   "historyNextCursor": zod.string().nullish().describe('Opaque cursor for older private events; null when the initial page is complete.')
@@ -9678,23 +9725,23 @@ export const GetReportsQueryParams = zod.object({
 })
 
 export const GetReportsResponse = zod.object({
-  "page": zod.number().int().optional(),
-  "pageSize": zod.number().int().optional(),
-  "totalPages": zod.number().int().optional(),
-  "total": zod.number().int().optional(),
+  "page": zod.int().optional(),
+  "pageSize": zod.int().optional(),
+  "totalPages": zod.int().optional(),
+  "total": zod.int().optional(),
   "from": zod.coerce.date(),
   "to": zod.coerce.date(),
   "groupBy": zod.string(),
   "rows": zod.array(zod.object({
   "key": zod.string(),
   "label": zod.string(),
-  "appointments": zod.number().int(),
-  "checkedIn": zod.number().int().optional(),
-  "waiting": zod.number().int().optional(),
-  "completed": zod.number().int(),
-  "cancelled": zod.number().int(),
-  "noShow": zod.number().int(),
-  "registrations": zod.number().int(),
+  "appointments": zod.int(),
+  "checkedIn": zod.int().optional(),
+  "waiting": zod.int().optional(),
+  "completed": zod.int(),
+  "cancelled": zod.int(),
+  "noShow": zod.int(),
+  "registrations": zod.int(),
   "averageWaitMinutes": zod.number(),
   "averageConsultationMinutes": zod.number().nullish()
 }))
@@ -9730,10 +9777,10 @@ export const listAuditLogsResponseOneTotalMin = 0;
 
 
 export const ListAuditLogsResponse = zod.object({
-  "total": zod.number().int().min(listAuditLogsResponseOneTotalMin),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
-  "totalPages": zod.number().int().optional()
+  "total": zod.int().min(listAuditLogsResponseOneTotalMin),
+  "page": zod.int(),
+  "pageSize": zod.int(),
+  "totalPages": zod.int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "id": zod.string(),
@@ -9767,15 +9814,15 @@ export const getSettingsResponseOneSessionTimeoutMinutesMin = 5;
 
 export const GetSettingsResponse = zod.object({
   "platformName": zod.string(),
-  "supportEmail": zod.string().email().optional(),
+  "supportEmail": zod.email().optional(),
   "supportPhone": zod.string().optional(),
   "timezone": zod.string().optional(),
-  "bookingHorizonDays": zod.number().int().min(1).optional(),
-  "cancellationCutoffMinutes": zod.number().int().min(getSettingsResponseOneCancellationCutoffMinutesMin).optional(),
+  "bookingHorizonDays": zod.int().min(1).optional(),
+  "cancellationCutoffMinutes": zod.int().min(getSettingsResponseOneCancellationCutoffMinutesMin).optional(),
   "requireMobileVerification": zod.boolean(),
-  "otpExpirySeconds": zod.number().int().min(getSettingsResponseOneOtpExpirySecondsMin).max(getSettingsResponseOneOtpExpirySecondsMax).optional(),
-  "otpMaxAttempts": zod.number().int().min(1).max(getSettingsResponseOneOtpMaxAttemptsMax).optional(),
-  "sessionTimeoutMinutes": zod.number().int().min(getSettingsResponseOneSessionTimeoutMinutesMin).optional(),
+  "otpExpirySeconds": zod.int().min(getSettingsResponseOneOtpExpirySecondsMin).max(getSettingsResponseOneOtpExpirySecondsMax).optional(),
+  "otpMaxAttempts": zod.int().min(1).max(getSettingsResponseOneOtpMaxAttemptsMax).optional(),
+  "sessionTimeoutMinutes": zod.int().min(getSettingsResponseOneSessionTimeoutMinutesMin).optional(),
   "notificationsEnabled": zod.boolean().optional(),
   "logoUrl": zod.string().optional(),
   "primaryColor": zod.string().optional(),
@@ -9804,15 +9851,15 @@ export const updateSettingsBodySessionTimeoutMinutesMin = 5;
 
 export const UpdateSettingsBody = zod.object({
   "platformName": zod.string().optional(),
-  "supportEmail": zod.string().email().optional(),
+  "supportEmail": zod.email().optional(),
   "supportPhone": zod.string().optional(),
   "timezone": zod.string().optional(),
-  "bookingHorizonDays": zod.number().int().min(1).optional(),
-  "cancellationCutoffMinutes": zod.number().int().min(updateSettingsBodyCancellationCutoffMinutesMin).optional(),
+  "bookingHorizonDays": zod.int().min(1).optional(),
+  "cancellationCutoffMinutes": zod.int().min(updateSettingsBodyCancellationCutoffMinutesMin).optional(),
   "requireMobileVerification": zod.boolean().optional(),
-  "otpExpirySeconds": zod.number().int().min(updateSettingsBodyOtpExpirySecondsMin).max(updateSettingsBodyOtpExpirySecondsMax).optional(),
-  "otpMaxAttempts": zod.number().int().min(1).max(updateSettingsBodyOtpMaxAttemptsMax).optional(),
-  "sessionTimeoutMinutes": zod.number().int().min(updateSettingsBodySessionTimeoutMinutesMin).optional(),
+  "otpExpirySeconds": zod.int().min(updateSettingsBodyOtpExpirySecondsMin).max(updateSettingsBodyOtpExpirySecondsMax).optional(),
+  "otpMaxAttempts": zod.int().min(1).max(updateSettingsBodyOtpMaxAttemptsMax).optional(),
+  "sessionTimeoutMinutes": zod.int().min(updateSettingsBodySessionTimeoutMinutesMin).optional(),
   "notificationsEnabled": zod.boolean().optional(),
   "logoUrl": zod.string().optional(),
   "primaryColor": zod.string().optional(),
@@ -9834,15 +9881,15 @@ export const updateSettingsResponseOneSessionTimeoutMinutesMin = 5;
 
 export const UpdateSettingsResponse = zod.object({
   "platformName": zod.string(),
-  "supportEmail": zod.string().email().optional(),
+  "supportEmail": zod.email().optional(),
   "supportPhone": zod.string().optional(),
   "timezone": zod.string().optional(),
-  "bookingHorizonDays": zod.number().int().min(1).optional(),
-  "cancellationCutoffMinutes": zod.number().int().min(updateSettingsResponseOneCancellationCutoffMinutesMin).optional(),
+  "bookingHorizonDays": zod.int().min(1).optional(),
+  "cancellationCutoffMinutes": zod.int().min(updateSettingsResponseOneCancellationCutoffMinutesMin).optional(),
   "requireMobileVerification": zod.boolean(),
-  "otpExpirySeconds": zod.number().int().min(updateSettingsResponseOneOtpExpirySecondsMin).max(updateSettingsResponseOneOtpExpirySecondsMax).optional(),
-  "otpMaxAttempts": zod.number().int().min(1).max(updateSettingsResponseOneOtpMaxAttemptsMax).optional(),
-  "sessionTimeoutMinutes": zod.number().int().min(updateSettingsResponseOneSessionTimeoutMinutesMin).optional(),
+  "otpExpirySeconds": zod.int().min(updateSettingsResponseOneOtpExpirySecondsMin).max(updateSettingsResponseOneOtpExpirySecondsMax).optional(),
+  "otpMaxAttempts": zod.int().min(1).max(updateSettingsResponseOneOtpMaxAttemptsMax).optional(),
+  "sessionTimeoutMinutes": zod.int().min(updateSettingsResponseOneSessionTimeoutMinutesMin).optional(),
   "notificationsEnabled": zod.boolean().optional(),
   "logoUrl": zod.string().optional(),
   "primaryColor": zod.string().optional(),
@@ -9874,7 +9921,7 @@ export const ListNotificationsResponse = zod.object({
   "appointmentId": zod.string().nullish(),
   "date": zod.string().nullish()
 })),
-  "unread": zod.number().int()
+  "unread": zod.int()
 })
 
 
@@ -9914,7 +9961,7 @@ export const GetCommunicationUsageResponse = zod.object({
   "completedAt": zod.number().nullable(),
   "queuedAt": zod.number().nullish(),
   "dueAt": zod.number().nullish(),
-  "httpStatus": zod.number().int().nullish(),
+  "httpStatus": zod.int().nullish(),
   "legacy": zod.boolean(),
   "recipient": zod.string().nullable(),
   "reason": zod.string().nullable()
@@ -9965,7 +10012,7 @@ export const GetCommunicationUsageDetailResponse = zod.object({
   "completedAt": zod.number().nullable(),
   "queuedAt": zod.number().nullish(),
   "dueAt": zod.number().nullish(),
-  "httpStatus": zod.number().int().nullish(),
+  "httpStatus": zod.int().nullish(),
   "legacy": zod.boolean(),
   "recipient": zod.string().nullable(),
   "reason": zod.string().nullable()
@@ -10018,22 +10065,22 @@ export const ListNotificationLogsResponse = zod.object({
   "subject": zod.string().nullish(),
   "message": zod.string().nullish(),
   "templateId": zod.string().nullish(),
-  "templateRevision": zod.number().int().nullish(),
+  "templateRevision": zod.int().nullish(),
   "templateScope": zod.string().nullish(),
   "dltTemplateId": zod.string().nullish(),
-  "createdAt": zod.number().int().nullable(),
-  "queuedAt": zod.number().int().nullish(),
-  "dueAt": zod.number().int().nullish(),
-  "dispatchAt": zod.number().int().nullish(),
-  "completedAt": zod.number().int().nullish(),
+  "createdAt": zod.int().nullable(),
+  "queuedAt": zod.int().nullish(),
+  "dueAt": zod.int().nullish(),
+  "dispatchAt": zod.int().nullish(),
+  "completedAt": zod.int().nullish(),
   "reason": zod.string().nullish(),
-  "httpStatus": zod.number().int().nullish(),
+  "httpStatus": zod.int().nullish(),
   "providerId": zod.string().nullish(),
   "legacy": zod.boolean(),
   "detailsUnavailable": zod.boolean().optional(),
   "timeline": zod.array(zod.object({
   "status": zod.string(),
-  "at": zod.number().int(),
+  "at": zod.int(),
   "reason": zod.string().nullish()
 }))
 })),
@@ -10066,22 +10113,22 @@ export const GetNotificationLogResponse = zod.object({
   "subject": zod.string().nullish(),
   "message": zod.string().nullish(),
   "templateId": zod.string().nullish(),
-  "templateRevision": zod.number().int().nullish(),
+  "templateRevision": zod.int().nullish(),
   "templateScope": zod.string().nullish(),
   "dltTemplateId": zod.string().nullish(),
-  "createdAt": zod.number().int().nullable(),
-  "queuedAt": zod.number().int().nullish(),
-  "dueAt": zod.number().int().nullish(),
-  "dispatchAt": zod.number().int().nullish(),
-  "completedAt": zod.number().int().nullish(),
+  "createdAt": zod.int().nullable(),
+  "queuedAt": zod.int().nullish(),
+  "dueAt": zod.int().nullish(),
+  "dispatchAt": zod.int().nullish(),
+  "completedAt": zod.int().nullish(),
   "reason": zod.string().nullish(),
-  "httpStatus": zod.number().int().nullish(),
+  "httpStatus": zod.int().nullish(),
   "providerId": zod.string().nullish(),
   "legacy": zod.boolean(),
   "detailsUnavailable": zod.boolean().optional(),
   "timeline": zod.array(zod.object({
   "status": zod.string(),
-  "at": zod.number().int(),
+  "at": zod.int(),
   "reason": zod.string().nullish()
 }))
 })
@@ -10109,7 +10156,7 @@ export const ListBookingMailOutcomesResponse = zod.object({
   "items": zod.array(zod.object({
   "reference": zod.string().nullable(),
   "status": zod.enum(['pending', 'sending', 'provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'configuration_failed', 'preparation_failed', 'disabled', 'obsolete', 'no_recipient', 'unknown']),
-  "createdAt": zod.number().int().nullable().describe('Recorded event time in milliseconds since epoch')
+  "createdAt": zod.int().nullable().describe('Recorded event time in milliseconds since epoch')
 })),
   "hasMore": zod.boolean()
 })
@@ -10127,7 +10174,7 @@ export const MarkNotificationsReadBody = zod.object({
 })
 
 export const MarkNotificationsReadResponse = zod.object({
-  "unread": zod.number().int()
+  "unread": zod.int()
 })
 
 
@@ -10170,7 +10217,7 @@ export const ListPatientDocumentsResponse = zod.object({
   "clinicName": zod.string().optional(),
   "name": zod.string(),
   "contentType": zod.string(),
-  "size": zod.number().int(),
+  "size": zod.int(),
   "createdAt": zod.coerce.date(),
   "uploadedByName": zod.string().optional()
 })),
@@ -10201,7 +10248,7 @@ export const UploadPatientDocumentResponse = zod.object({
   "clinicName": zod.string().optional(),
   "name": zod.string(),
   "contentType": zod.string(),
-  "size": zod.number().int(),
+  "size": zod.int(),
   "createdAt": zod.coerce.date(),
   "uploadedByName": zod.string().optional()
 })
@@ -10252,9 +10299,9 @@ export const ListPatientActivityResponse = zod.object({
   "date": zod.string(),
   "actorName": zod.string().nullish()
 })),
-  "total": zod.number().int(),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "total": zod.int(),
+  "page": zod.int(),
+  "pageSize": zod.int()
 })
 
 
@@ -10300,56 +10347,56 @@ export const GetReportAnalyticsResponse = zod.object({
   "timezone": zod.string(),
   "generatedAt": zod.coerce.date(),
   "summary": zod.object({
-  "appointments": zod.number().int(),
-  "completed": zod.number().int(),
-  "cancelled": zod.number().int(),
-  "noShow": zod.number().int(),
-  "uniquePatients": zod.number().int(),
-  "registrations": zod.number().int(),
-  "waiting": zod.number().int(),
-  "checkedIn": zod.number().int(),
+  "appointments": zod.int(),
+  "completed": zod.int(),
+  "cancelled": zod.int(),
+  "noShow": zod.int(),
+  "uniquePatients": zod.int(),
+  "registrations": zod.int(),
+  "waiting": zod.int(),
+  "checkedIn": zod.int(),
   "averageWaitMinutes": zod.number().nullable(),
   "averageConsultationMinutes": zod.number().nullable(),
   "consultationMinutes": zod.number().nullable(),
-  "timedConsultations": zod.number().int(),
-  "reschedules": zod.number().int(),
-  "rescheduledAppointments": zod.number().int(),
-  "activity": zod.number().int()
+  "timedConsultations": zod.int(),
+  "reschedules": zod.int(),
+  "rescheduledAppointments": zod.int(),
+  "activity": zod.int()
 }),
   "previous": zod.union([zod.object({
-  "appointments": zod.number().int(),
-  "completed": zod.number().int(),
-  "cancelled": zod.number().int(),
-  "noShow": zod.number().int(),
-  "uniquePatients": zod.number().int(),
-  "registrations": zod.number().int(),
-  "waiting": zod.number().int(),
-  "checkedIn": zod.number().int(),
+  "appointments": zod.int(),
+  "completed": zod.int(),
+  "cancelled": zod.int(),
+  "noShow": zod.int(),
+  "uniquePatients": zod.int(),
+  "registrations": zod.int(),
+  "waiting": zod.int(),
+  "checkedIn": zod.int(),
   "averageWaitMinutes": zod.number().nullable(),
   "averageConsultationMinutes": zod.number().nullable(),
   "consultationMinutes": zod.number().nullable(),
-  "timedConsultations": zod.number().int(),
-  "reschedules": zod.number().int(),
-  "rescheduledAppointments": zod.number().int(),
-  "activity": zod.number().int()
+  "timedConsultations": zod.int(),
+  "reschedules": zod.int(),
+  "rescheduledAppointments": zod.int(),
+  "activity": zod.int()
 }),zod.null()]),
   "previousFrom": zod.string(),
   "previousTo": zod.string(),
   "points": zod.array(zod.object({
   "date": zod.string(),
-  "appointments": zod.number().int(),
-  "completed": zod.number().int(),
-  "cancelled": zod.number().int(),
-  "noShow": zod.number().int(),
-  "waiting": zod.number().int()
+  "appointments": zod.int(),
+  "completed": zod.int(),
+  "cancelled": zod.int(),
+  "noShow": zod.int(),
+  "waiting": zod.int()
 })),
   "previousPoints": zod.array(zod.object({
   "date": zod.string(),
-  "appointments": zod.number().int(),
-  "completed": zod.number().int(),
-  "cancelled": zod.number().int(),
-  "noShow": zod.number().int(),
-  "waiting": zod.number().int()
+  "appointments": zod.int(),
+  "completed": zod.int(),
+  "cancelled": zod.int(),
+  "noShow": zod.int(),
+  "waiting": zod.int()
 })),
   "rows": zod.array(zod.object({
   "id": zod.string(),
@@ -10362,26 +10409,26 @@ export const GetReportAnalyticsResponse = zod.object({
   "family": zod.string(),
   "status": zod.enum(['available', 'noData']),
   "metrics": zod.object({
-  "appointments": zod.number().int(),
-  "completed": zod.number().int(),
-  "cancelled": zod.number().int(),
-  "noShow": zod.number().int(),
-  "uniquePatients": zod.number().int(),
-  "registrations": zod.number().int(),
-  "waiting": zod.number().int(),
-  "checkedIn": zod.number().int(),
+  "appointments": zod.int(),
+  "completed": zod.int(),
+  "cancelled": zod.int(),
+  "noShow": zod.int(),
+  "uniquePatients": zod.int(),
+  "registrations": zod.int(),
+  "waiting": zod.int(),
+  "checkedIn": zod.int(),
   "averageWaitMinutes": zod.number().nullable(),
   "averageConsultationMinutes": zod.number().nullable(),
   "consultationMinutes": zod.number().nullable(),
-  "timedConsultations": zod.number().int(),
-  "reschedules": zod.number().int(),
-  "rescheduledAppointments": zod.number().int(),
-  "activity": zod.number().int()
+  "timedConsultations": zod.int(),
+  "reschedules": zod.int(),
+  "rescheduledAppointments": zod.int(),
+  "activity": zod.int()
 })
 })),
-  "total": zod.number().int(),
-  "page": zod.number().int(),
-  "pageSize": zod.number().int(),
+  "total": zod.int(),
+  "page": zod.int(),
+  "pageSize": zod.int(),
   "notes": zod.array(zod.string())
 })
 
@@ -10399,11 +10446,11 @@ export const GetReportTrendsResponse = zod.object({
   "to": zod.string(),
   "points": zod.array(zod.object({
   "date": zod.string(),
-  "appointments": zod.number().int(),
-  "completed": zod.number().int(),
-  "cancelled": zod.number().int(),
-  "noShow": zod.number().int(),
-  "waiting": zod.number().int()
+  "appointments": zod.int(),
+  "completed": zod.int(),
+  "cancelled": zod.int(),
+  "noShow": zod.int(),
+  "waiting": zod.int()
 }))
 })
 
@@ -10431,7 +10478,7 @@ export const SearchRecordsResponse = zod.object({
   "reference": zod.string(),
   "patientName": zod.string(),
   "doctorName": zod.string(),
-  "tokenNumber": zod.number().int(),
+  "tokenNumber": zod.int(),
   "token": zod.string().optional(),
   "date": zod.string(),
   "status": zod.string(),

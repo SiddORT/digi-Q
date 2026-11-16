@@ -100,12 +100,12 @@ systemUsersRouter.post("/management/system-users/:id/permanent-removal", async (
 });
 systemUsersRouter.get("/management/staff-removals/:operationId", async (req, res) => {
   await context(req); res.setHeader("Cache-Control", "no-store");
-  res.json(await getDeletionReceipt(db, body(z.string().uuid(), req.params.operationId)));
+  res.json(await getDeletionReceipt(db, body(z.guid(), req.params.operationId)));
 });
 systemUsersRouter.post("/management/staff-removals/:operationId/retry-cleanup", async (req, res) => {
   await context(req); res.setHeader("Cache-Control", "no-store");
   body(z.object({}).strict(), req.body ?? {});
-  res.json(await retryStaffFileCleanup(body(z.string().uuid(), req.params.operationId)));
+  res.json(await retryStaffFileCleanup(body(z.guid(), req.params.operationId)));
 });
 systemUsersRouter.post("/management/system-users/:id/handoff-impact", async (req, res) => {
   const ctx = await context(req), input = body(handoffInput, req.body);

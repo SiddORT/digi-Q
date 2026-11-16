@@ -56,6 +56,7 @@ export interface GuestRequestInput {
   doctorId: string;
   /** @pattern ^\d{4}-\d{2}-\d{2}$ */
   date: string;
+  /** @pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ */
   requestId: string;
   /** @pattern ^[a-f0-9]{64}$ */
   receiptSecret: string;

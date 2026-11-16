@@ -24,11 +24,13 @@
 export interface PatientActivityItem {
   id: string;
   appointmentId: string;
+  /** @nullable */
   fromStatus?: string | null;
   toStatus: string;
   occurredAt: Date;
   reference: string;
   doctorName: string;
   date: string;
+  /** @nullable */
   actorName?: string | null;
 }

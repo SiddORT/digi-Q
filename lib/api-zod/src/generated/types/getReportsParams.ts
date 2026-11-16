@@ -33,30 +33,26 @@ import type { StartTimeParameter } from './startTimeParameter';
 import type { ToParameter } from './toParameter';
 
 export type GetReportsParams = {
-/**
- * Trimmed report search text
- * @maxLength 200
- */
-search?: string;
-/**
- * Outcomes orders by cancelled then no-show then residual Other counts. Other equals visits minus completed minus cancelled minus no-show. Group key ascending breaks ties.
- */
-sort?: GetReportsSort;
-sessionId?: SessionIdParameter;
-startTime?: StartTimeParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
-from?: FromParameter;
-to?: ToParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-doctorId?: DoctorIdParameter;
-groupBy?: GetReportsGroupBy;
+  /**
+   * Trimmed report search text
+   * @maxLength 200
+   */
+  search?: string;
+  /** Outcomes orders by cancelled then no-show then residual Other counts. Other equals visits minus completed minus cancelled minus no-show. Group key ascending breaks ties. */
+  sort?: GetReportsSort;
+  sessionId?: SessionIdParameter;
+  startTime?: StartTimeParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
+  from?: FromParameter;
+  to?: ToParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  doctorId?: DoctorIdParameter;
+  groupBy?: GetReportsGroupBy;
 };

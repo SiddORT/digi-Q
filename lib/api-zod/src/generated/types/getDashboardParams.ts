@@ -26,8 +26,8 @@ import type { DateParameter } from './dateParameter';
 import type { DoctorIdParameter } from './doctorIdParameter';
 
 export type GetDashboardParams = {
-date?: DateParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-doctorId?: DoctorIdParameter;
+  date?: DateParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  doctorId?: DoctorIdParameter;
 };

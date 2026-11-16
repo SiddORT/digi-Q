@@ -505,8 +505,12 @@ export interface HistoryReviewRecord {
   event: string;
   envelopeCount: number;
   status: HistoryReviewRecordStatus;
+  /** @nullable */
   unresolvedReason: string | null;
-  /** Unix time in milliseconds */
+  /**
+     * Unix time in milliseconds
+     * @nullable
+     */
   reviewedAt: number | null;
 }
 
@@ -516,6 +520,7 @@ export interface HistoryReviewCursorInput {
 
 export interface HistoryReviewPage {
   items: HistoryReviewRecord[];
+  /** @nullable */
   nextCursor: string | null;
   scannedCount: number;
 }
@@ -556,6 +561,7 @@ export interface HistoryEvidenceReview {
   envelopeCount: number;
   sourceCount: number;
   subjectCount: number;
+  /** @nullable */
   reviewToken: string | null;
 }
 
@@ -709,7 +715,9 @@ export interface WorkspaceNotification {
   body?: string;
   createdAt: string;
   read: boolean;
+  /** @nullable */
   appointmentId?: string | null;
+  /** @nullable */
   date?: string | null;
 }
 
@@ -737,9 +745,13 @@ export const BookingMailOutcomeStatus = {
 } as const;
 
 export interface BookingMailOutcome {
+  /** @nullable */
   reference: string | null;
   status: BookingMailOutcomeStatus;
-  /** Recorded event time in milliseconds since epoch */
+  /**
+     * Recorded event time in milliseconds since epoch
+     * @nullable
+     */
   createdAt: number | null;
 }
 
@@ -767,12 +779,14 @@ export interface WorkspaceOption {
 }
 
 export interface WorkspaceList {
+  /** @nullable */
   activeClinicId?: string | null;
   switchable: boolean;
   workspaces: WorkspaceOption[];
 }
 
 export interface WorkspaceSelect {
+  /** @nullable */
   clinicId: string | null;
 }
 
@@ -796,12 +810,14 @@ export interface PatientDocumentList {
 export interface PatientActivityItem {
   id: string;
   appointmentId: string;
+  /** @nullable */
   fromStatus?: string | null;
   toStatus: string;
   occurredAt: string;
   reference: string;
   doctorName: string;
   date: string;
+  /** @nullable */
   actorName?: string | null;
 }
 
@@ -833,8 +849,12 @@ export interface RecordSearchItem {
   clinicId: string;
   branchId: string;
   doctorId: string;
-  /** Session start time when the visit belongs to a timed session. */
+  /**
+     * Session start time when the visit belongs to a timed session.
+     * @nullable
+     */
   startTime?: string | null;
+  /** @nullable */
   sessionId?: string | null;
   reference: string;
   patientName: string;
@@ -861,7 +881,10 @@ export interface SavedViewColumns {
      * @items.maxLength 60
      */
   hidden: string[];
-  /** @maxLength 60 */
+  /**
+     * @maxLength 60
+     * @nullable
+     */
   pinned?: string | null;
 }
 
@@ -4073,30 +4096,28 @@ export type GetPublicWebsiteConfig200 = {
 };
 
 export type GetManagedNotificationSettingsParams = {
-clinicId?: string;
+  clinicId?: string;
 };
 
 export type SearchGeographyParams = {
-kind: SearchGeographyKind;
-/**
- * @maxLength 100
- */
-search?: string;
-/**
- * ISO-2 code or English country name scoping states and cities
- * @maxLength 100
- */
-country?: string;
-/**
- * State/UT name scoping cities
- * @maxLength 100
- */
-state?: string;
-/**
- * When given with kind=city, the response includes a compatible flag
- * @maxLength 100
- */
-city?: string;
+  kind: SearchGeographyKind;
+  /** @maxLength 100 */
+  search?: string;
+  /**
+   * ISO-2 code or English country name scoping states and cities
+   * @maxLength 100
+   */
+  country?: string;
+  /**
+   * State/UT name scoping cities
+   * @maxLength 100
+   */
+  state?: string;
+  /**
+   * When given with kind=city, the response includes a compatible flag
+   * @maxLength 100
+   */
+  city?: string;
 };
 
 export type SearchGeographyKind = typeof SearchGeographyKind[keyof typeof SearchGeographyKind];
@@ -4109,23 +4130,15 @@ export const SearchGeographyKind = {
 } as const;
 
 export type SearchPublicGeographyParams = {
-kind: SearchPublicGeographyKind;
-/**
- * @maxLength 100
- */
-search?: string;
-/**
- * @maxLength 100
- */
-country?: string;
-/**
- * @maxLength 100
- */
-state?: string;
-/**
- * @maxLength 100
- */
-city?: string;
+  kind: SearchPublicGeographyKind;
+  /** @maxLength 100 */
+  search?: string;
+  /** @maxLength 100 */
+  country?: string;
+  /** @maxLength 100 */
+  state?: string;
+  /** @maxLength 100 */
+  city?: string;
 };
 
 export type SearchPublicGeographyKind = typeof SearchPublicGeographyKind[keyof typeof SearchPublicGeographyKind];
@@ -4138,11 +4151,11 @@ export const SearchPublicGeographyKind = {
 } as const;
 
 export type GetSystemUsersParams = {
-page?: number;
-search?: string;
-role?: string;
-status?: string;
-clinicId?: string;
+  page?: number;
+  search?: string;
+  role?: string;
+  status?: string;
+  clinicId?: string;
 };
 
 export type RequestLogoUpload200 = {
@@ -4155,9 +4168,9 @@ export type CompleteLogoUpload200 = {
 };
 
 export type GetNotificationTemplatesParams = {
-clinicId?: string;
-recipient?: GetNotificationTemplatesRecipient;
-channel?: GetNotificationTemplatesChannel;
+  clinicId?: string;
+  recipient?: GetNotificationTemplatesRecipient;
+  channel?: GetNotificationTemplatesChannel;
 };
 
 export type GetNotificationTemplatesRecipient = typeof GetNotificationTemplatesRecipient[keyof typeof GetNotificationTemplatesRecipient];
@@ -4180,143 +4193,131 @@ export const GetNotificationTemplatesChannel = {
 } as const;
 
 export type GetEventControlsParams = {
-clinicId?: string;
+  clinicId?: string;
 };
 
 export type ListQueueSessionsParams = {
-date: string;
-clinicId?: string;
-branchId?: string;
-doctorId?: string;
-/**
- * @maxLength 200
- */
-search?: string;
-/**
- * @minimum 1
- * @maximum 100000
- */
-page?: number;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
+  date: string;
+  clinicId?: string;
+  branchId?: string;
+  doctorId?: string;
+  /** @maxLength 200 */
+  search?: string;
+  /**
+   * @minimum 1
+   * @maximum 100000
+   */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
 };
 
 export type GetSessionContextsParams = {
-doctorId: string;
-branchId: string;
-date: string;
+  doctorId: string;
+  branchId: string;
+  date: string;
 };
 
 export type GetClinicRegistrationCompletionParams = {
-requestId: string;
+  requestId: string;
 };
 
 export type GetClinicAdminSetupCompletionParams = {
-requestId: string;
+  requestId: string;
 };
 
 export type CheckSlugAvailabilityParams = {
-/**
- * @minLength 3
- * @maxLength 63
- */
-slug: string;
-clinicId?: string;
+  /**
+   * @minLength 3
+   * @maxLength 63
+   */
+  slug: string;
+  clinicId?: string;
 };
 
 export type ResolveClinicSlugParams = {
-/**
- * Opt in to scoped server pagination; omitted preserves the legacy context arrays.
- */
-directory?: PublicDirectoryParameter;
-/**
- * @minimum 1
- * @maximum 1000000
- */
-page?: PublicDirectoryPageParameter;
-pageSize?: PublicDirectoryPageSizeParameter;
-/**
- * Matches public clinic name/address/city or doctor name/specialization only.
- * @maxLength 200
- */
-search?: PublicDirectorySearchParameter;
-/**
- * Public name with optional minus prefix; sorting never uses private fields.
- */
-sort?: PublicDirectorySortParameter;
+  /** Opt in to scoped server pagination; omitted preserves the legacy context arrays. */
+  directory?: PublicDirectoryParameter;
+  /**
+   * @minimum 1
+   * @maximum 1000000
+   */
+  page?: PublicDirectoryPageParameter;
+  pageSize?: PublicDirectoryPageSizeParameter;
+  /**
+   * Matches public clinic name/address/city or doctor name/specialization only.
+   * @maxLength 200
+   */
+  search?: PublicDirectorySearchParameter;
+  /** Public name with optional minus prefix; sorting never uses private fields. */
+  sort?: PublicDirectorySortParameter;
 };
 
 export type ResolveBranchSlugParams = {
-/**
- * Opt in to scoped server pagination; omitted preserves the legacy context arrays.
- */
-directory?: PublicDirectoryParameter;
-/**
- * @minimum 1
- * @maximum 1000000
- */
-page?: PublicDirectoryPageParameter;
-pageSize?: PublicDirectoryPageSizeParameter;
-/**
- * Matches public clinic name/address/city or doctor name/specialization only.
- * @maxLength 200
- */
-search?: PublicDirectorySearchParameter;
-/**
- * Public name with optional minus prefix; sorting never uses private fields.
- */
-sort?: PublicDirectorySortParameter;
+  /** Opt in to scoped server pagination; omitted preserves the legacy context arrays. */
+  directory?: PublicDirectoryParameter;
+  /**
+   * @minimum 1
+   * @maximum 1000000
+   */
+  page?: PublicDirectoryPageParameter;
+  pageSize?: PublicDirectoryPageSizeParameter;
+  /**
+   * Matches public clinic name/address/city or doctor name/specialization only.
+   * @maxLength 200
+   */
+  search?: PublicDirectorySearchParameter;
+  /** Public name with optional minus prefix; sorting never uses private fields. */
+  sort?: PublicDirectorySortParameter;
 };
 
 export type GetDoctorPresenceParams = {
-branchId: string;
-date: string;
-sessionId?: string;
-startTime?: string;
+  branchId: string;
+  date: string;
+  sessionId?: string;
+  startTime?: string;
 };
 
 export type GetBookingScheduleAccessParams = {
-doctorId: string;
-branchId: string;
+  doctorId: string;
+  branchId: string;
 };
 
 export type GetPublicBookingContextParams = {
-doctorId: string;
-branchId: string;
+  doctorId: string;
+  branchId: string;
 };
 
 export type GetPublicAvailabilitySessionsParams = {
-doctorId: string;
-branchId: string;
-date: string;
+  doctorId: string;
+  branchId: string;
+  date: string;
 };
 
 export type ListGuestRequestsParams = {
-/**
- * @maxLength 200
- */
-search?: string;
-sort?: ListGuestRequestsSort;
-sessionId?: SessionIdParameter;
-startTime?: StartTimeParameter;
-clinicId?: string;
-branchId?: string;
-doctorId?: string;
-date?: string;
-status?: ListGuestRequestsStatus;
-/**
- * @minimum 1
- * @maximum 100000
- */
-page?: number;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
+  /** @maxLength 200 */
+  search?: string;
+  sort?: ListGuestRequestsSort;
+  sessionId?: SessionIdParameter;
+  startTime?: StartTimeParameter;
+  clinicId?: string;
+  branchId?: string;
+  doctorId?: string;
+  date?: string;
+  status?: ListGuestRequestsStatus;
+  /**
+   * @minimum 1
+   * @maximum 100000
+   */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
 };
 
 export type ListGuestRequestsSort = typeof ListGuestRequestsSort[keyof typeof ListGuestRequestsSort];
@@ -4361,208 +4362,176 @@ export type LogoutNativeSession200 = {
 };
 
 export type ListPublicClinicsParams = {
-/**
- * Comma-separated exact IDs within existing scope (maximum 100).
- * @maxLength 10000
- */
-selectedIds?: SelectedIdsParameter;
-search?: SearchParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
+  /**
+   * Comma-separated exact IDs within existing scope (maximum 100).
+   * @maxLength 10000
+   */
+  selectedIds?: SelectedIdsParameter;
+  search?: SearchParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
 };
 
 export type ListPublicBranchesParams = {
-/**
- * Comma-separated exact IDs within existing scope (maximum 100).
- * @maxLength 10000
- */
-selectedIds?: SelectedIdsParameter;
-search?: SearchParameter;
-doctorId?: DoctorIdParameter;
-clinicId?: ClinicIdParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
+  /**
+   * Comma-separated exact IDs within existing scope (maximum 100).
+   * @maxLength 10000
+   */
+  selectedIds?: SelectedIdsParameter;
+  search?: SearchParameter;
+  doctorId?: DoctorIdParameter;
+  clinicId?: ClinicIdParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
 };
 
 export type ListPublicDoctorsParams = {
-/**
- * Comma-separated exact IDs within existing scope (maximum 100).
- * @maxLength 10000
- */
-selectedIds?: SelectedIdsParameter;
-search?: SearchParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-specializationId?: string;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
+  /**
+   * Comma-separated exact IDs within existing scope (maximum 100).
+   * @maxLength 10000
+   */
+  selectedIds?: SelectedIdsParameter;
+  search?: SearchParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  specializationId?: string;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
 };
 
 export type GetPublicAvailabilityParams = {
-sessionId?: string;
-startTime?: string;
-doctorId: string;
-branchId: string;
-date: string;
+  sessionId?: string;
+  startTime?: string;
+  doctorId: string;
+  branchId: string;
+  date: string;
 };
 
 export type ListClinicsParams = {
-/**
- * Comma-separated exact IDs within existing scope (maximum 100).
- * @maxLength 10000
- */
-selectedIds?: SelectedIdsParameter;
-doctorId?: DoctorIdParameter;
-search?: SearchParameter;
-status?: StatusParameter;
-adminId?: string;
-city?: string;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
-/**
- * Allowlisted field with optional minus prefix for descending order
- */
-sort?: SortParameter;
+  /**
+   * Comma-separated exact IDs within existing scope (maximum 100).
+   * @maxLength 10000
+   */
+  selectedIds?: SelectedIdsParameter;
+  doctorId?: DoctorIdParameter;
+  search?: SearchParameter;
+  status?: StatusParameter;
+  adminId?: string;
+  city?: string;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
+  /** Allowlisted field with optional minus prefix for descending order */
+  sort?: SortParameter;
 };
 
 export type ListBranchesParams = {
-/**
- * Comma-separated exact IDs within existing scope (maximum 100).
- * @maxLength 10000
- */
-selectedIds?: SelectedIdsParameter;
-doctorId?: DoctorIdParameter;
-clinicId?: ClinicIdParameter;
-search?: SearchParameter;
-status?: StatusParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
-/**
- * Allowlisted field with optional minus prefix for descending order
- */
-sort?: SortParameter;
+  /**
+   * Comma-separated exact IDs within existing scope (maximum 100).
+   * @maxLength 10000
+   */
+  selectedIds?: SelectedIdsParameter;
+  doctorId?: DoctorIdParameter;
+  clinicId?: ClinicIdParameter;
+  search?: SearchParameter;
+  status?: StatusParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
+  /** Allowlisted field with optional minus prefix for descending order */
+  sort?: SortParameter;
 };
 
 export type ListDoctorsParams = {
-/**
- * Comma-separated exact IDs within existing scope (maximum 100).
- * @maxLength 10000
- */
-selectedIds?: SelectedIdsParameter;
-search?: SearchParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-managingAdminId?: string;
-status?: StatusParameter;
-specializationId?: string;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
-/**
- * Allowlisted field with optional minus prefix for descending order
- */
-sort?: SortParameter;
+  /**
+   * Comma-separated exact IDs within existing scope (maximum 100).
+   * @maxLength 10000
+   */
+  selectedIds?: SelectedIdsParameter;
+  search?: SearchParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  managingAdminId?: string;
+  status?: StatusParameter;
+  specializationId?: string;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
+  /** Allowlisted field with optional minus prefix for descending order */
+  sort?: SortParameter;
 };
 
 export type ListUsersParams = {
-linkedOnly?: boolean;
-search?: SearchParameter;
-role?: Role;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-managingAdminId?: string;
-status?: StatusParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
-/**
- * Allowlisted field with optional minus prefix for descending order
- */
-sort?: SortParameter;
+  linkedOnly?: boolean;
+  search?: SearchParameter;
+  role?: Role;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  managingAdminId?: string;
+  status?: StatusParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
+  /** Allowlisted field with optional minus prefix for descending order */
+  sort?: SortParameter;
 };
 
 export type GetStaffAssignmentOptionsParams = {
-targetRole: GetStaffAssignmentOptionsTargetRole;
-/**
- * Server ordering within each authorized clinic and branch catalog. ID in the selected direction breaks ties.
- */
-sort?: GetStaffAssignmentOptionsSort;
-/**
- * Existing doctor being edited.
- */
-doctorId?: string;
-/**
- * Existing receptionist being edited.
- */
-userId?: string;
-/**
- * Narrows the catalog owner; cannot override an actor or edited staff owner.
- */
-managingAdminId?: string;
-search?: SearchParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-/**
- * Comma-separated IDs to resolve within the authorized catalog (maximum 100).
- * @maxLength 10000
- */
-selectedIds?: string;
+  targetRole: GetStaffAssignmentOptionsTargetRole;
+  /** Server ordering within each authorized clinic and branch catalog. ID in the selected direction breaks ties. */
+  sort?: GetStaffAssignmentOptionsSort;
+  /** Existing doctor being edited. */
+  doctorId?: string;
+  /** Existing receptionist being edited. */
+  userId?: string;
+  /** Narrows the catalog owner; cannot override an actor or edited staff owner. */
+  managingAdminId?: string;
+  search?: SearchParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  /**
+   * Comma-separated IDs to resolve within the authorized catalog (maximum 100).
+   * @maxLength 10000
+   */
+  selectedIds?: string;
 };
 
 export type GetStaffAssignmentOptionsTargetRole = typeof GetStaffAssignmentOptionsTargetRole[keyof typeof GetStaffAssignmentOptionsTargetRole];
@@ -4584,249 +4553,215 @@ export const GetStaffAssignmentOptionsSort = {
 } as const;
 
 export type ListPatientsParams = {
-search?: SearchParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-status?: StatusParameter;
-from?: FromParameter;
-to?: ToParameter;
-gender?: string;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
-/**
- * Allowlisted field with optional minus prefix for descending order
- */
-sort?: SortParameter;
+  search?: SearchParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  status?: StatusParameter;
+  from?: FromParameter;
+  to?: ToParameter;
+  gender?: string;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
+  /** Allowlisted field with optional minus prefix for descending order */
+  sort?: SortParameter;
 };
 
 export type ListMastersParams = {
-category?: string;
-parentId?: string;
-search?: SearchParameter;
-status?: StatusParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
-/**
- * Allowlisted field with optional minus prefix for descending order
- */
-sort?: SortParameter;
+  category?: string;
+  parentId?: string;
+  search?: SearchParameter;
+  status?: StatusParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
+  /** Allowlisted field with optional minus prefix for descending order */
+  sort?: SortParameter;
 };
 
 export type GetScheduleDayContextParams = {
-doctorId: string;
-branchId: string;
+  doctorId: string;
+  branchId: string;
 };
 
 export type ListSchedulesParams = {
-search?: SearchParameter;
-/**
- * Allowlisted field with optional minus prefix for descending order
- */
-sort?: SortParameter;
-/**
- * @minimum 0
- * @maximum 6
- */
-dayOfWeek?: number;
-/**
- * Alias for dayOfWeek
- * @minimum 0
- * @maximum 6
- */
-weekday?: number;
-doctorId?: DoctorIdParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
+  search?: SearchParameter;
+  /** Allowlisted field with optional minus prefix for descending order */
+  sort?: SortParameter;
+  /**
+   * @minimum 0
+   * @maximum 6
+   */
+  dayOfWeek?: number;
+  /**
+   * Alias for dayOfWeek
+   * @minimum 0
+   * @maximum 6
+   */
+  weekday?: number;
+  doctorId?: DoctorIdParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
 };
 
 export type DeleteScheduleParams = {
-/**
- * Optional loaded schedule authoring snapshot. Compared after acquiring doctor locks; stale changes return 409. Deactivation retains history.
- * @maxLength 20000
- */
-expectedSnapshot?: string;
+  /**
+   * Optional loaded schedule authoring snapshot. Compared after acquiring doctor locks; stale changes return 409. Deactivation retains history.
+   * @maxLength 20000
+   */
+  expectedSnapshot?: string;
 };
 
 export type ListAvailabilityExceptionsParams = {
-search?: SearchParameter;
-/**
- * Allowlisted field with optional minus prefix for descending order
- */
-sort?: SortParameter;
-date?: DateParameter;
-doctorId?: DoctorIdParameter;
-branchId?: BranchIdParameter;
-from?: FromParameter;
-to?: ToParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
+  search?: SearchParameter;
+  /** Allowlisted field with optional minus prefix for descending order */
+  sort?: SortParameter;
+  date?: DateParameter;
+  doctorId?: DoctorIdParameter;
+  branchId?: BranchIdParameter;
+  from?: FromParameter;
+  to?: ToParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
 };
 
 export type ListAppointmentsParams = {
-sessionId?: SessionIdParameter;
-startTime?: StartTimeParameter;
-/**
- * Server-side group filter applied before pagination; intersects with status when both supplied
- */
-statusGroup?: StatusGroupParameter;
-search?: SearchParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-doctorId?: DoctorIdParameter;
-patientId?: string;
-date?: DateParameter;
-from?: FromParameter;
-to?: ToParameter;
-status?: AppointmentStatus;
-source?: BookingSource;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
-/**
- * Allowlisted field with optional minus prefix for descending order
- */
-sort?: SortParameter;
+  sessionId?: SessionIdParameter;
+  startTime?: StartTimeParameter;
+  /** Server-side group filter applied before pagination; intersects with status when both supplied */
+  statusGroup?: StatusGroupParameter;
+  search?: SearchParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  doctorId?: DoctorIdParameter;
+  patientId?: string;
+  date?: DateParameter;
+  from?: FromParameter;
+  to?: ToParameter;
+  status?: AppointmentStatus;
+  source?: BookingSource;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
+  /** Allowlisted field with optional minus prefix for descending order */
+  sort?: SortParameter;
 };
 
 export type GetAppointmentCalendarParams = {
-from: string;
-to: string;
-clinicId?: string;
-branchId?: string;
-doctorId?: string;
-status?: string;
-search?: string;
+  from: string;
+  to: string;
+  clinicId?: string;
+  branchId?: string;
+  doctorId?: string;
+  status?: string;
+  search?: string;
 };
 
 export type GetAppointmentHistoryParams = {
-cursor?: string;
+  cursor?: string;
 };
 
 export type GetQueueParams = {
-sessionId?: string;
-startTime?: string;
-doctorId: string;
-branchId: string;
-date: string;
-appointmentId?: string;
-/**
- * Explicit staff listing page; omit both pagination parameters for legacy full-list compatibility
- * @minimum 1
- */
-page?: number;
-/**
- * Explicit staff listing page size; omitted pagination parameters must not be default-injected by clients
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
-/**
- * Staff-only listing search applied before pagination
- * @maxLength 200
- */
-search?: string;
-/**
- * Staff-only allowlisted listing sort with optional minus prefix
- */
-sort?: string;
-status?: AppointmentStatus;
-/**
- * Server-side group filter applied before pagination; intersects with status when both supplied
- */
-statusGroup?: StatusGroupParameter;
+  sessionId?: string;
+  startTime?: string;
+  doctorId: string;
+  branchId: string;
+  date: string;
+  appointmentId?: string;
+  /**
+   * Explicit staff listing page; omit both pagination parameters for legacy full-list compatibility
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Explicit staff listing page size; omitted pagination parameters must not be default-injected by clients
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
+  /**
+   * Staff-only listing search applied before pagination
+   * @maxLength 200
+   */
+  search?: string;
+  /** Staff-only allowlisted listing sort with optional minus prefix */
+  sort?: string;
+  status?: AppointmentStatus;
+  /** Server-side group filter applied before pagination; intersects with status when both supplied */
+  statusGroup?: StatusGroupParameter;
 };
 
 export type ListQrsParams = {
-search?: SearchParameter;
-/**
- * Allowlisted field with optional minus prefix for descending order
- */
-sort?: SortParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-doctorId?: DoctorIdParameter;
-status?: StatusParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
+  search?: SearchParameter;
+  /** Allowlisted field with optional minus prefix for descending order */
+  sort?: SortParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  doctorId?: DoctorIdParameter;
+  status?: StatusParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
 };
 
 export type GetDashboardParams = {
-date?: DateParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-doctorId?: DoctorIdParameter;
+  date?: DateParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  doctorId?: DoctorIdParameter;
 };
 
 export type GetReportsParams = {
-/**
- * Trimmed report search text
- * @maxLength 200
- */
-search?: string;
-/**
- * Outcomes orders by cancelled then no-show then residual Other counts. Other equals visits minus completed minus cancelled minus no-show. Group key ascending breaks ties.
- */
-sort?: GetReportsSort;
-sessionId?: SessionIdParameter;
-startTime?: StartTimeParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
-from?: FromParameter;
-to?: ToParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-doctorId?: DoctorIdParameter;
-groupBy?: GetReportsGroupBy;
+  /**
+   * Trimmed report search text
+   * @maxLength 200
+   */
+  search?: string;
+  /** Outcomes orders by cancelled then no-show then residual Other counts. Other equals visits minus completed minus cancelled minus no-show. Group key ascending breaks ties. */
+  sort?: GetReportsSort;
+  sessionId?: SessionIdParameter;
+  startTime?: StartTimeParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
+  from?: FromParameter;
+  to?: ToParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  doctorId?: DoctorIdParameter;
+  groupBy?: GetReportsGroupBy;
 };
 
 export type GetReportsSort = typeof GetReportsSort[keyof typeof GetReportsSort];
@@ -4871,26 +4806,22 @@ export const GetReportsGroupBy = {
 } as const;
 
 export type ListAuditLogsParams = {
-search?: SearchParameter;
-/**
- * Allowlisted field with optional minus prefix for descending order
- */
-sort?: SortParameter;
-activityType?: ListAuditLogsActivityType;
-entityType?: string;
-actorId?: string;
-clinicId?: ClinicIdParameter;
-from?: FromParameter;
-to?: ToParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
+  search?: SearchParameter;
+  /** Allowlisted field with optional minus prefix for descending order */
+  sort?: SortParameter;
+  activityType?: ListAuditLogsActivityType;
+  entityType?: string;
+  actorId?: string;
+  clinicId?: ClinicIdParameter;
+  from?: FromParameter;
+  to?: ToParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
 };
 
 export type ListAuditLogsActivityType = typeof ListAuditLogsActivityType[keyof typeof ListAuditLogsActivityType];
@@ -4903,7 +4834,7 @@ export const ListAuditLogsActivityType = {
 } as const;
 
 export type ListNotificationsParams = {
-kind?: ListNotificationsKind;
+  kind?: ListNotificationsKind;
 };
 
 export type ListNotificationsKind = typeof ListNotificationsKind[keyof typeof ListNotificationsKind];
@@ -4917,23 +4848,23 @@ export const ListNotificationsKind = {
 } as const;
 
 export type GetCommunicationUsageParams = {
-from?: string;
-to?: string;
-channel?: GetCommunicationUsageChannel;
-event?: string;
-status?: GetCommunicationUsageStatus;
-clinicId?: string;
-source?: GetCommunicationUsageSource;
-groupBy?: GetCommunicationUsageGroupBy;
-attribution?: GetCommunicationUsageAttribution;
-userId?: string;
-branchId?: string;
-cursor?: string;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
+  from?: string;
+  to?: string;
+  channel?: GetCommunicationUsageChannel;
+  event?: string;
+  status?: GetCommunicationUsageStatus;
+  clinicId?: string;
+  source?: GetCommunicationUsageSource;
+  groupBy?: GetCommunicationUsageGroupBy;
+  attribution?: GetCommunicationUsageAttribution;
+  userId?: string;
+  branchId?: string;
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
 };
 
 export type GetCommunicationUsageChannel = typeof GetCommunicationUsageChannel[keyof typeof GetCommunicationUsageChannel];
@@ -4983,35 +4914,27 @@ export const GetCommunicationUsageAttribution = {
 } as const;
 
 export type ListNotificationLogsParams = {
-from?: string;
-to?: string;
-channel?: ListNotificationLogsChannel;
-event?: string;
-status?: string;
-clinicId?: string;
-recipientGroup?: string;
-source?: ListNotificationLogsSource;
-/**
- * @maxLength 254
- */
-sender?: string;
-/**
- * @maxLength 254
- */
-recipient?: string;
-/**
- * @maxLength 100
- */
-reference?: string;
-/**
- * @maxLength 1000
- */
-cursor?: string;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
+  from?: string;
+  to?: string;
+  channel?: ListNotificationLogsChannel;
+  event?: string;
+  status?: string;
+  clinicId?: string;
+  recipientGroup?: string;
+  source?: ListNotificationLogsSource;
+  /** @maxLength 254 */
+  sender?: string;
+  /** @maxLength 254 */
+  recipient?: string;
+  /** @maxLength 100 */
+  reference?: string;
+  /** @maxLength 1000 */
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
 };
 
 export type ListNotificationLogsChannel = typeof ListNotificationLogsChannel[keyof typeof ListNotificationLogsChannel];
@@ -5031,70 +4954,62 @@ export const ListNotificationLogsSource = {
 } as const;
 
 export type ListBookingMailOutcomesParams = {
-/**
- * @minLength 1
- */
-clinicId: string;
-/**
- * @minimum 1
- * @maximum 10000
- */
-page?: number;
-/**
- * @minimum 1
- * @maximum 50
- */
-pageSize?: number;
+  /** @minLength 1 */
+  clinicId: string;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 50
+   */
+  pageSize?: number;
 };
 
 export type UploadPatientDocumentParams = {
-/**
- * @minLength 1
- * @maxLength 160
- */
-name: string;
-clinicId?: string;
+  /**
+   * @minLength 1
+   * @maxLength 160
+   */
+  name: string;
+  clinicId?: string;
 };
 
 export type ListPatientActivityParams = {
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
 };
 
 export type GetReportAnalyticsParams = {
-from?: FromParameter;
-to?: ToParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-doctorId?: DoctorIdParameter;
-sessionId?: SessionIdParameter;
-startTime?: StartTimeParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
-/**
- * @maxLength 200
- */
-search?: string;
-groupBy?: GetReportAnalyticsGroupBy;
-reportType?: GetReportAnalyticsReportType;
-status?: GetReportAnalyticsStatus;
-compare?: boolean;
-exportAll?: boolean;
-sort?: GetReportAnalyticsSort;
+  from?: FromParameter;
+  to?: ToParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  doctorId?: DoctorIdParameter;
+  sessionId?: SessionIdParameter;
+  startTime?: StartTimeParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
+  /** @maxLength 200 */
+  search?: string;
+  groupBy?: GetReportAnalyticsGroupBy;
+  reportType?: GetReportAnalyticsReportType;
+  status?: GetReportAnalyticsStatus;
+  compare?: boolean;
+  exportAll?: boolean;
+  sort?: GetReportAnalyticsSort;
 };
 
 export type GetReportAnalyticsGroupBy = typeof GetReportAnalyticsGroupBy[keyof typeof GetReportAnalyticsGroupBy];
@@ -5160,25 +5075,23 @@ export const GetReportAnalyticsSort = {
 } as const;
 
 export type GetReportTrendsParams = {
-from?: FromParameter;
-to?: ToParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-doctorId?: DoctorIdParameter;
+  from?: FromParameter;
+  to?: ToParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  doctorId?: DoctorIdParameter;
 };
 
 export type SearchRecordsParams = {
-/**
- * @minLength 2
- * @maxLength 100
- */
-q: string;
+  /**
+   * @minLength 2
+   * @maxLength 100
+   */
+  q: string;
 };
 
 export type ListSavedViewsParams = {
-/**
- * @maxLength 60
- */
-tableKey: string;
+  /** @maxLength 60 */
+  tableKey: string;
 };
 

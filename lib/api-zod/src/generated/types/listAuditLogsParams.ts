@@ -30,24 +30,20 @@ import type { SortParameter } from './sortParameter';
 import type { ToParameter } from './toParameter';
 
 export type ListAuditLogsParams = {
-search?: SearchParameter;
-/**
- * Allowlisted field with optional minus prefix for descending order
- */
-sort?: SortParameter;
-activityType?: ListAuditLogsActivityType;
-entityType?: string;
-actorId?: string;
-clinicId?: ClinicIdParameter;
-from?: FromParameter;
-to?: ToParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
+  search?: SearchParameter;
+  /** Allowlisted field with optional minus prefix for descending order */
+  sort?: SortParameter;
+  activityType?: ListAuditLogsActivityType;
+  entityType?: string;
+  actorId?: string;
+  clinicId?: ClinicIdParameter;
+  from?: FromParameter;
+  to?: ToParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
 };

@@ -29,6 +29,8 @@ export interface WorkspaceNotification {
   body?: string;
   createdAt: Date;
   read: boolean;
+  /** @nullable */
   appointmentId?: string | null;
+  /** @nullable */
   date?: string | null;
 }

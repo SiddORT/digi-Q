@@ -37,33 +37,27 @@ import type { StatusGroupParameter } from './statusGroupParameter';
 import type { ToParameter } from './toParameter';
 
 export type ListAppointmentsParams = {
-sessionId?: SessionIdParameter;
-startTime?: StartTimeParameter;
-/**
- * Server-side group filter applied before pagination; intersects with status when both supplied
- */
-statusGroup?: StatusGroupParameter;
-search?: SearchParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-doctorId?: DoctorIdParameter;
-patientId?: string;
-date?: DateParameter;
-from?: FromParameter;
-to?: ToParameter;
-status?: AppointmentStatus;
-source?: BookingSource;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
-/**
- * Allowlisted field with optional minus prefix for descending order
- */
-sort?: SortParameter;
+  sessionId?: SessionIdParameter;
+  startTime?: StartTimeParameter;
+  /** Server-side group filter applied before pagination; intersects with status when both supplied */
+  statusGroup?: StatusGroupParameter;
+  search?: SearchParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  doctorId?: DoctorIdParameter;
+  patientId?: string;
+  date?: DateParameter;
+  from?: FromParameter;
+  to?: ToParameter;
+  status?: AppointmentStatus;
+  source?: BookingSource;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
+  /** Allowlisted field with optional minus prefix for descending order */
+  sort?: SortParameter;
 };

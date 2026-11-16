@@ -30,22 +30,18 @@ import type { SortParameter } from './sortParameter';
 import type { StatusParameter } from './statusParameter';
 
 export type ListQrsParams = {
-search?: SearchParameter;
-/**
- * Allowlisted field with optional minus prefix for descending order
- */
-sort?: SortParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-doctorId?: DoctorIdParameter;
-status?: StatusParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
+  search?: SearchParameter;
+  /** Allowlisted field with optional minus prefix for descending order */
+  sort?: SortParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  doctorId?: DoctorIdParameter;
+  status?: StatusParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
 };

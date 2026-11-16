@@ -79,3 +79,4 @@
 - [Ticket interaction contract](ticket-interaction-contract.md) — view-scoped send lifetime; count-based wait never subtracts elapsed consultation time or silently adds breaks.
 - [Inline save evidence](inline-save-boundary.md) — persisted writes alone do not prove a clean client baseline; verify leave/reopen and preserve independent drafts.
 - [Dependency security updates](dependency-security-updates.md) — inspect resolved versions and peer identities; prefer mature compatible fixes without weakening install protections.
+- [Validation migration compatibility](validation-migration-compatibility.md) — preserve UUID-shaped recovery IDs; distinguish missing-field guard changes from valid-input regressions.

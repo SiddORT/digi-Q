@@ -22,5 +22,5 @@
  */
 
 export type GetEventControlsParams = {
-clinicId?: string;
+  clinicId?: string;
 };

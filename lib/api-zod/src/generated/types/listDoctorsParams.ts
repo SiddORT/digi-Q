@@ -30,28 +30,24 @@ import type { SortParameter } from './sortParameter';
 import type { StatusParameter } from './statusParameter';
 
 export type ListDoctorsParams = {
-/**
- * Comma-separated exact IDs within existing scope (maximum 100).
- * @maxLength 10000
- */
-selectedIds?: SelectedIdsParameter;
-search?: SearchParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-managingAdminId?: string;
-status?: StatusParameter;
-specializationId?: string;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
-/**
- * Allowlisted field with optional minus prefix for descending order
- */
-sort?: SortParameter;
+  /**
+   * Comma-separated exact IDs within existing scope (maximum 100).
+   * @maxLength 10000
+   */
+  selectedIds?: SelectedIdsParameter;
+  search?: SearchParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  managingAdminId?: string;
+  status?: StatusParameter;
+  specializationId?: string;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
+  /** Allowlisted field with optional minus prefix for descending order */
+  sort?: SortParameter;
 };

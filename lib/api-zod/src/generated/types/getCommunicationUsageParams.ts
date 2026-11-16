@@ -27,21 +27,21 @@ import type { GetCommunicationUsageSource } from './getCommunicationUsageSource'
 import type { GetCommunicationUsageStatus } from './getCommunicationUsageStatus';
 
 export type GetCommunicationUsageParams = {
-from?: Date;
-to?: Date;
-channel?: GetCommunicationUsageChannel;
-event?: string;
-status?: GetCommunicationUsageStatus;
-clinicId?: string;
-source?: GetCommunicationUsageSource;
-groupBy?: GetCommunicationUsageGroupBy;
-attribution?: GetCommunicationUsageAttribution;
-userId?: string;
-branchId?: string;
-cursor?: string;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
+  from?: Date;
+  to?: Date;
+  channel?: GetCommunicationUsageChannel;
+  event?: string;
+  status?: GetCommunicationUsageStatus;
+  clinicId?: string;
+  source?: GetCommunicationUsageSource;
+  groupBy?: GetCommunicationUsageGroupBy;
+  attribution?: GetCommunicationUsageAttribution;
+  userId?: string;
+  branchId?: string;
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
 };

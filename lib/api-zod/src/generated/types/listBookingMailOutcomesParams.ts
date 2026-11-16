@@ -22,18 +22,16 @@
  */
 
 export type ListBookingMailOutcomesParams = {
-/**
- * @minLength 1
- */
-clinicId: string;
-/**
- * @minimum 1
- * @maximum 10000
- */
-page?: number;
-/**
- * @minimum 1
- * @maximum 50
- */
-pageSize?: number;
+  /** @minLength 1 */
+  clinicId: string;
+  /**
+   * @minimum 1
+   * @maximum 10000
+   */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 50
+   */
+  pageSize?: number;
 };

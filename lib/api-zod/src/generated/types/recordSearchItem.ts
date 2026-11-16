@@ -27,8 +27,12 @@ export interface RecordSearchItem {
   clinicId: string;
   branchId: string;
   doctorId: string;
-  /** Session start time when the visit belongs to a timed session. */
+  /**
+     * Session start time when the visit belongs to a timed session.
+     * @nullable
+     */
   startTime?: string | null;
+  /** @nullable */
   sessionId?: string | null;
   reference: string;
   patientName: string;

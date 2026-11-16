@@ -19,7 +19,7 @@ const branch = z.object({
 });
 // Explicit allowlists: never persist credentials, passwords, OTPs or server record IDs.
 export const setupDraftSchema = z.object({
-  step: z.number().int().min(0).max(5).transform(step => Math.min(step, 4)), requestId: z.string().uuid(),
+  step: z.number().int().min(0).max(5).transform(step => Math.min(step, 4)), requestId: z.guid(),
   values: z.object({
     dateFormat: z.enum(["DD MMM YYYY", "DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"]), timeFormat: z.enum(["12h", "24h"]),
     fullName: text, email: text, mobile: text, name: text, slug: text, categoryId: text, specialityIds: z.array(text),

@@ -22,22 +22,20 @@
  */
 
 export type ListQueueSessionsParams = {
-date: Date;
-clinicId?: string;
-branchId?: string;
-doctorId?: string;
-/**
- * @maxLength 200
- */
-search?: string;
-/**
- * @minimum 1
- * @maximum 100000
- */
-page?: number;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
+  date: Date;
+  clinicId?: string;
+  branchId?: string;
+  doctorId?: string;
+  /** @maxLength 200 */
+  search?: string;
+  /**
+   * @minimum 1
+   * @maximum 100000
+   */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
 };

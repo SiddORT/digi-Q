@@ -22,10 +22,10 @@
  */
 
 export type UploadPatientDocumentParams = {
-/**
- * @minLength 1
- * @maxLength 160
- */
-name: string;
-clinicId?: string;
+  /**
+   * @minLength 1
+   * @maxLength 160
+   */
+  name: string;
+  clinicId?: string;
 };

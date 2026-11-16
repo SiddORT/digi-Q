@@ -29,38 +29,28 @@ import type { PageSizeParameter } from './pageSizeParameter';
 import type { SearchParameter } from './searchParameter';
 
 export type GetStaffAssignmentOptionsParams = {
-targetRole: GetStaffAssignmentOptionsTargetRole;
-/**
- * Server ordering within each authorized clinic and branch catalog. ID in the selected direction breaks ties.
- */
-sort?: GetStaffAssignmentOptionsSort;
-/**
- * Existing doctor being edited.
- */
-doctorId?: string;
-/**
- * Existing receptionist being edited.
- */
-userId?: string;
-/**
- * Narrows the catalog owner; cannot override an actor or edited staff owner.
- */
-managingAdminId?: string;
-search?: SearchParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-/**
- * Comma-separated IDs to resolve within the authorized catalog (maximum 100).
- * @maxLength 10000
- */
-selectedIds?: string;
+  targetRole: GetStaffAssignmentOptionsTargetRole;
+  /** Server ordering within each authorized clinic and branch catalog. ID in the selected direction breaks ties. */
+  sort?: GetStaffAssignmentOptionsSort;
+  /** Existing doctor being edited. */
+  doctorId?: string;
+  /** Existing receptionist being edited. */
+  userId?: string;
+  /** Narrows the catalog owner; cannot override an actor or edited staff owner. */
+  managingAdminId?: string;
+  search?: SearchParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  /**
+   * Comma-separated IDs to resolve within the authorized catalog (maximum 100).
+   * @maxLength 10000
+   */
+  selectedIds?: string;
 };

@@ -22,9 +22,9 @@
  */
 
 export type SearchRecordsParams = {
-/**
- * @minLength 2
- * @maxLength 100
- */
-q: string;
+  /**
+   * @minLength 2
+   * @maxLength 100
+   */
+  q: string;
 };

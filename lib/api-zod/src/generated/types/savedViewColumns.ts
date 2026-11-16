@@ -32,6 +32,9 @@ export interface SavedViewColumns {
      * @items.maxLength 60
      */
   hidden: string[];
-  /** @maxLength 60 */
+  /**
+     * @maxLength 60
+     * @nullable
+     */
   pinned?: string | null;
 }

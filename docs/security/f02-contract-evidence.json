@@ -1,0 +1,1342 @@
+{
+  "mode": "compare",
+  "schemas": 423,
+  "cases": 12116,
+  "acceptedSeeds": 387,
+  "requiredFieldGuards": [
+    {
+      "name": "CheckSlugAvailabilityQueryParams",
+      "before": {
+        "success": true,
+        "data": {
+          "slug": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"slug\"]"
+        ]
+      }
+    },
+    {
+      "name": "CommitStaffHandoffParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "CompleteLogoUploadParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "CompleteProfileFieldsParams",
+      "before": {
+        "success": false,
+        "paths": [
+          "[\"profileKind\"]"
+        ]
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"profileId\"]",
+          "[\"profileKind\"]"
+        ]
+      }
+    },
+    {
+      "name": "DecideGuestRequestParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "DeleteAvailabilityExceptionParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "DeleteBranchParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "DeleteClinicParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "DeleteDoctorParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "DeleteMasterParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "DeletePatientDocumentParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "DeletePatientParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "DeleteQrParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "DeleteSavedViewParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "DeleteScheduleParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "DeleteUserParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "DownloadPatientDocumentParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetAppointmentHistoryParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetAppointmentMovementParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetAppointmentParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetAppointmentQrParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetBookingScheduleAccessQueryParams",
+      "before": {
+        "success": true,
+        "data": {
+          "doctorId": "undefined",
+          "branchId": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"branchId\"]",
+          "[\"doctorId\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetBookingStatusSmsPreviewParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetBranchParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetClinicParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetClinicSettingsParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetCommunicationUsageDetailParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetDoctorDurationParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined",
+          "clinicId": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"clinicId\"]",
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetDoctorParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetDoctorPresenceParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetDoctorPresenceQueryParams",
+      "before": {
+        "success": false,
+        "paths": [
+          "[\"date\"]"
+        ]
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"branchId\"]",
+          "[\"date\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetMasterParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetNotificationLogParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetPatientParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetProfileFieldAccessParams",
+      "before": {
+        "success": false,
+        "paths": [
+          "[\"profileKind\"]"
+        ]
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"profileId\"]",
+          "[\"profileKind\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetPublicAvailabilityQueryParams",
+      "before": {
+        "success": false,
+        "paths": [
+          "[\"date\"]"
+        ]
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"branchId\"]",
+          "[\"date\"]",
+          "[\"doctorId\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetPublicAvailabilitySessionsQueryParams",
+      "before": {
+        "success": false,
+        "paths": [
+          "[\"date\"]"
+        ]
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"branchId\"]",
+          "[\"date\"]",
+          "[\"doctorId\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetPublicBookingContextQueryParams",
+      "before": {
+        "success": true,
+        "data": {
+          "doctorId": "undefined",
+          "branchId": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"branchId\"]",
+          "[\"doctorId\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetPublicDisplayParams",
+      "before": {
+        "success": true,
+        "data": {
+          "reference": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"reference\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetQrParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetQueueQueryParams",
+      "before": {
+        "success": false,
+        "paths": [
+          "[\"date\"]"
+        ]
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"branchId\"]",
+          "[\"date\"]",
+          "[\"doctorId\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetScheduleDayContextQueryParams",
+      "before": {
+        "success": true,
+        "data": {
+          "doctorId": "undefined",
+          "branchId": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"branchId\"]",
+          "[\"doctorId\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetSessionContextsQueryParams",
+      "before": {
+        "success": false,
+        "paths": [
+          "[\"date\"]"
+        ]
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"branchId\"]",
+          "[\"date\"]",
+          "[\"doctorId\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetStaffDeletionImpactParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetStaffHandoffOptionsParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetStaffHistoryReviewParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetTicketEmailPreviewParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "GetUserParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "ListBookingMailOutcomesQueryParams",
+      "before": {
+        "success": true,
+        "data": {
+          "clinicId": "undefined",
+          "page": 1,
+          "pageSize": 20
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"clinicId\"]"
+        ]
+      }
+    },
+    {
+      "name": "ListPatientActivityParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "ListPatientDocumentsParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "ListSavedViewsQueryParams",
+      "before": {
+        "success": true,
+        "data": {
+          "tableKey": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"tableKey\"]"
+        ]
+      }
+    },
+    {
+      "name": "MarkStaffHistoryUnresolvedParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "PermanentlyRemoveStaffParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "PreviewClinicSettingsParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "PreviewStaffHistoryEvidenceParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "RegenerateQrParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "RequestUserPasswordResetParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "RescheduleAppointmentParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "ResendUserInvitationParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "ResolveBranchSlugParams",
+      "before": {
+        "success": true,
+        "data": {
+          "clinicSlug": "undefined",
+          "branchSlug": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"branchSlug\"]",
+          "[\"clinicSlug\"]"
+        ]
+      }
+    },
+    {
+      "name": "ResolveClinicSlugParams",
+      "before": {
+        "success": true,
+        "data": {
+          "clinicSlug": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"clinicSlug\"]"
+        ]
+      }
+    },
+    {
+      "name": "ResolveQrParams",
+      "before": {
+        "success": true,
+        "data": {
+          "reference": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"reference\"]"
+        ]
+      }
+    },
+    {
+      "name": "RestoreStaffHistoryEvidenceParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "ReviewStaffHandoffParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "RevokeLiveTicketLinksParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "ScanStaffHistoryReviewParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "SearchRecordsQueryParams",
+      "before": {
+        "success": true,
+        "data": {
+          "q": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"q\"]"
+        ]
+      }
+    },
+    {
+      "name": "SendBookingStatusSmsParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "SendTicketEmailParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "TransitionAppointmentParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "UpdateAppointmentBookingParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "UpdateAvailabilityExceptionParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "UpdateBranchParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "UpdateClinicParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "UpdateClinicSettingsParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "UpdateDoctorDurationParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined",
+          "clinicId": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"clinicId\"]",
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "UpdateDoctorParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "UpdateDoctorPresenceParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "UpdateMasterParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "UpdatePatientParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "UpdateQrParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "UpdateScheduleParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "UpdateUserParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "UploadLocalLogoParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "UploadPatientDocumentParams",
+      "before": {
+        "success": true,
+        "data": {
+          "id": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"id\"]"
+        ]
+      }
+    },
+    {
+      "name": "UploadPatientDocumentQueryParams",
+      "before": {
+        "success": true,
+        "data": {
+          "name": "undefined"
+        }
+      },
+      "after": {
+        "success": false,
+        "paths": [
+          "[\"name\"]"
+        ]
+      }
+    }
+  ],
+  "unexpectedDifferences": 0,
+  "baselineSha256": "beca665e65048a6464eb549468c0e72ed1c42d8dce05c0f5823f17322989cf21",
+  "capturedAt": "2026-11-16T08:13:46.410Z",
+  "note": "Synthetic values only. Baseline captured on Zod 3.25.76 before migration. Issue wording is tested separately from acceptance, parsed output and issue paths."
+}

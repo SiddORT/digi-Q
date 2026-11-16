@@ -45,7 +45,7 @@ appointmentsRouter.get("/appointments/:id/email-ticket", async (req, res) => {
   res.json(await ticketEmailPreview(await requireUser(req), req.params.id as string));
 });
 appointmentsRouter.post("/appointments/:id/email-ticket", async (req, res) => {
-  const body = validator.object({ requestId: validator.string().uuid(), recipient: validator.string().email() }).parse(req.body);
+  const body = validator.object({ requestId: validator.guid(), recipient: validator.string().email() }).parse(req.body);
   res.setHeader("Cache-Control", "no-store");
   res.json(await emailTicket(await requireUser(req), req.params.id as string, body.requestId, body.recipient));
 });

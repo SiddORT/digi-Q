@@ -22,9 +22,9 @@
  */
 
 export type DeleteScheduleParams = {
-/**
- * Optional loaded schedule authoring snapshot. Compared after acquiring doctor locks; stale changes return 409. Deactivation retains history.
- * @maxLength 20000
- */
-expectedSnapshot?: string;
+  /**
+   * Optional loaded schedule authoring snapshot. Compared after acquiring doctor locks; stale changes return 409. Deactivation retains history.
+   * @maxLength 20000
+   */
+  expectedSnapshot?: string;
 };

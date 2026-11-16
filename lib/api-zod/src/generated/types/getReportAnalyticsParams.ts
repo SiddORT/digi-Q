@@ -35,30 +35,26 @@ import type { StartTimeParameter } from './startTimeParameter';
 import type { ToParameter } from './toParameter';
 
 export type GetReportAnalyticsParams = {
-from?: FromParameter;
-to?: ToParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-doctorId?: DoctorIdParameter;
-sessionId?: SessionIdParameter;
-startTime?: StartTimeParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
-/**
- * @maxLength 200
- */
-search?: string;
-groupBy?: GetReportAnalyticsGroupBy;
-reportType?: GetReportAnalyticsReportType;
-status?: GetReportAnalyticsStatus;
-compare?: boolean;
-exportAll?: boolean;
-sort?: GetReportAnalyticsSort;
+  from?: FromParameter;
+  to?: ToParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  doctorId?: DoctorIdParameter;
+  sessionId?: SessionIdParameter;
+  startTime?: StartTimeParameter;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
+  /** @maxLength 200 */
+  search?: string;
+  groupBy?: GetReportAnalyticsGroupBy;
+  reportType?: GetReportAnalyticsReportType;
+  status?: GetReportAnalyticsStatus;
+  compare?: boolean;
+  exportAll?: boolean;
+  sort?: GetReportAnalyticsSort;
 };

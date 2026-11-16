@@ -31,24 +31,20 @@ import type { StatusParameter } from './statusParameter';
 import type { ToParameter } from './toParameter';
 
 export type ListPatientsParams = {
-search?: SearchParameter;
-clinicId?: ClinicIdParameter;
-branchId?: BranchIdParameter;
-status?: StatusParameter;
-from?: FromParameter;
-to?: ToParameter;
-gender?: string;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
-/**
- * Allowlisted field with optional minus prefix for descending order
- */
-sort?: SortParameter;
+  search?: SearchParameter;
+  clinicId?: ClinicIdParameter;
+  branchId?: BranchIdParameter;
+  status?: StatusParameter;
+  from?: FromParameter;
+  to?: ToParameter;
+  gender?: string;
+  /** @minimum 1 */
+  page?: PageParameter;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: PageSizeParameter;
+  /** Allowlisted field with optional minus prefix for descending order */
+  sort?: SortParameter;
 };

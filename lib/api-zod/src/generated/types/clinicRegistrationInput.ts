@@ -27,7 +27,10 @@ import type { OwnerCustomSchedule } from './ownerCustomSchedule';
 import type { OwnerSchedule } from './ownerSchedule';
 
 export interface ClinicRegistrationInput {
-  /** Stable non-secret retry identity; changed payloads cannot replay a committed request. */
+  /**
+     * Stable non-secret retry identity; changed payloads cannot replay a committed request.
+     * @pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+     */
   requestId?: string;
   /**
      * @minLength 1

@@ -22,8 +22,6 @@
  */
 
 export type ListSavedViewsParams = {
-/**
- * @maxLength 60
- */
-tableKey: string;
+  /** @maxLength 60 */
+  tableKey: string;
 };

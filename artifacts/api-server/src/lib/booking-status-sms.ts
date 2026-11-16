@@ -21,7 +21,7 @@ import { bookingEditPermission } from "./appointment-booking-edit";
 
 const event = "booking_status_link" as const;
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
-const sendInput = z.object({ requestId: z.string().uuid(), previewToken: z.string().regex(/^[a-f0-9]{64}$/) }).strict();
+const sendInput = z.object({ requestId: z.guid(), previewToken: z.string().regex(/^[a-f0-9]{64}$/) }).strict();
 const active = (row: any) => ["waiting", "booked", "checkedIn", "called", "inConsultation", "noShow", "skipped"].includes(row.status);
 const blocked = (reason: string, recipient = "") => ({ eligible: false, reason, recipient, message: "", previewToken: "" });
 

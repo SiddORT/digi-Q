@@ -22,5 +22,5 @@
  */
 
 export type GetAppointmentHistoryParams = {
-cursor?: string;
+  cursor?: string;
 };

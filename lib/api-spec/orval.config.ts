@@ -13,6 +13,26 @@ const titleTransformer: InputTransformerFn = (config) => {
   return config;
 };
 
+// Zod 3's uuid() accepted UUID-shaped identifiers without checking version or
+// variant bits. Preserve that existing identifier contract with a native regex;
+// Zod 4's default uuid() would reject previously saved request IDs. This applies
+// only to generated validators, not the published OpenAPI document or clients.
+const validationTransformer: InputTransformerFn = async (input) => {
+  const config = await titleTransformer(structuredClone(input));
+  const visit = (value: unknown): void => {
+    if (!value || typeof value !== "object") return;
+    const node = value as Record<string, unknown>;
+    if (node.type === "string" && node.format === "uuid") {
+      if (node.pattern) throw new Error("UUID compatibility must not replace an explicit schema pattern");
+      delete node.format;
+      node.pattern = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
+    }
+    for (const child of Object.values(node)) visit(child);
+  };
+  visit(config);
+  return config;
+};
+
 export default defineConfig({
   "api-client-react": {
     input: {
@@ -44,7 +64,7 @@ export default defineConfig({
     input: {
       target: "./openapi.yaml",
       override: {
-        transformer: titleTransformer,
+        transformer: validationTransformer,
       },
     },
     output: {
@@ -57,10 +77,9 @@ export default defineConfig({
       prettier: true,
       override: {
         zod: {
-          // Orval resolves `auto` from lib/api-spec/package.json, which has no
-          // zod dependency, so orval >= 8.23 falls back to Zod 4 syntax while
-          // the catalog installs zod 3. Pin to match the catalog.
-          version: 3,
+          // Explicitly match the patched workspace catalog, independent of
+          // Orval's package-local auto-detection.
+          version: 4,
           coerce: {
             query: ['boolean', 'number', 'string'],
             param: ['boolean', 'number', 'string'],

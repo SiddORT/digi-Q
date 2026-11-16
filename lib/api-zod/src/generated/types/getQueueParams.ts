@@ -24,35 +24,31 @@ import type { AppointmentStatus } from './appointmentStatus';
 import type { StatusGroupParameter } from './statusGroupParameter';
 
 export type GetQueueParams = {
-sessionId?: string;
-startTime?: string;
-doctorId: string;
-branchId: string;
-date: Date;
-appointmentId?: string;
-/**
- * Explicit staff listing page; omit both pagination parameters for legacy full-list compatibility
- * @minimum 1
- */
-page?: number;
-/**
- * Explicit staff listing page size; omitted pagination parameters must not be default-injected by clients
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
-/**
- * Staff-only listing search applied before pagination
- * @maxLength 200
- */
-search?: string;
-/**
- * Staff-only allowlisted listing sort with optional minus prefix
- */
-sort?: string;
-status?: AppointmentStatus;
-/**
- * Server-side group filter applied before pagination; intersects with status when both supplied
- */
-statusGroup?: StatusGroupParameter;
+  sessionId?: string;
+  startTime?: string;
+  doctorId: string;
+  branchId: string;
+  date: Date;
+  appointmentId?: string;
+  /**
+   * Explicit staff listing page; omit both pagination parameters for legacy full-list compatibility
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * Explicit staff listing page size; omitted pagination parameters must not be default-injected by clients
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
+  /**
+   * Staff-only listing search applied before pagination
+   * @maxLength 200
+   */
+  search?: string;
+  /** Staff-only allowlisted listing sort with optional minus prefix */
+  sort?: string;
+  status?: AppointmentStatus;
+  /** Server-side group filter applied before pagination; intersects with status when both supplied */
+  statusGroup?: StatusGroupParameter;
 };
