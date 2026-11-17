@@ -20,18 +20,16 @@ for (const [key, value] of Object.entries(env)) {
   }
 }
 
-const rawPort = process.env.NODE_ENV !== 'production' ? process.env.FRONTEND_PORT : process.env.PORT;
+const rawPort = process.env.PORT;
 
 if (!rawPort) {
-  throw new Error(
-    `${process.env.NODE_ENV !== 'production' ? 'FRONTEND_PORT' : 'PORT'} environment variable is required.`
-  );
+  throw new Error('PORT environment variable is required.');
 }
 
 const port = Number(rawPort);
 
 if (!Number.isInteger(port) || port <= 0 || port > 65535) {
-  throw new Error(`Invalid ${process.env.NODE_ENV !== 'production' ? 'FRONTEND_PORT' : 'PORT'} value: "${rawPort}"`);
+  throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
 const basePath = process.env.BASE_PATH;
@@ -123,18 +121,6 @@ export default defineConfig({
     strictPort: true,
     host: '0.0.0.0',
     allowedHosts: true,
-    ...(process.env.NODE_ENV !== 'production'
-      ? {
-          proxy: {
-            '/api': {
-              target: `http://localhost:${process.env.PORT || '5000'}`,
-              changeOrigin: true,
-              secure: false,
-            },
-          },
-        }
-      : {}),
-
     fs: {
       strict: true,
     },
