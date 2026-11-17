@@ -95,7 +95,7 @@ export function ProfileValue({ kind, record, field, editable, children, blocked 
     <AppDialog open={open} onClose={() => setOpen(false)} title={`Add ${label}`} dirty={dirty} busy={busy}
       description={["mobile", "email"].includes(field) ? "Profile contact only. This does not verify the contact, create an account or change this visit's contact." : undefined}>
       <ErrorNotice error={error} />
-      {current && <div ref={formHost}><Editor fields={fields} initial={current} onSave={data => void save(data)} onDirtyChange={setDirty} busy={busy} submitLabel="Save" /></div>}
+      {current && <div ref={formHost}><Editor fields={fields} mobileVerificationHelp={kind==="users"&&current.role==="superAdmin"} initial={current} onSave={data => void save(data)} onDirtyChange={setDirty} busy={busy} submitLabel="Save" /></div>}
     </AppDialog>
   </>;
 }

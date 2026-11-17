@@ -45,6 +45,7 @@ function GuidedAdminSetup({ draftActor, onDirtyChange, onBusyChange, carry, onSn
       if (saved.result) { requireRegistrationDoctor(saved.result, values.alsoConsult); if (draftKey) clearRegistrationDraft(draftKey); setCompleted(saved.result); return; }
       setSetupBusy(true); setSetupError(null);
       const result = await api.onboardClinicAdmin({
+        mobileProofId: values.mobileProofId,
         requestId,
         admin: { fullName: values.fullName.trim(), email: values.email.trim(), ...(values.mobile.trim() ? { mobile: values.mobile.trim() } : {}), ...(values.password ? { password: values.password, confirmPassword: values.confirmPassword } : {}) } as api.ClinicAdminOnboardingInputAdmin,
         clinic: { dateFormat: values.dateFormat, timeFormat: values.timeFormat, name: values.name.trim(), address: values.branches[0].address.trim(), slug: values.slug, email: values.clinicEmail.trim() || undefined, phone: values.phone.trim() || undefined, categoryId: values.categoryId || undefined, customCategory: values.customCategory?.trim() || null, specialityIds: values.specialityIds, customSpecialities: values.customSpecialities.map(text => text.trim()), referralCode: values.referralCode.trim() || null },

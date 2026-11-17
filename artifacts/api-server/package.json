@@ -9,6 +9,7 @@
     "start": "node --env-file-if-exists=../../.env --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:auth": "node --test ./src/native-auth.integration.test.mjs ./src/auth-http.integration.test.mjs ./src/jwt-session.test.mjs",
+    "test:owner-mobile": "node --test ./src/owner-mobile.integration.test.mjs",
     "test:staff-removal": "node --test --test-concurrency=2 ./src/staff-*.integration.test.mjs ./src/staff-removal-review.test.mjs ./src/retired-staff*.integration.test.mjs ./src/development-deletion-guards.integration.test.mjs ./src/notification-history-provenance.integration.test.mjs ./src/exclusive-media-cleanup.integration.test.mjs",
     "test:jwt": "node --test ./src/jwt-session.test.mjs",
     "test:public-metadata": "node --test ./src/public-page-metadata.integration.test.mjs",

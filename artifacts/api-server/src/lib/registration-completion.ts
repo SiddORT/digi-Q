@@ -13,7 +13,7 @@ function canonical(value: any): any {
   return value;
 }
 export function registrationDigest(body: any) {
-  const { password: _password, confirmPassword: _confirm, requestId: _request, ...fields } = body;
+  const { password: _password, confirmPassword: _confirm, mobileProofId: _proof, requestId: _request, ...fields } = body;
   if (fields.admin) {
     const { password: _adminPassword, confirmPassword: _adminConfirm, ...admin } = fields.admin;
     fields.admin = admin;

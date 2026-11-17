@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { createFeatureHarness } from "./test-support/feature-harness.mjs";
 import { seedFeatureFixtures } from "./test-support/feature-fixtures.mjs";
+import { withOwnerMobileFixture } from "./test-support/owner-mobile-fixture.mjs";
 
 const { build } = createRequire(import.meta.url)("esbuild");
 const addressBundle = await build({ entryPoints: [new URL("../../clinicflow/src/lib/clinic-address.ts", import.meta.url).pathname], bundle: true, platform: "node", format: "esm", write: false });
@@ -20,6 +21,7 @@ before(async () => {
     SMTP_PASSWORD: "fictional", SMTP_FROM: "fictional@test.invalid", SMTP_REQUIRE_TLS: "true" });
   h = await createFeatureHarness({ administration: true, simulatedMail: true, postgres: true, registration: true });
   await seedFeatureFixtures(h.pg);
+  withOwnerMobileFixture(h);
 });
 after(async () => await h?.close());
 const body = (name, requestId) => ({
@@ -95,6 +97,7 @@ test("self-registration requires verified ownership and a password; success can 
   const argon2 = createRequire(import.meta.url)("argon2");
   const hash = await argon2.hash("FictionalPass123", { type: argon2.argon2id });
   await h.pg.query("insert into users(id,email,full_name,role,status,email_verified_at,password_hash) values ('self-fixture','self@test.invalid','Fictional Owner','clinicAdmin','active',now(),$1)", [hash]);
+  await h.pg.query("update users set mobile='+919876543210',data=$1 where id='self-fixture'",[{staffMobileProof:{contact:"+919876543210",verifiedAt:new Date().toISOString()}}]);
   const { admin, ...input } = body("self-owner", crypto.randomUUID());
   input.clinic.slug = await resolveClinicAddress(input.clinic.name, "", available);
   // Display names remain subject to the existing name-uniqueness policy.

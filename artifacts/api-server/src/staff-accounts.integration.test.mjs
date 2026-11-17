@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { createFeatureHarness } from "./test-support/feature-harness.mjs";
 import { seedFeatureFixtures } from "./test-support/feature-fixtures.mjs";
+import { withOwnerMobileFixture } from "./test-support/owner-mobile-fixture.mjs";
 
 let h;
 const password = "Fictional-Staff-239!";
@@ -41,6 +42,7 @@ before(async () => {
   });
   h = await createFeatureHarness({ administration: true, simulatedMail: true, staffAccounts: true, registration: true, postgres: true });
   await seedFeatureFixtures(h.pg);
+  withOwnerMobileFixture(h);
   for (const recipient of ["clinicAdmin", "doctor", "receptionist", "superAdmin"])
     for (const event of ["staff_mobile_otp", "staff_welcome", "staff_created_admin"]) await smsTemplate(event, recipient);
 });

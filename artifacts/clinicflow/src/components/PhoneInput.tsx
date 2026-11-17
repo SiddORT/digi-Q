@@ -1,10 +1,10 @@
 import { forwardRef, useEffect, useRef, useState, type InputHTMLAttributes } from "react";
 import type { CountryCode } from "libphonenumber-js/max";
 import { SearchableSelect } from "./SearchableSelect";
-import { formatNational, joinPhone, phoneCountries, splitPhone } from "../lib/phone";
+import { callingCode, formatNational, joinPhone, phoneCountries, splitPhone } from "../lib/phone";
 import { DEFAULT_PHONE_COUNTRY } from "../lib/address";
 
-type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange"> & { value: string; onChange: (value: string) => void };
+type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange"> & { value: string; onChange: (value: string) => void; accountMobile?: boolean };
 // Dropdown rows search full names; the closed control shows only the compact calling code.
 const countryOptions = phoneCountries.map(item => ({ value: item.country, label: `${item.name} ${item.code}`, selectedLabel: `${item.code} ${item.country}` }));
 
@@ -13,7 +13,7 @@ const countryOptions = phoneCountries.map(item => ({ value: item.country, label:
  * (+country digits) value, or "" when empty. Pasting a full "+..." number into
  * the local field selects its country automatically.
  */
-export const PhoneInput = forwardRef<HTMLInputElement, Props>(function PhoneInput({ value, onChange, className, ...props }, ref) {
+export const PhoneInput = forwardRef<HTMLInputElement, Props>(function PhoneInput({ value, onChange, className, accountMobile = false, ...props }, ref) {
   const [parts, setParts] = useState(() => splitPhone(value, DEFAULT_PHONE_COUNTRY));
   const emitted = useRef(value);
   useEffect(() => {
@@ -22,7 +22,8 @@ export const PhoneInput = forwardRef<HTMLInputElement, Props>(function PhoneInpu
     setParts(previous => splitPhone(value, previous.country));
   }, [value]);
   const emit = (country: CountryCode | "", national: string) => {
-    const next = joinPhone(country, national);
+    const next = accountMobile && national.trim() && !/^\s*(\+|00)/.test(national)
+      ? `${callingCode(country)}${national.replace(/\D/g, "")}` : joinPhone(country, national);
     emitted.current = next;
     onChange(next);
   };
@@ -30,6 +31,7 @@ export const PhoneInput = forwardRef<HTMLInputElement, Props>(function PhoneInpu
     if (/^\s*(\+|00)/.test(text)) {
       const international = joinPhone("", text);
       const split = splitPhone(international, parts.country);
+      if (accountMobile && split.country) split.national = international.slice(callingCode(split.country).length);
       if (split.country && split.national !== international) { setParts(split); emit(split.country, split.national); return; }
       setParts({ ...parts, national: text }); emit(parts.country, text); return;
     }

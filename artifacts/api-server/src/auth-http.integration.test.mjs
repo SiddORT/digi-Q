@@ -11,6 +11,7 @@ import { join, resolve } from "node:path";
 import { request as httpsRequest } from "node:https";
 import { createQueueHarness } from "./test-support/postgres-queue.mjs";
 import { queueFixtureSql } from "./test-support/queue-fixtures.mjs";
+import { seedOwnerMobileProof } from "./test-support/owner-mobile-fixture.mjs";
 
 const root = resolve(import.meta.dirname);
 const frontend = resolve(root, "../../clinicflow/src/lib/auth-request.ts");
@@ -158,8 +159,11 @@ function mailCode() {
   return code;
 }
 test("correcting owner email retires the prior registration challenge and its mobile proof", async () => {
-  const first=await authRequest("register/start",{email:"original-owner@example.test",fullName:"Fictional Owner",password:"FictionalPass123"});
-  const second=await authRequest("register/start",{email:"corrected-owner@example.test",fullName:"Fictional Owner",password:"FictionalPass456"});
+  const binding="f".repeat(43); jar.set("digiq_owner_mobile",binding);
+  const first=await authRequest("register/start",{email:"original-owner@example.test",fullName:"Fictional Owner",password:"FictionalPass123",
+    mobile:"+919876543210",mobileProofId:await seedOwnerMobileProof(harness.control,"public",binding)});
+  const second=await authRequest("register/start",{email:"corrected-owner@example.test",fullName:"Fictional Owner",password:"FictionalPass456",
+    mobile:"+919876543210",mobileProofId:await seedOwnerMobileProof(harness.control,"public",binding)});
   assert.notEqual(first.challengeId,second.challengeId);
   const {rows}=await harness.control.query("select consumed_at,data from auth_challenges where id=$1",[first.challengeId]);
   assert.ok(rows[0].consumed_at);

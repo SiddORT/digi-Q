@@ -1,5 +1,11 @@
 # SMS diagnosis, fixes and UAT handoff
 
+For the subsequent scoped mobile-first clinic-owner fix and its separate
+deployment/acceptance prerequisites, see
+[owner mobile onboarding handoff](owner-mobile-onboarding-uat-handoff.md).
+Its supplied UAT onboarding evidence is distinct from the older workspace
+inventory below; neither establishes the historical cause of generic skips.
+
 ## Evidence and safety boundary
 
 This is a workspace implementation and local verification, **not a UAT deployment

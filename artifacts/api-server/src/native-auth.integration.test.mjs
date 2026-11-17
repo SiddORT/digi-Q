@@ -8,6 +8,7 @@ import { readFile, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createQueueHarness } from "./test-support/postgres-queue.mjs";
 import { queueFixtureSql } from "./test-support/queue-fixtures.mjs";
+import { seedOwnerMobileProof } from "./test-support/owner-mobile-fixture.mjs";
 
 const root = resolve(import.meta.dirname);
 const bundle = resolve(root, `.native-auth-test-${process.pid}.mjs`);
@@ -101,6 +102,12 @@ function response() {
     json(body) { this.body = body; return this; } };
 }
 async function route(path, body = {}, cookie = "") {
+  if(path==="/auth/register/start"&&!body.mobileProofId) {
+    const binding="f".repeat(43), mobile=body.mobile||"+919876543210";
+    const mobileProofId=await seedOwnerMobileProof(h.control,"public",binding,mobile);
+    body={...body,mobile,mobileProofId};
+    cookie+=`${cookie?"; ":""}digiq_owner_mobile=${binding}`;
+  }
   const r = request(body, cookie), s = response();
   const layer = api.authRouter.stack.find(l => l.route?.path === path && l.route.methods.post);
   assert.ok(layer, path);
@@ -310,7 +317,7 @@ test("all SMTP settings absent: staff login works, denials remain credential err
       error => error.code === "EMAIL_UNCONFIGURED");
     await assert.rejects(() => api.requestStaffReset(null, { id: "staff", email: "staff@example.test" }),
       error => error.code === "EMAIL_UNCONFIGURED");
-    assert.equal((await h.control.query("select count(*)::int as n from auth_challenges")).rows[0].n, 0);
+    assert.equal((await h.control.query("select count(*)::int as n from auth_challenges where purpose!='owner-mobile'")).rows[0].n, 0);
     assert.equal(globalThis.nativeAuthMail.length, 0);
     // Redeeming an already-issued reset token has no email-delivery dependency.
     const id = await api.createChallenge({ userId: "staff", email: "staff@example.test",
@@ -345,7 +352,7 @@ test("registration preflight rejects every missing original field despite comple
       await assert.rejects(() => route("/auth/register/start", {
         email: `${field.toLowerCase()}@example.test`, fullName: "Fictional Admin", password: "fictional preflight password 123",
       }), error => error.code === "EMAIL_UNCONFIGURED");
-      assert.equal((await h.control.query("select count(*)::int n from auth_challenges")).rows[0].n, 0);
+      assert.equal((await h.control.query("select count(*)::int n from auth_challenges where purpose!='owner-mobile'")).rows[0].n, 0);
       assert.equal((await h.control.query("select count(*)::int n from users")).rows[0].n, 0);
       assert.equal(globalThis.nativeAuthMail.length, 0);
     } finally {
@@ -610,11 +617,11 @@ const lastEmailCode = () => /code is (\d{6})/.exec(globalThis.nativeAuthMail.at(
 const lastMobileCode = () => /code is (\d{6})/.exec(smsCalls.at(-1))[1];
 const newAdmin = (suffix, mobile) => ({email:`${suffix}@example.invalid`,fullName:"Example Clinic Admin",password:"Fictional-only-password-42",...(mobile?{mobile}:{})});
 
-test("registration channels are independent: phone proof cannot verify email or create a session",async()=>{
-  await publishSecuritySms("registration_mobile_otp","clinicAdmin");
-  const started = await route("/auth/register/start",newAdmin("dual","+919876543210"));
+test("patient registration channels remain independent: phone proof cannot verify email or create a session",async()=>{
+  await publishSecuritySms("registration_mobile_otp","patient");
+  const started = await route("/auth/patient/start",newAdmin("dual","+919876543210"));
   const {challengeId,channels} = started.res.body;
-  assert.equal(channels.email.status,"provider_accepted");
+  assert.equal(channels.email.status,"not_reported");
   assert.equal(channels.sms.status,"provider_accepted");
   assert(!channels.sms.destination.includes("+919876543210"));
   assert.equal(started.res.cookies[api.SESSION_COOKIE],undefined);
@@ -627,7 +634,7 @@ test("registration channels are independent: phone proof cannot verify email or 
   assert.equal(parent.consumed_at,null);
   assert.equal(parent.data.mobileVerified,true);
   await assert.rejects(route("/auth/registration/mobile/verify",{challengeId,code:phoneCode}));
-  const done = await route("/auth/register/verify",{challengeId,code:emailCode});
+  const done = await route("/auth/patient/verify",{challengeId,code:emailCode});
   assert(done.res.body.authenticated);
   const user = (await h.control.query("select * from users where email='dual@example.invalid'")).rows[0];
   assert(user.email_verified_at);
@@ -645,9 +652,8 @@ test("registration email failure preserves successful SMS and resend uses the pu
   globalThis.nativeAuthMailFailure = "EAUTH";
   const started = await route("/auth/register/start",newAdmin("partial","+919876543210"));
   assert.equal(started.res.body.channels.email.status,"provider_rejected");
-  assert.equal(started.res.body.channels.sms.status,"provider_accepted");
+  assert.equal(started.res.body.channels.sms.status,"not_requested");
   const challengeId = started.res.body.challengeId, previousCode = lastEmailCode();
-  await route("/auth/registration/mobile/verify",{challengeId,code:lastMobileCode()});
   await assert.rejects(route("/auth/registration/resend",{challengeId}),{code:"REGISTRATION_RESEND_COOLDOWN"});
   await h.control.query("update auth_challenges set created_at=now()-interval '2 minutes',expires_at=now()+interval '4 minutes' where id=$1",[challengeId]);
   const expiry = (await h.control.query("select expires_at from auth_challenges where id=$1",[challengeId])).rows[0].expires_at;
@@ -665,29 +671,27 @@ test("registration email failure preserves successful SMS and resend uses the pu
   await route("/auth/register/verify",{challengeId,code:emailCode});
 });
 
-test("required registration email works with SMS unconfigured, including optional mobile preparation failure",async()=>{
+test("patient email remains usable with SMS unconfigured or optional mobile preparation failure",async()=>{
   const keys = ["NOTIFICATION_SMS_KEY","NOTIFICATION_SMS_BEARER_TOKEN","NOTIFICATION_SMS_CLIENT_ID"];
   const saved = Object.fromEntries(keys.map(key=>[key,process.env[key]]));
   keys.forEach(key=>delete process.env[key]);
   try {
     for(const mobile of [undefined,"+919876543210"]) {
-      const started=await route("/auth/register/start",newAdmin(mobile?"sms-absent":"email-only",mobile));
+      const started=await route("/auth/patient/start",newAdmin(mobile?"sms-absent":"email-only",mobile));
       const {challengeId,channels}=started.res.body;
-      assert.equal(channels.email.status,"provider_accepted");
+      assert.equal(channels.email.status,"not_reported");
       assert.equal(channels.sms.status,mobile?"unavailable":"not_requested");
-      assert(started.res.cookies.digiq_registration);
       assert.equal(smsCalls.length,0);
-      assert.equal((await route("/auth/register/verify",{challengeId,code:lastEmailCode()})).res.body.authenticated,true);
+      assert.equal((await route("/auth/patient/verify",{challengeId,code:lastEmailCode()})).res.body.authenticated,true);
     }
     await h.control.query(`create function fixture_optional_sms_failure() returns trigger language plpgsql as $$
       begin if new.purpose='registration-mobile' then raise exception 'fictional optional preparation failure'; end if; return new; end $$;
       create trigger fixture_optional_sms_failure before insert on auth_challenges for each row execute function fixture_optional_sms_failure()`);
     try {
-      const started=await route("/auth/register/start",newAdmin("optional-preparation-failed","+919876543210"));
-      assert.equal(started.res.body.channels.email.status,"provider_accepted");
+      const started=await route("/auth/patient/start",newAdmin("optional-preparation-failed","+919876543210"));
+      assert.equal(started.res.body.channels.email.status,"not_reported");
       assert.equal(started.res.body.channels.sms.status,"unavailable");
-      assert(started.res.cookies.digiq_registration);
-      assert.equal((await route("/auth/register/verify",{challengeId:started.res.body.challengeId,code:lastEmailCode()})).res.body.authenticated,true);
+      assert.equal((await route("/auth/patient/verify",{challengeId:started.res.body.challengeId,code:lastEmailCode()})).res.body.authenticated,true);
       assert.equal(smsCalls.length,0);
     } finally {
       await h.control.query("drop trigger fixture_optional_sms_failure on auth_challenges; drop function fixture_optional_sms_failure()");
@@ -756,16 +760,16 @@ test("registration resend rejection and uncertainty retain prior proof, expiry a
   }
 });
 
-test("optional SMS rejection/uncertainty/unavailable never blocks required email proof or marks a number verified",async()=>{
+test("patient optional SMS rejection/uncertainty/unavailable never blocks email proof or marks a number verified",async()=>{
   for(const status of ["provider_rejected","delivery_unknown","unavailable"]) {
     await h.control.query("truncate auth_rate_limits");
-    if(status !== "unavailable") await publishSecuritySms("registration_mobile_otp","clinicAdmin");
+    if(status !== "unavailable") await publishSecuritySms("registration_mobile_otp","patient");
     else await h.control.query("delete from settings where id like '%registration_mobile_otp%'");
     globalThis.nativeAuthSmsOutcome = status;
-    const started = await route("/auth/register/start",newAdmin(status,"+919876543210"));
-    assert.equal(started.res.body.channels.email.status,"provider_accepted");
+    const started = await route("/auth/patient/start",newAdmin(status,"+919876543210"));
+    assert.equal(started.res.body.channels.email.status,"not_reported");
     assert.equal(started.res.body.channels.sms.status,status);
-    await route("/auth/register/verify",{challengeId:started.res.body.challengeId,code:lastEmailCode()});
+    await route("/auth/patient/verify",{challengeId:started.res.body.challengeId,code:lastEmailCode()});
     const user = (await h.control.query("select * from users where email=$1",[`${status}@example.invalid`])).rows[0];
     assert(user.email_verified_at);
     assert.equal(user.data.mobileVerified,false);
@@ -836,8 +840,8 @@ test("unverified duplicate registration phone cannot deny an existing patient's 
 });
 
 test("mobile expiry, five wrong attempts, cross-purpose codes and superseded mobile challenges fail closed",async()=>{
-  await publishSecuritySms("registration_mobile_otp","clinicAdmin");
-  const started = await route("/auth/register/start",newAdmin("attempts","+919876543210"));
+  await publishSecuritySms("registration_mobile_otp","patient");
+  const started = await route("/auth/patient/start",newAdmin("attempts","+919876543210"));
   const challengeId = started.res.body.challengeId, emailCode=lastEmailCode(), otp=lastMobileCode();
   const [child] = (await h.control.query("select * from auth_challenges where purpose='registration-mobile'")).rows;
   await assert.rejects(route("/auth/register/verify",{challengeId:child.id,code:otp}));
@@ -850,7 +854,7 @@ test("mobile expiry, five wrong attempts, cross-purpose codes and superseded mob
   const next = lastMobileCode();
   await h.control.query("update auth_challenges set expires_at=now()-interval '1 second' where purpose='registration-mobile'");
   await assert.rejects(route("/auth/registration/mobile/verify",{challengeId,code:next}));
-  await route("/auth/register/verify",{challengeId,code:emailCode});
+  await route("/auth/patient/verify",{challengeId,code:emailCode});
   assert.equal((await h.control.query("select data from users where email='attempts@example.invalid'")).rows[0].data.mobileVerified,false);
 });
 
@@ -936,7 +940,7 @@ test("disabled verification and setup fail closed before challenges while indepe
   await toggle("doctor_setup","doctor","email",false);
   await h.control.query("insert into users(id,email,full_name,role) values('disabled-doctor','disabled-doctor@example.invalid','Fixture','doctor')");
   await assert.rejects(api.inviteStaff(null,{id:"disabled-doctor",email:"disabled-doctor@example.invalid"}),{code:"SECURITY_DELIVERY_DISABLED"});
-  assert.equal((await h.control.query("select count(*)::int n from auth_challenges")).rows[0].n,count);
+  assert.equal((await h.control.query("select count(*)::int n from auth_challenges where purpose!='owner-mobile'")).rows[0].n,count);
   assert.equal(globalThis.nativeAuthMail.length,0);
   await toggle("registration_mobile_otp","patient","sms",false);
   await toggle("patient_email_otp","patient","email",true);

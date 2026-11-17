@@ -26,6 +26,8 @@ async function interceptApi(context: BrowserContext, start: Reply): Promise<Mock
       "GET /auth/status": { status: 401, body: { error: "Sign in required", code: "SIGN_IN_REQUIRED" } },
       "GET /auth/csrf": { body: { csrfToken: "fictional-csrf-token" } },
       "POST /auth/register/start": start,
+      "POST /auth/owner-mobile/start": {body:{challengeId:"fictional-phone-proof",sms:{status:"provider_accepted"}}},
+      "POST /auth/owner-mobile/verify": {body:{mobileVerified:true}},
     },
   };
   await context.route("**/api/**", async (route: Route) => {
@@ -53,6 +55,12 @@ async function openRegistration(context: BrowserContext): Promise<Page> {
 }
 
 async function submitDetails(page: Page) {
+  if (!await page.getByRole("textbox", { name: "Your Name" }).isVisible()) {
+    await page.getByTestId("owner-mobile-proof").locator('input[type="tel"]').fill("9876543210");
+    await page.getByRole("button",{name:"Send SMS code",exact:true}).click();
+    await page.getByRole("textbox",{name:"SMS verification code",exact:true}).fill("123456");
+    await page.getByRole("button",{name:"Verify mobile",exact:true}).click();
+  }
   await page.getByRole("textbox", { name: "Your Name" }).fill(NAME);
   await page.getByTestId("input-registration-email").fill(EMAIL);
   await page.getByRole("textbox", { name: "Password", exact: true }).fill(PASSWORD);

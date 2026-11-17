@@ -471,6 +471,8 @@ export const GetManagedNotificationSettingsResponse = zod.object({
   "enabled": zod.boolean(),
   "source": zod.string(),
   "ready": zod.boolean(),
+  "recipientReady": zod.boolean().optional().describe('Onboarding SMS account eligibility, separate from configuration readiness. Never certifies delivery.'),
+  "recipientBlockedReasons": zod.array(zod.string()).optional(),
   "required": zod.boolean().optional().describe('Security event policy; independent from optional communication gates. Does not certify provider or DLT approval.'),
   "blockedReasons": zod.array(zod.string()),
   "timing": zod.string()
@@ -525,6 +527,8 @@ export const SaveManagedNotificationSettingsResponse = zod.object({
   "enabled": zod.boolean(),
   "source": zod.string(),
   "ready": zod.boolean(),
+  "recipientReady": zod.boolean().optional().describe('Onboarding SMS account eligibility, separate from configuration readiness. Never certifies delivery.'),
+  "recipientBlockedReasons": zod.array(zod.string()).optional(),
   "required": zod.boolean().optional().describe('Security event policy; independent from optional communication gates. Does not certify provider or DLT approval.'),
   "blockedReasons": zod.array(zod.string()),
   "timing": zod.string()
@@ -1389,6 +1393,8 @@ export const GetEventControlsResponse = zod.object({
   "enabled": zod.boolean(),
   "source": zod.string(),
   "ready": zod.boolean(),
+  "recipientReady": zod.boolean().optional().describe('Onboarding SMS account eligibility, separate from configuration readiness. Never certifies delivery.'),
+  "recipientBlockedReasons": zod.array(zod.string()).optional(),
   "required": zod.boolean().optional().describe('Security event policy; independent from optional communication gates. Does not certify provider or DLT approval.'),
   "blockedReasons": zod.array(zod.string()),
   "timing": zod.string()
@@ -1424,6 +1430,8 @@ export const UpdateEventControlResponse = zod.object({
   "enabled": zod.boolean(),
   "source": zod.string(),
   "ready": zod.boolean(),
+  "recipientReady": zod.boolean().optional().describe('Onboarding SMS account eligibility, separate from configuration readiness. Never certifies delivery.'),
+  "recipientBlockedReasons": zod.array(zod.string()).optional(),
   "required": zod.boolean().optional().describe('Security event policy; independent from optional communication gates. Does not certify provider or DLT approval.'),
   "blockedReasons": zod.array(zod.string()),
   "timing": zod.string()
@@ -3644,6 +3652,60 @@ export const VerifyPatientEmailResponse = zod.object({
 
 
 /**
+ * Explicitly request mobile-first clinic-owner proof, bound to an HttpOnly guest intent or the signed-in Super Admin. Never creates an identity or session.
+ */
+export const startOwnerMobileBodyMobileMax = 16;
+
+
+
+export const StartOwnerMobileBody = zod.object({
+  "mobile": zod.string().max(startOwnerMobileBodyMobileMax),
+  "flow": zod.enum(['public', 'admin'])
+})
+
+export const StartOwnerMobileResponse = zod.object({
+  "challengeId": zod.string(),
+  "sms": zod.object({
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
+  "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
+})
+})
+
+
+export const confirmOwnerMobileBodyChallengeIdMax = 100;
+
+export const confirmOwnerMobileBodyCodeRegExp = new RegExp('^[0-9]{6}$');
+
+
+export const ConfirmOwnerMobileBody = zod.object({
+  "flow": zod.enum(['public', 'admin']),
+  "challengeId": zod.string().max(confirmOwnerMobileBodyChallengeIdMax),
+  "code": zod.string().regex(confirmOwnerMobileBodyCodeRegExp)
+})
+
+export const ConfirmOwnerMobileResponse = zod.object({
+  "mobileVerified": zod.boolean()
+})
+
+
+/**
+ * Retires only this browser or actor's exact owner-phone attempt without sending a message.
+ */
+export const invalidateOwnerMobileBodyChallengeIdMax = 100;
+
+
+
+export const InvalidateOwnerMobileBody = zod.object({
+  "flow": zod.enum(['public', 'admin']),
+  "challengeId": zod.string().max(invalidateOwnerMobileBodyChallengeIdMax)
+})
+
+export const InvalidateOwnerMobileResponse = zod.object({
+  "mobileVerified": zod.boolean()
+})
+
+
+/**
  * Requests a separate optional phone code for a pending email registration intent. Does not create a session or verify email.
  */
 export const RequestRegistrationMobileCodeBody = zod.object({
@@ -3676,6 +3738,8 @@ export const VerifyRegistrationMobileCodeResponse = zod.object({
 })
 
 
+export const startClinicRegistrationBodyMobileProofIdMax = 100;
+
 export const startClinicRegistrationBodyFullNameMax = 200;
 
 export const startClinicRegistrationBodyMobileRegExp = new RegExp('^\\+[1-9][0-9]{6,14}$');
@@ -3687,9 +3751,10 @@ export const startClinicRegistrationBodyPasswordRegExp = new RegExp('^(?=[\\s\\S
 
 
 export const StartClinicRegistrationBody = zod.object({
+  "mobileProofId": zod.string().max(startClinicRegistrationBodyMobileProofIdMax),
   "email": zod.email(),
   "fullName": zod.string().min(1).max(startClinicRegistrationBodyFullNameMax),
-  "mobile": zod.string().regex(startClinicRegistrationBodyMobileRegExp).optional(),
+  "mobile": zod.string().regex(startClinicRegistrationBodyMobileRegExp),
   "password": zod.string().min(startClinicRegistrationBodyPasswordMin).max(startClinicRegistrationBodyPasswordMax).regex(startClinicRegistrationBodyPasswordRegExp).describe('Requires letters and numbers; maximum 1024 UTF-8 bytes, enforced by server.')
 })
 
@@ -5899,6 +5964,8 @@ export const CreateUserResponse = zod.object({
 /**
  * Super Admin only. Atomically creates an active Clinic Admin and their first active clinic, with ownership persisted through clinic.adminId. Existing clinics and doctor ownership are never changed.
  */
+export const onboardClinicAdminBodyMobileProofIdMax = 100;
+
 export const onboardClinicAdminBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 
 export const onboardClinicAdminBodyBranchesItemSlugMin = 3;
@@ -5974,6 +6041,7 @@ export const onboardClinicAdminBodyClinicReferralCodeMax = 100;
 export const onboardClinicAdminBodyClinicTimezoneDefault = `Asia/Kolkata`;
 
 export const OnboardClinicAdminBody = zod.object({
+  "mobileProofId": zod.string().max(onboardClinicAdminBodyMobileProofIdMax).optional().describe('Required verified owner-mobile challenge for new setup; completion receipts remain recoverable.'),
   "requestId": zod.string().regex(onboardClinicAdminBodyRequestIdRegExp).optional(),
   "branches": zod.array(zod.object({
   "id": zod.string().optional(),

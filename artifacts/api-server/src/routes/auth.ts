@@ -20,6 +20,8 @@ import { createSession, revokeSession, hashPassword, verifyPassword, issueCsrf,
   createChallenge, validateChallenge, consumeChallenge, consumeRateLimit, passwordInput } from "../lib/native-auth";
 import { withStaffDispatch } from "../lib/staff-dispatch-barrier";
 import { accountRoleLabel } from "@workspace/api-zod/notification-variable-contract";
+import { StartOwnerMobileBody, ConfirmOwnerMobileBody, InvalidateOwnerMobileBody, StartClinicRegistrationBody } from "@workspace/api-zod";
+import { startOwnerMobile, confirmOwnerMobile, invalidateOwnerMobile, ownerMobileSubject, useOwnerMobileProof, requireAccountMobile } from "../lib/owner-mobile";
 
 export const authRouter = Router();
 const CODE_AGE = 10 * 60_000;
@@ -39,27 +41,28 @@ async function limit(req: any, address: string, action: string, maximum = 5) {
   await consumeRateLimit(`${action}:account:${address}`, maximum);
   await consumeRateLimit(`${action}:ip:${req.ip || "unknown"}`, maximum * 10);
 }
-async function challengeMinutes(id: string) {
-  const [challenge] = await db.select({expiresAt:authChallenges.expiresAt}).from(authChallenges).where(eq(authChallenges.id,id));
+async function challengeMinutes(id: string, conn: Pick<typeof db,"select"> = db) {
+  const [challenge] = await conn.select({expiresAt:authChallenges.expiresAt}).from(authChallenges).where(eq(authChallenges.id,id));
   assert(challenge,503,"Verification preparation unavailable");
   return String(Math.max(1,Math.ceil((challenge.expiresAt.getTime()-Date.now())/60_000)));
 }
-async function mailCode(address: string, purpose: string, userId?: string, data?: Record<string, unknown>) {
+async function mailCode(address: string, purpose: string, userId?: string, data?: Record<string, unknown>, ttlMs = CODE_AGE,
+  transaction?: Parameters<Parameters<typeof db.transaction>[0]>[0]) {
   await requireSecurityDelivery(purpose === "register" ? "clinic_registration_otp" : "patient_email_otp",
     purpose === "register" ? "clinicAdmin" : "patient","email");
   smtpConfig((await resolvedIntegration("smtp")).env);
   const secret = String(code());
-  const challengeId = await createChallenge({ userId, email: address, purpose, secret, ttlMs: CODE_AGE, data });
+  const challengeId = await createChallenge({ userId, email: address, purpose, secret, ttlMs, data },transaction);
   const emailOutcome = await securityEmail(purpose === "register" ? "clinic_registration_otp" : "patient_email_otp",
-    purpose === "register" ? "clinicAdmin" : "patient",address,{otp:secret,expiry_minutes:await challengeMinutes(challengeId)});
+    purpose === "register" ? "clinicAdmin" : "patient",address,{otp:secret,expiry_minutes:await challengeMinutes(challengeId,transaction||db)});
   if (emailOutcome.status === "disabled") {
-    await db.update(authChallenges).set({consumedAt:new Date(),data:{}}).where(eq(authChallenges.id,challengeId));
+    await (transaction||db).update(authChallenges).set({consumedAt:new Date(),data:{}}).where(eq(authChallenges.id,challengeId));
     throw new HttpError(503,"Verification email delivery is unavailable. Verification is still required.",
       "SECURITY_DELIVERY_DISABLED");
   }
    // Optional phone preparation must not strand a required email challenge.
    let smsOutcome: SecurityOutcomes["sms"] = {status:"not_requested"};
-   if(data?.mobile) {
+   if(data?.mobile && data.mobileVerified !== true) {
      try { smsOutcome = await requestRegistrationMobile(challengeId); }
      catch { smsOutcome = {status:"unavailable"}; }
    }
@@ -306,7 +309,41 @@ authRouter.post("/auth/patient/resend",async(req,res)=>{
   }
   res.set("Cache-Control","no-store").json({challengeId:body.challengeId,channels:{email:{status:"not_reported"}}});
 });
+async function ownerSubject(req: any, res: any, flow: string, create = false) {
+  if (flow === "admin") {
+    const actor = await requireUser(req);
+    assert(actor.role === "superAdmin", 403, "Only a Super Admin can set up a clinic owner.");
+    return ownerMobileSubject("admin", actor.id);
+  }
+  assert(!(req as any).authUserId, 409, "Use your existing workspace account.");
+  let binding = getCookie(req, "digiq_owner_mobile");
+  if (!binding && create) {
+    binding = randomBytes(32).toString("base64url");
+    res.cookie("digiq_owner_mobile", binding, { httpOnly: true, secure: true, sameSite: "strict", path: "/api", maxAge: 3600_000 });
+  }
+  assert(typeof binding === "string" && /^[A-Za-z0-9_-]{43}$/.test(binding), 400, "Request a mobile code in this browser first.");
+  return ownerMobileSubject("public", binding);
+}
+authRouter.post("/auth/owner-mobile/start", async (req, res) => {
+  const body = parse(StartOwnerMobileBody, req.body);
+  await consumeRateLimit(`owner-mobile:ip:${req.ip || "unknown"}`, 20);
+  const subject = await ownerSubject(req, res, body.flow, true);
+  res.set("Cache-Control", "no-store").json(await startOwnerMobile(subject, body.mobile));
+});
+authRouter.post("/auth/owner-mobile/verify", async (req, res) => {
+  const body = parse(ConfirmOwnerMobileBody, req.body);
+  await consumeRateLimit(`owner-mobile-verify:ip:${req.ip || "unknown"}`, 40);
+  await confirmOwnerMobile(await ownerSubject(req, res, body.flow), body.challengeId, body.code);
+  res.set("Cache-Control", "no-store").json({ mobileVerified: true });
+});
+authRouter.post("/auth/owner-mobile/invalidate", async (req, res) => {
+  const body = parse(InvalidateOwnerMobileBody, req.body);
+  await consumeRateLimit(`owner-mobile-invalidate:ip:${req.ip || "unknown"}`, 40);
+  await invalidateOwnerMobile(await ownerSubject(req,res,body.flow),body.challengeId);
+  res.set("Cache-Control","no-store").json({mobileVerified:false});
+});
 authRouter.post("/auth/register/start", async (req, res) => {
+  const body = parse(StartClinicRegistrationBody, req.body);
   await requireSecurityDelivery("clinic_registration_otp","clinicAdmin","email");
   const address = email(req.body?.email);
   const name = typeof req.body?.fullName === "string" ? req.body.fullName.trim() : "";
@@ -316,8 +353,28 @@ authRouter.post("/auth/register/start", async (req, res) => {
   smtpConfig((await resolvedIntegration("smtp")).env);
   if (await localUser(address)) throw new HttpError(409, "Account already registered", "ACCOUNT_EXISTS");
   const hash = await hashPassword(req.body.password);
-   const mobile = optionalRegistrationMobile(req.body?.mobile);
-   const result = await mailCode(address, "register", undefined, { fullName: name, passwordHash: hash,...(mobile ? {mobile,mobileVerified:false} : {}) });
+   const mobile = requireAccountMobile(body.mobile);
+   const subject = await ownerSubject(req, res, "public");
+   const result = await db.transaction(async tx => {
+     const staffMobileProof = await useOwnerMobileProof(tx, subject, body.mobileProofId, mobile, getCookie(req,"digiq_registration"));
+     const [proof] = await tx.select().from(authChallenges).where(eq(authChallenges.id,body.mobileProofId));
+     const ttlMs = Math.min(CODE_AGE,proof.createdAt.getTime()+30*60_000-Date.now());
+     assert(ttlMs>0,400,"Verify your mobile again; this registration attempt has expired.");
+     if(proof.data.registrationId) {
+       const [pending]=await tx.select().from(authChallenges).where(eq(authChallenges.id,String(proof.data.registrationId)));
+       if(pending?.email===address && pending.data.ownerRegistrationChannels) {
+         await tx.update(authChallenges).set({data:{...pending.data,fullName:name,passwordHash:hash}}).where(eq(authChallenges.id,pending.id));
+         return {challengeId:pending.id,channels:pending.data.ownerRegistrationChannels as SecurityOutcomes};
+       }
+     }
+     const result = await mailCode(address, "register", undefined, { fullName: name, passwordHash: hash,
+       mobile, mobileVerified: true, staffMobileProof, ownerMobileProofId: body.mobileProofId },ttlMs,tx);
+     await tx.execute(sql`update auth_challenges set data=data||jsonb_build_object('ownerRegistrationChannels',${JSON.stringify(result.channels)}::jsonb) where id=${result.challengeId}`);
+     await tx.execute(sql`update auth_challenges set data=data||jsonb_build_object('registrationId',${result.challengeId}::text),
+       expires_at=least(created_at+interval '30 minutes',(select expires_at from auth_challenges where id=${result.challengeId}))
+       where id=${body.mobileProofId}`);
+     return result;
+   });
    const {challengeId} = result;
    // A corrected email starts a new challenge in this tab. Retire its previous
    // registration capability as well, including any optional mobile proof.
@@ -366,14 +423,19 @@ authRouter.post("/auth/register/verify", async (req, res) => {
   const { challengeId, code: submitted } = req.body || {};
   if (typeof challengeId !== "string" || typeof submitted !== "string") throw new HttpError(400, "Invalid verification", "INVALID_VERIFICATION");
   const challenge = await consumeChallenge(challengeId, "register", submitted);
+  assert(challenge.data.mobileVerified === true && challenge.data.staffMobileProof &&
+    (challenge.data.staffMobileProof as any).contact === challenge.data.mobile, 400, "Restart registration and verify your mobile first.");
   const user = await db.transaction(async tx => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"user-email:" + challenge.email}))`);
     const [existing] = await tx.select().from(users).where(sql`lower(${users.email})=${challenge.email}`).limit(1);
     assert(!existing, 409, "Account already registered");
+    const [proof] = await tx.select().from(authChallenges).where(eq(authChallenges.id,String(challenge.data.ownerMobileProofId || ""))).for("update");
+    assert(proof?.data.registrationId === challengeId && proof.data.verified === true && proof.data.used === true,
+      400,"This registration was replaced. Use the latest email code.");
     const record = await put(users, { id: uid(), email: challenge.email, fullName: String(challenge.data.fullName),
       role: "clinicAdmin", status: "active", passwordHash: String(challenge.data.passwordHash),
        mobile:challenge.data.mobileVerified === true && typeof challenge.data.mobile === "string" ? challenge.data.mobile : undefined,
-       data:{mobileVerified:challenge.data.mobileVerified === true},
+       data:{mobileVerified:true,staffMobileProof:challenge.data.staffMobileProof},
       emailVerifiedAt: new Date(), invitationStatus: "notRequired" }, tx);
     await audit(record, "registerClinicAdmin", "users", record, tx);
     return record;

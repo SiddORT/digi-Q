@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./account-mobile": "./src/account-mobile.ts",
     ".": "./src/index.ts",
     "./notification-variable-contract": "./src/notification-variable-contract.ts",
     "./public-website": "./src/public-website.ts",
@@ -11,6 +12,7 @@
     "./ticket-directions": "./src/ticket-directions.ts"
   },
   "dependencies": {
+    "libphonenumber-js": "^1.13.14",
     "zod": "catalog:"
   }
 }

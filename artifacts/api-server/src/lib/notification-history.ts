@@ -116,7 +116,7 @@ export async function recordNotification(conn: any, job: string, entry: Entry, s
       }
       data.status = status;
       data.reason = status === "pending" || status === "sending" || status === "provider_accepted" ? null :
-        status === "preparation_failed" && entry.preparationReason ? entry.preparationReason : status;
+        entry.preparationReason || status;
       if (status === "pending") { data.queuedAt ??= now; data.dueAt = entry.dueAt ?? data.dueAt ?? now; delete data.completedAt; }
       if (status === "sending" && previousStatus !== "sending") data.dispatchAt = now;
       if (!["pending", "sending"].includes(status)) data.completedAt = now;

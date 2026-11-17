@@ -28,6 +28,11 @@ import type { OwnerCustomSchedule } from './ownerCustomSchedule';
 import type { OwnerSchedule } from './ownerSchedule';
 
 export interface ClinicAdminOnboardingInput {
+  /**
+     * Required verified owner-mobile challenge for new setup; completion receipts remain recoverable.
+     * @maxLength 100
+     */
+  mobileProofId?: string;
   /** @pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ */
   requestId?: string;
   /** @maxItems 30 */

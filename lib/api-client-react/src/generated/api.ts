@@ -196,6 +196,10 @@ import type {
   OtpResult,
   OtpVerification,
   OwnDoctorProfileInput,
+  OwnerMobileChallenge,
+  OwnerMobileConfirmInput,
+  OwnerMobileReference,
+  OwnerMobileStartInput,
   Patient,
   PatientActivityPage,
   PatientDocument,
@@ -7242,6 +7246,260 @@ export const useVerifyPatientEmail = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getVerifyPatientEmailMutationOptions(options));
+    }
+
+export const getStartOwnerMobileUrl = () => {
+
+
+
+
+  return `/api/auth/owner-mobile/start`
+}
+
+/**
+ * Explicitly request mobile-first clinic-owner proof, bound to an HttpOnly guest intent or the signed-in Super Admin. Never creates an identity or session.
+ */
+export const startOwnerMobile = async (ownerMobileStartInput: OwnerMobileStartInput, options?: Parameters<typeof customFetch>[1]): Promise<OwnerMobileChallenge> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<OwnerMobileChallenge>(getStartOwnerMobileUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(ownerMobileStartInput)
+  }
+);}
+
+
+
+
+
+export const getStartOwnerMobileMutationKey = () => ['startOwnerMobile'] as const;
+
+export const getStartOwnerMobileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startOwnerMobile>>, TError,StartOwnerMobileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startOwnerMobile>>, TError,StartOwnerMobileMutationVariables, TContext> => {
+
+const mutationKey = getStartOwnerMobileMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startOwnerMobile>>, StartOwnerMobileMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  startOwnerMobile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartOwnerMobileMutationResult = NonNullable<Awaited<ReturnType<typeof startOwnerMobile>>>
+    export type StartOwnerMobileMutationBody = BodyType<OwnerMobileStartInput>
+    export type StartOwnerMobileMutationError = ErrorType<unknown>
+    export type StartOwnerMobileMutationVariables = {data: BodyType<OwnerMobileStartInput>}
+
+    /** Explicitly request mobile-first clinic-owner proof, bound to an HttpOnly guest intent or the signed-in Super Admin. Never creates an identity or session. */
+export const useStartOwnerMobile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startOwnerMobile>>, TError,StartOwnerMobileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startOwnerMobile>>,
+        TError,
+        StartOwnerMobileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStartOwnerMobileMutationOptions(options));
+    }
+
+export const getConfirmOwnerMobileUrl = () => {
+
+
+
+
+  return `/api/auth/owner-mobile/verify`
+}
+
+export const confirmOwnerMobile = async (ownerMobileConfirmInput: OwnerMobileConfirmInput, options?: Parameters<typeof customFetch>[1]): Promise<RegistrationMobileProof> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<RegistrationMobileProof>(getConfirmOwnerMobileUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(ownerMobileConfirmInput)
+  }
+);}
+
+
+
+
+
+export const getConfirmOwnerMobileMutationKey = () => ['confirmOwnerMobile'] as const;
+
+export const getConfirmOwnerMobileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmOwnerMobile>>, TError,ConfirmOwnerMobileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmOwnerMobile>>, TError,ConfirmOwnerMobileMutationVariables, TContext> => {
+
+const mutationKey = getConfirmOwnerMobileMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmOwnerMobile>>, ConfirmOwnerMobileMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirmOwnerMobile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmOwnerMobileMutationResult = NonNullable<Awaited<ReturnType<typeof confirmOwnerMobile>>>
+    export type ConfirmOwnerMobileMutationBody = BodyType<OwnerMobileConfirmInput>
+    export type ConfirmOwnerMobileMutationError = ErrorType<unknown>
+    export type ConfirmOwnerMobileMutationVariables = {data: BodyType<OwnerMobileConfirmInput>}
+
+    export const useConfirmOwnerMobile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmOwnerMobile>>, TError,ConfirmOwnerMobileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmOwnerMobile>>,
+        TError,
+        ConfirmOwnerMobileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getConfirmOwnerMobileMutationOptions(options));
+    }
+
+export const getInvalidateOwnerMobileUrl = () => {
+
+
+
+
+  return `/api/auth/owner-mobile/invalidate`
+}
+
+/**
+ * Retires only this browser or actor's exact owner-phone attempt without sending a message.
+ */
+export const invalidateOwnerMobile = async (ownerMobileReference: OwnerMobileReference, options?: Parameters<typeof customFetch>[1]): Promise<RegistrationMobileProof> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<RegistrationMobileProof>(getInvalidateOwnerMobileUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(ownerMobileReference)
+  }
+);}
+
+
+
+
+
+export const getInvalidateOwnerMobileMutationKey = () => ['invalidateOwnerMobile'] as const;
+
+export const getInvalidateOwnerMobileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof invalidateOwnerMobile>>, TError,InvalidateOwnerMobileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof invalidateOwnerMobile>>, TError,InvalidateOwnerMobileMutationVariables, TContext> => {
+
+const mutationKey = getInvalidateOwnerMobileMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof invalidateOwnerMobile>>, InvalidateOwnerMobileMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  invalidateOwnerMobile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InvalidateOwnerMobileMutationResult = NonNullable<Awaited<ReturnType<typeof invalidateOwnerMobile>>>
+    export type InvalidateOwnerMobileMutationBody = BodyType<OwnerMobileReference>
+    export type InvalidateOwnerMobileMutationError = ErrorType<unknown>
+    export type InvalidateOwnerMobileMutationVariables = {data: BodyType<OwnerMobileReference>}
+
+    /** Retires only this browser or actor's exact owner-phone attempt without sending a message. */
+export const useInvalidateOwnerMobile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof invalidateOwnerMobile>>, TError,InvalidateOwnerMobileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof invalidateOwnerMobile>>,
+        TError,
+        InvalidateOwnerMobileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getInvalidateOwnerMobileMutationOptions(options));
     }
 
 export const getRequestRegistrationMobileCodeUrl = () => {

@@ -470,6 +470,9 @@ export interface EventControlRow {
   enabled: boolean;
   source: string;
   ready: boolean;
+  /** Onboarding SMS account eligibility, separate from configuration readiness. Never certifies delivery. */
+  recipientReady?: boolean;
+  recipientBlockedReasons?: string[];
   /** Security event policy; independent from optional communication gates. Does not certify provider or DLT approval. */
   required?: boolean;
   blockedReasons: string[];
@@ -1869,7 +1872,78 @@ export interface StaffLoginResponse {
   user: StaffLoginResponseUser;
 }
 
+export type OwnerMobileStartInputFlow = typeof OwnerMobileStartInputFlow[keyof typeof OwnerMobileStartInputFlow];
+
+
+export const OwnerMobileStartInputFlow = {
+  public: 'public',
+  admin: 'admin',
+} as const;
+
+export interface OwnerMobileStartInput {
+  /** @maxLength 16 */
+  mobile: string;
+  flow: OwnerMobileStartInputFlow;
+}
+
+export type OwnerMobileConfirmInputFlow = typeof OwnerMobileConfirmInputFlow[keyof typeof OwnerMobileConfirmInputFlow];
+
+
+export const OwnerMobileConfirmInputFlow = {
+  public: 'public',
+  admin: 'admin',
+} as const;
+
+export interface OwnerMobileConfirmInput {
+  flow: OwnerMobileConfirmInputFlow;
+  /** @maxLength 100 */
+  challengeId: string;
+  /** @pattern ^[0-9]{6}$ */
+  code: string;
+}
+
+export type OwnerMobileReferenceFlow = typeof OwnerMobileReferenceFlow[keyof typeof OwnerMobileReferenceFlow];
+
+
+export const OwnerMobileReferenceFlow = {
+  public: 'public',
+  admin: 'admin',
+} as const;
+
+export interface OwnerMobileReference {
+  flow: OwnerMobileReferenceFlow;
+  /** @maxLength 100 */
+  challengeId: string;
+}
+
+export type SecurityChannelOutcomeStatus = typeof SecurityChannelOutcomeStatus[keyof typeof SecurityChannelOutcomeStatus];
+
+
+export const SecurityChannelOutcomeStatus = {
+  provider_accepted: 'provider_accepted',
+  provider_rejected: 'provider_rejected',
+  pre_dispatch_failed: 'pre_dispatch_failed',
+  delivery_unknown: 'delivery_unknown',
+  unavailable: 'unavailable',
+  disabled: 'disabled',
+  not_requested: 'not_requested',
+  not_reported: 'not_reported',
+} as const;
+
+export interface SecurityChannelOutcome {
+  status: SecurityChannelOutcomeStatus;
+  /** Masked destination only. Acceptance is not receipt. */
+  destination?: string;
+}
+
+export interface OwnerMobileChallenge {
+  challengeId: string;
+  sms: SecurityChannelOutcome;
+}
+
 export interface StartClinicRegistrationInput {
+  /** @maxLength 100 */
+  mobileProofId: string;
   email: string;
   /**
      * @minLength 1
@@ -1877,7 +1951,7 @@ export interface StartClinicRegistrationInput {
      */
   fullName: string;
   /** @pattern ^\+[1-9][0-9]{6,14}$ */
-  mobile?: string;
+  mobile: string;
   /**
      * Requires letters and numbers; maximum 1024 UTF-8 bytes, enforced by server.
      * @minLength 8
@@ -1916,26 +1990,6 @@ export interface DemoLoginInput {
      * @maxLength 200
      */
   password: string;
-}
-
-export type SecurityChannelOutcomeStatus = typeof SecurityChannelOutcomeStatus[keyof typeof SecurityChannelOutcomeStatus];
-
-
-export const SecurityChannelOutcomeStatus = {
-  provider_accepted: 'provider_accepted',
-  provider_rejected: 'provider_rejected',
-  pre_dispatch_failed: 'pre_dispatch_failed',
-  delivery_unknown: 'delivery_unknown',
-  unavailable: 'unavailable',
-  disabled: 'disabled',
-  not_requested: 'not_requested',
-  not_reported: 'not_reported',
-} as const;
-
-export interface SecurityChannelOutcome {
-  status: SecurityChannelOutcomeStatus;
-  /** Masked destination only. Acceptance is not receipt. */
-  destination?: string;
 }
 
 export interface SecurityChannelOutcomes {
@@ -3106,6 +3160,11 @@ export type ClinicAdminOnboardingInputClinic = {
 };
 
 export interface ClinicAdminOnboardingInput {
+  /**
+     * Required verified owner-mobile challenge for new setup; completion receipts remain recoverable.
+     * @maxLength 100
+     */
+  mobileProofId?: string;
   requestId?: string;
   /** @maxItems 30 */
   branches?: ClinicBranchSetup[];

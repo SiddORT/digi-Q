@@ -150,10 +150,12 @@ export async function consumeRateLimit(key: string, max: number, windowMs = 600_
     }
   });
 }
-export async function createChallenge(input: { userId?: string; email: string; purpose: string; secret: string; ttlMs: number; data?: Record<string, unknown> }) {
+export async function createChallenge(input: { userId?: string; email: string; purpose: string; secret: string; ttlMs: number; data?: Record<string, unknown> }, transaction?: AuthTransaction) {
   const id = randomBytes(18).toString("base64url");
-  await db.delete(authChallenges).where(lt(authChallenges.expiresAt, new Date()));
-  await db.transaction(async tx => {
+  // An enclosing proof transaction owns its locks. Cleanup on another connection
+  // could wait on that same attempt; leave opportunistic cleanup to ordinary calls.
+  if (!transaction) await db.delete(authChallenges).where(lt(authChallenges.expiresAt, new Date()));
+  const create = async (tx: AuthTransaction) => {
     if (input.userId) await lockCredentials(tx, input.userId);
     if (input.userId && input.purpose === "patient-sms")
       await tx.update(authChallenges).set({consumedAt:new Date(),data:{}})
@@ -162,7 +164,8 @@ export async function createChallenge(input: { userId?: string; email: string; p
     id, userId: input.userId, email: input.email, purpose: input.purpose, tokenHash: challengeDigest(id, input.purpose, input.secret),
     expiresAt: new Date(Date.now() + input.ttlMs), data: input.data || {},
     });
-  });
+  };
+  if (transaction) await create(transaction); else await db.transaction(create);
   return id;
 }
 /** Validate reset/invite token before starting expensive Argon2id work. */

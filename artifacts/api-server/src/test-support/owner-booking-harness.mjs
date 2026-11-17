@@ -5,6 +5,7 @@ import argon2 from "argon2";
 import { createHash, randomBytes } from "node:crypto";
 import { SignJWT, jwtVerify } from "jose";
 import { createFeatureHarness } from "./feature-harness.mjs";
+import { seedOwnerMobileProof } from "./owner-mobile-fixture.mjs";
 
 export const OWNER_PASSWORD = "Fictional-Owner!2026";
 export const sessionDigest = cookie => createHash("sha256").update(cookie.slice("digiq_session=".length)).digest("hex");
@@ -86,11 +87,19 @@ export async function createOwnerBookingHarness({ sessionMode = "native" } = {})
     assert.equal(response.status, 200, JSON.stringify(response.data));
     return sessionCookie(response, email);
   };
-  h.as = (cookie, method, path, body) => h.call(null, method, path, body, { cookie });
+  h.as = async (cookie, method, path, body) => {
+    if(method==="POST"&&path==="/clinic-admin-onboarding"&&!body.mobileProofId) {
+      body.admin.mobile ||= "+919876543210";
+      body.mobileProofId=await seedOwnerMobileProof(h.pg,"admin","owner-test-super",body.admin.mobile);
+    }
+    return h.call(null, method, path, body, { cookie });
+  };
   h.register = async email => {
+    const binding=randomBytes(32).toString("base64url");
+    const mobileProofId=await seedOwnerMobileProof(h.pg,"public",binding);
     const start = await h.call(null, "POST", "/auth/register/start", {
-      email, fullName: "Fictional Self Owner", password: OWNER_PASSWORD,
-    });
+      email, fullName: "Fictional Self Owner", password: OWNER_PASSWORD,mobile:"+919876543210",mobileProofId,
+    },{cookie:`digiq_owner_mobile=${binding}`});
     assert.equal(start.status, 200, JSON.stringify(start.data));
     const message = h.mail.messages.findLast(mail => mail.to === email);
     const code = (message.text || message.html).match(/\b\d{6}\b/)?.[0];

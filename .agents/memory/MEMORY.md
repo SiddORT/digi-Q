@@ -81,3 +81,4 @@
 - [Dependency security updates](dependency-security-updates.md) — inspect resolved versions and peer identities; prefer mature compatible fixes without weakening install protections.
 - [Validation migration compatibility](validation-migration-compatibility.md) — preserve UUID-shaped recovery IDs; distinguish missing-field guard changes from valid-input regressions.
 - [Private file policy](private-file-policy.md) — quarantine is separate from MIME checks; retained personal files must not bypass staff-erasure policy.
+- [Owner mobile onboarding](owner-mobile-onboarding-boundary.md) — owner phone-first proof is a narrow exception; preserve email identity, existing access and separate live-send authorization.

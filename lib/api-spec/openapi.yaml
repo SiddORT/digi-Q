@@ -983,6 +983,26 @@ paths:
       responses:
         "200": { description: Patient session created, content: { application/json: { schema: { $ref: "#/components/schemas/AuthAuthenticated" } } } }
         "503": { description: "Session issuance unavailable; code AUTH_SESSION_UNCONFIGURED when session mode or signing key is invalid." }
+  /auth/owner-mobile/start:
+    post:
+      operationId: startOwnerMobile
+      description: Explicitly request mobile-first clinic-owner proof, bound to an HttpOnly guest intent or the signed-in Super Admin. Never creates an identity or session.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/OwnerMobileStartInput" } } } }
+      responses:
+        "200": { description: Safe SMS outcome, content: { application/json: { schema: { $ref: "#/components/schemas/OwnerMobileChallenge" } } } }
+  /auth/owner-mobile/verify:
+    post:
+      operationId: confirmOwnerMobile
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/OwnerMobileConfirmInput" } } } }
+      responses:
+        "200": { description: Phone proof only, content: { application/json: { schema: { $ref: "#/components/schemas/RegistrationMobileProof" } } } }
+  /auth/owner-mobile/invalidate:
+    post:
+      operationId: invalidateOwnerMobile
+      description: Retires only this browser or actor's exact owner-phone attempt without sending a message.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/OwnerMobileReference" } } } }
+      responses:
+        "200": { description: Attempt retired, content: { application/json: { schema: { $ref: "#/components/schemas/RegistrationMobileProof" } } } }
   /auth/registration/mobile/request:
     post:
       operationId: requestRegistrationMobileCode
@@ -2728,6 +2748,8 @@ components:
         enabled: { type: boolean }
         source: { type: string }
         ready: { type: boolean }
+        recipientReady: { type: boolean, description: "Onboarding SMS account eligibility, separate from configuration readiness. Never certifies delivery." }
+        recipientBlockedReasons: { type: array, items: { type: string } }
         required: { type: boolean, description: "Security event policy; independent from optional communication gates. Does not certify provider or DLT approval." }
         blockedReasons: { type: array, items: { type: string } }
         timing: { type: string }
@@ -3015,10 +3037,39 @@ components:
             fullName: { type: string }
             role: { type: string, enum: [superAdmin, clinicAdmin, doctor, receptionist] }
             status: { type: string, enum: [active] }
+    OwnerMobileStartInput:
+      type: object
+      additionalProperties: false
+      required: [mobile, flow]
+      properties:
+        mobile: { type: string, maxLength: 16 }
+        flow: { type: string, enum: [public, admin] }
+    OwnerMobileConfirmInput:
+      type: object
+      additionalProperties: false
+      required: [flow, challengeId, code]
+      properties:
+        flow: { type: string, enum: [public, admin] }
+        challengeId: { type: string, maxLength: 100 }
+        code: { type: string, pattern: '^[0-9]{6}$' }
+    OwnerMobileReference:
+      type: object
+      additionalProperties: false
+      required: [flow, challengeId]
+      properties:
+        flow: { type: string, enum: [public, admin] }
+        challengeId: { type: string, maxLength: 100 }
+    OwnerMobileChallenge:
+      type: object
+      required: [challengeId, sms]
+      properties:
+        challengeId: { type: string }
+        sms: { $ref: "#/components/schemas/SecurityChannelOutcome" }
     StartClinicRegistrationInput:
       type: object
-      required: [email, fullName, password]
+      required: [email, fullName, password, mobile, mobileProofId]
       properties:
+        mobileProofId: { type: string, maxLength: 100 }
         email: { type: string, format: email }
         fullName: { type: string, minLength: 1, maxLength: 200 }
         mobile: { type: string, pattern: '^\+[1-9][0-9]{6,14}$' }
@@ -3649,6 +3700,7 @@ components:
       type: object
       required: [admin, clinic]
       properties:
+        mobileProofId: { type: string, maxLength: 100, description: "Required verified owner-mobile challenge for new setup; completion receipts remain recoverable." }
         requestId: { type: string, format: uuid }
         branches: { type: array, maxItems: 30, items: { $ref: "#/components/schemas/ClinicBranchSetup" } }
         policies: { $ref: "#/components/schemas/ClinicPolicy" }

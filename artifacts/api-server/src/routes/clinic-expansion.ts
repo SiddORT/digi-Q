@@ -14,6 +14,8 @@ import { configuredDuration } from "../lib/session-duration";
 import { clinicalMembership, clinicalBranchIds } from "../lib/clinical-membership";
 import { registrationCompletion, saveRegistrationReceipt } from "../lib/registration-completion";
 import { validateRegistrationContacts } from "../lib/registration-contacts";
+import { requireAccountMobile } from "../lib/owner-mobile";
+import { verifiedContact } from "../lib/staff-account-notifications";
 
 export const clinicExpansionRouter = Router();
 clinicExpansionRouter.get("/clinic-registration/completion", async (req, res) => {
@@ -69,7 +71,10 @@ clinicExpansionRouter.post("/clinic-registration", registrationLimit, async (req
     assert(!existing.length, 409, "This administrator already owns a clinic");
     assert(body.clinic.slug && body.branches.every((b: any) => b.slug), 400, "Choose public URLs for the clinic and each branch");
     validateRegistrationContacts(body);
-    const admin = await change(users, userId, { fullName: body.fullName, mobile: body.mobile }, tx);
+    const [current] = await tx.select().from(users).where(eq(users.id, userId)).for("update");
+    const mobile = requireAccountMobile(current.mobile);
+    assert(verifiedContact(current, "sms") === mobile && (!body.mobile || body.mobile === mobile), 400, "Verify your account mobile in My Profile before clinic setup.");
+    const admin = await change(users, userId, { fullName: body.fullName }, tx);
     const result = await createOwnedClinic(admin, admin, body, tx);
     await saveRegistrationReceipt(userId, "self", body, result.clinic.id, tx);
     await audit(admin, "registerClinic", "users", admin, tx);

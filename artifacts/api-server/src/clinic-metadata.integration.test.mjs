@@ -7,6 +7,7 @@ import { rm } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/pglite";
 import { createFeatureHarness } from "./test-support/feature-harness.mjs";
 import { seedFeatureFixtures } from "./test-support/feature-fixtures.mjs";
+import { withOwnerMobileFixture } from "./test-support/owner-mobile-fixture.mjs";
 
 let h, provision;
 const bundle = resolve(import.meta.dirname, ".healthcare-vocabulary-test.mjs");
@@ -19,6 +20,7 @@ before(async () => {
   provision = (await import(bundle)).provisionHealthcareVocabulary;
   h = await createFeatureHarness({ administration: true, registration: true, simulatedMail: true });
   await seedFeatureFixtures(h.pg);
+  withOwnerMobileFixture(h);
 });
 after(async () => { await h?.close(); await rm(bundle, { force: true }); });
 const patch = (actor, clinic, metadata) => h.call(actor, "PATCH", `/clinics/${clinic}/settings`, { clinic: metadata });
@@ -190,6 +192,7 @@ test("public owner onboarding saves mixed metadata atomically, with recovery and
   const argon2 = createRequire(import.meta.url)("argon2");
   const password = "Fixture-Only!DigiQ-2026";
   await h.pg.query("insert into users(id,email,full_name,role,email_verified_at,password_hash) values('metadata-self','metadata-self@test.invalid','Fictional Owner','clinicAdmin',now(),$1)", [await argon2.hash(password)]);
+  await h.pg.query("update users set mobile='+919876543210',data=$1 where id='metadata-self'",[{staffMobileProof:{contact:"+919876543210",verifiedAt:new Date().toISOString()}}]);
   const standard = (await h.call(null, "GET", "/public/registration-options")).data.specialities.find(r => r.name === "General Medicine");
   const { admin, ...input } = setup("metadata-self-clinic", { categoryId: "legacy-general", specialityIds: [standard.id], customSpecialities: ["  Mobile Care  "] });
   Object.assign(input, { fullName: "Fictional Owner", password, ownDoctor: true });

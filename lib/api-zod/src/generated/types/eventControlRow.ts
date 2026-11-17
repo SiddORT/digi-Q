@@ -33,6 +33,9 @@ export interface EventControlRow {
   enabled: boolean;
   source: string;
   ready: boolean;
+  /** Onboarding SMS account eligibility, separate from configuration readiness. Never certifies delivery. */
+  recipientReady?: boolean;
+  recipientBlockedReasons?: string[];
   /** Security event policy; independent from optional communication gates. Does not certify provider or DLT approval. */
   required?: boolean;
   blockedReasons: string[];

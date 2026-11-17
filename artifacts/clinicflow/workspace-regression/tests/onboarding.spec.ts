@@ -12,6 +12,8 @@ async function services(page: Page, signedIn = true) {
     else if (path === "/api/auth/csrf") result = { csrfToken: "fictional-csrf" };
     else if (path === "/api/me") result = { user: actor, permissions: {} };
     else if (path === "/api/auth/register/start") { state.starts.push(data); result = { challengeId: "fictional-challenge" }; }
+    else if (path === "/api/auth/owner-mobile/start") result = { challengeId:"fictional-mobile-proof",sms:{status:"provider_accepted"} };
+    else if (path === "/api/auth/owner-mobile/verify") result = { mobileVerified:true };
     else if (path === "/api/auth/registration/resume") { state.resumes++; result = { challengeId: "fictional-challenge" }; }
     else if (path === "/api/auth/registration/resend") {
       if (state.failResend) { await route.fulfill({status:503,json:{error:"Email service is temporarily unavailable."}}); return; }
@@ -35,6 +37,12 @@ async function services(page: Page, signedIn = true) {
 }
 const go = (page:Page) => page.goto("/?mode=onboarding");
 const next = (page:Page) => page.getByRole("button",{name:"Continue",exact:true}).click();
+async function mobileFirst(page:Page) {
+  await page.getByTestId("owner-mobile-proof").locator('input[type="tel"]').fill("9876543210");
+  await page.getByRole("button",{name:"Send SMS code",exact:true}).click();
+  await page.getByRole("textbox",{name:"SMS verification code",exact:true}).fill("123456");
+  await page.getByRole("button",{name:"Verify mobile",exact:true}).click();
+}
 async function identity(page:Page) {
   await page.getByTestId("registration-name").fill("Fictional Long Clinic Group");
   await page.getByTestId("registration-slug").fill("fictional-long-group");
@@ -115,6 +123,8 @@ for(const width of [1366,390])test(`owner direct send, email correction, legacy 
   await expect(page.getByRole("heading",{name:"Create your account",exact:true})).toBeVisible();
   await expect(page.locator('input[autocomplete="new-password"]')).toHaveValue("");
   expect(state.starts).toHaveLength(0);expect(state.resumes).toBe(0);
+  await expect(page.getByRole("button",{name:"Send verification code",exact:true})).toBeDisabled();
+  await mobileFirst(page);
   await page.getByRole("button",{name:"Send verification code",exact:true}).click();
   expect(state.starts).toHaveLength(0);
   await page.locator('input[autocomplete="new-password"]').fill("FictionalPass123");
@@ -131,7 +141,7 @@ for(const width of [1366,390])test(`owner direct send, email correction, legacy 
   await page.getByRole("button",{name:"Send verification code",exact:true}).click();
   await expect(page.getByRole("heading",{name:"Verify your email",exact:true})).toBeVisible();
   expect(state.starts.map(input=>input.email)).toEqual([actor.email,"corrected-owner@test.invalid"]);
-  expect(await page.evaluate(()=>JSON.stringify(Object.values(sessionStorage)))).not.toMatch(/FictionalPass|987654|fictional-challenge/);
+  expect(await page.evaluate(()=>JSON.stringify(Object.values(sessionStorage)))).not.toMatch(/FictionalPass|"code"|fictional-challenge/);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
 });
 test("legacy final setup draft revalidates hidden fields and retains finish security",async({page})=>{
@@ -159,6 +169,7 @@ test("onboarding account secrets are not restored and latest-code success differ
   });
   const state = await services(page,false);
   await go(page);
+  await mobileFirst(page);
   await page.getByLabel("Your Name",{exact:false}).fill("Fictional Owner");
   await page.getByLabel("Email Address",{exact:false}).fill(actor.email);
   await page.locator('input[autocomplete="new-password"]').fill("FictionalPass123");

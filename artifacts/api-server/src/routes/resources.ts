@@ -231,6 +231,8 @@ export async function deliverInvitation(userId: string, redirectUrl?: string) {
 }
 export async function createClinicAdminOnboarding(actor: any, body: any, redirectUrl?: string) {
   roles(actor, ["superAdmin"]);
+  const { requireAccountMobile } = await import("../lib/owner-mobile");
+  const suppliedMobile = body.admin.mobile;
   const direct = await takeStaffCredentials(body.admin);
   body = { ...body, admin: direct.body };
   const email = body.admin.email.toLowerCase();
@@ -241,6 +243,7 @@ export async function createClinicAdminOnboarding(actor: any, body: any, redirec
     const completed = await registrationCompletion(actor.id, body.requestId, "admin", db, body);
     if (completed) return completed;
   }
+  requireAccountMobile(suppliedMobile);
   if (!direct.credentials) await ensureStaffInvitationConfigured("clinicAdmin");
   const result = await db.transaction(async tx => {
     if (body.requestId) {
@@ -251,6 +254,8 @@ export async function createClinicAdminOnboarding(actor: any, body: any, redirec
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"user-email:" + email}))`);
     assert(!(await all(users, tx)).some(u => u.email === email), 409, "Email already belongs to an existing profile; roles cannot be silently changed");
     validateRegistrationContacts(body);
+    const { ownerMobileSubject, useOwnerMobileProof } = await import("../lib/owner-mobile");
+    const staffMobileProof = await useOwnerMobileProof(tx, ownerMobileSubject("admin", actor.id), body.mobileProofId, body.admin.mobile);
     const adminId = uid();
     const admin = await put(users, {
       id: adminId,
@@ -261,7 +266,7 @@ export async function createClinicAdminOnboarding(actor: any, body: any, redirec
       status: "active",
       invitationStatus: "failed",
       ...direct.credentials,
-      ...(direct.credentials ? { data: { staffContactOnboarding: true, staffVerificationPrompt: true } } : {}),
+      data: { ...(direct.credentials ? { staffContactOnboarding: true, staffVerificationPrompt: true } : {}), staffMobileProof },
     }, tx);
     const setup = await createOwnedClinic(actor, admin, body, tx);
     await saveRegistrationReceipt(actor.id, "admin", body, setup.clinic.id, tx);

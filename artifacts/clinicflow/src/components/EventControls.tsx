@@ -71,7 +71,9 @@ export function EventControls({ identity }: { identity: api.Identity }) {
           <table className="ec-table"><thead><tr><th>Recipient</th><th>Channel</th><th>Timing</th><th>Status</th><th>Switch</th></tr></thead><tbody>
             {rows.map(r => <tr key={rowKey(r)} data-testid={`row-control-${r.channel}-${event}-${r.recipient}`}>
               <td>{RECIPIENT_LABEL[r.recipient]}</td><td>{r.channel === "sms" ? "SMS" : "Email"}</td><td>{r.timing}</td>
-              <td><span className={`et-chip ${r.enabled && r.ready ? "live" : ""}`}>{r.enabled ? (r.ready ? "On and ready" : "On, blocked") : "Off"}</span> <span className="muted">{titleCase(r.source.replace(/[_-]/g, " "))}</span>
+              <td>
+                {r.recipientReady !== undefined && <small className="muted">Account contacts: {r.recipientReady ? "eligible for future events; delivery not confirmed" : "action required"}.{r.recipientBlockedReasons?.map(reason => <span key={reason} style={{display:"block"}}>{reason}</span>)}</small>}
+                <span className={`et-chip ${r.enabled && r.ready ? "live" : ""}`}>{r.enabled ? (r.ready ? "On and ready" : "On, blocked") : "Off"}</span> <span className="muted">{titleCase(r.source.replace(/[_-]/g, " "))}</span>
                 {r.enabled && !r.ready && r.blockedReasons.length > 0 && <ul className="ec-blocked" data-testid={`list-blocked-${r.channel}-${event}-${r.recipient}`}>{r.blockedReasons.map(b => <li key={b}>{b}</li>)}
                   <li><Link href={area(r.channel)} className="text-link" data-testid={`link-fix-${r.channel}-${event}-${r.recipient}`}>Open {r.channel === "sms" ? "SMS" : "Email"} settings</Link></li></ul>}
                 {!r.enabled && r.blockedReasons.length > 0 && <small className="muted"> Needs: {r.blockedReasons.join("; ")} <Link href={area(r.channel)} className="text-link">Open {r.channel === "sms" ? "SMS" : "Email"} settings</Link></small>}</td>

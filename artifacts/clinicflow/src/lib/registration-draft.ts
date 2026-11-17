@@ -32,7 +32,7 @@ export const setupDraftSchema = z.object({
     })) })).length(7)).max(30).optional(),
   }),
 });
-export const accountDraftSchema = z.object({ fullName: text, email: text, step: z.enum(["details", "review", "verify"]).transform(step => step === "review" ? "details" as const : step) });
+export const accountDraftSchema = z.object({ fullName: text, email: text, mobile: text.optional(), step: z.enum(["details", "review", "verify"]).transform(step => step === "review" ? "details" as const : step) });
 const AGE = 24 * 60 * 60 * 1000;
 export const registrationDraftKey = (mode: string, actor: string) => `digiq:registration:v1:${mode}:${actor}`;
 export function readRegistrationDraft<T>(key: string, schema: z.ZodType<T>): { data?: T; stored: boolean } {

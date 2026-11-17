@@ -464,6 +464,7 @@ test("disabled email tests use the existing sender interface, exact sample value
   assert.equal((await h.control.query("select count(*)::int n from settings where id like '%outbox:%'")).rows[0].n,before.rows[0].n);
 });
 test("all six lifecycle events enqueue once per channel and eligible recipient; unknown dispatch is never resent",async()=>{
+  await h.control.query("update users set data=data||jsonb_build_object('staffMobileProof',jsonb_build_object('contact',mobile,'verifiedAt',now()::text)) where id='ca'");
   await h.control.query("delete from settings where id like 'sms-template:%' or id like 'sms-outbox:%' or id like 'mail-outbox:%'");
   for(const event of api.templateEvents.filter(event=>!["staff_created_admin", "staff_welcome", "booking_status_link"].includes(event)))for(const group of api.templateRecipients){
     // Patient authentication codes are not lifecycle jobs. Keep this scenario's

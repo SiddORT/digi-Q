@@ -19,6 +19,8 @@ import { notificationStaffSubjects } from "./notification-staff-subjects";
 import { lockNotificationPreferences, recipientPreference, pendingPreferenceAllowed } from "./notification-preferences";
 import { appointmentCaptureAfterCutover } from "./appointment-notification-cutover";
 import { appointmentNotificationTarget } from "./appointment-notification-scope";
+import { onboardingMobileReason } from "./onboarding-mobile-readiness";
+import { storedSmsDiagnostic } from "./notification-sms-diagnostics";
 
 const phoneKey=(phone:string)=>createHash("sha256").update(phone).digest("hex");
 export function notificationPhone(value:unknown) {
@@ -28,7 +30,7 @@ export function notificationPhone(value:unknown) {
 }
 async function targetAccounts(conn:any,group:TemplateRecipient,row:any,clinic:any) {
   if(group==="superAdmin") return conn.select().from(users).where(eq(users.role,"superAdmin"));
-  if(group==="clinicAdmin") return [await one(users,clinic.adminId,conn)];
+  if(group==="clinicAdmin") return conn.select().from(users).where(eq(users.id,clinic.adminId));
   if(group==="doctor") {
     if(!row.doctorId)return [];
     const doctor=await one(doctors,row.doctorId,conn);
@@ -68,13 +70,20 @@ export async function enqueueSmsEvent(conn:any,event:TemplateEvent,row:any,previ
       const preference=await recipientPreference(conn,preferenceUserId,"sms",event);
       const decision=`sms-decision:${event}:${row.id}:${row.revision||0}:${group}:${account?.id||"missing"}`;
       const entry=notificationEntry({event,clinicId:row.clinicId,snapshot:row,recipientGroup:group},"sms");
+      const recipientReason = event === "onboarding" ? onboardingMobileReason(account) : undefined;
+      const activationReason = !preference.enabled ? "Recipient notification choice is off." : !gate ? "Clinic notification gate is off."
+        : !notificationSmsEnabled(env) ? "SMS notifications are disabled in Communication Settings."
+        : !template.content.enabled ? "Published activation is off." : "Event predates current activation; old occurrences are not replayed.";
+      const configurationReason=!notificationSmsReadiness(env).ready?"SMS provider configuration is not ready; check Communication Settings."
+        : event==="onboarding"&&!template.wordingPublished?"Publish approved onboarding SMS wording before a fresh event."
+        : "SMS sender or DLT metadata is not ready; check this published template and approved sender.";
        const status=!preference.enabled||!gate||!notificationSmsEnabled(env)||!template.content.enabled||
          !appointmentCaptureAfterCutover(event,group,template.activatedAt,row)?"disabled":
-         !notificationSmsReadiness(env).ready||
-         appointmentNotificationTarget(event,group)&&!smsMetadataReady(notificationSmsConfig(env),template.content as SmsTemplateContent)?"configuration_failed":
-        !account||account.status!=="active"||!notificationPhone(account.mobile)?"no_recipient":
+         !notificationSmsReadiness(env).ready||event==="onboarding"&&!template.wordingPublished||
+         (event==="onboarding"||appointmentNotificationTarget(event,group))&&!smsMetadataReady(notificationSmsConfig(env),template.content as SmsTemplateContent)?"configuration_failed":
+        recipientReason||!account||account.status!=="active"||!notificationPhone(account.mobile)?"no_recipient":
         used.has(notificationPhone(account.mobile))?"not_attempted":null;
-      if(status){await recordDecision(conn,decision,entry,status,{...templateSnapshot(template,event,group,"sms"),recipient:notificationPhone(account?.mobile)||undefined,dltTemplateId:(template.content as SmsTemplateContent).dltTemplateId});continue;}
+      if(status){await recordDecision(conn,decision,{...entry,...(event==="onboarding"?{preparationReason:status==="disabled"?activationReason:status==="no_recipient"?recipientReason:status==="configuration_failed"?configurationReason:status==="not_attempted"?"This destination already has an occurrence for this event.":undefined}:{})},status,{...templateSnapshot(template,event,group,"sms"),recipient:notificationPhone(account?.mobile)||undefined,dltTemplateId:(template.content as SmsTemplateContent).dltTemplateId});continue;}
       const phone=notificationPhone(account.mobile);
       used.add(phone);
       const id=`sms-outbox:${event}:${row.id}:${row.revision||0}:${phoneKey(phone)}`;
@@ -111,8 +120,9 @@ export async function processSmsNotifications(conn:any=db,send=sendNotificationS
            await tx.update(settings).set({data:{...data,state,preparationReason,finishedAt:now}}).where(eq(settings.id,record.id));
            await recordNotification(tx,data.historyKey||record.id,{...notificationEntry(data,"sms"),preparationReason},state,undefined,[],now);
         };
-        if(!await pendingPreferenceAllowed(tx,data,"sms")){await update("disabled");return null;}
-        if(!(await getSettings(tx,data.clinicId)).notificationsEnabled){await update("disabled");return null;}
+        const reason=(text:string)=>data.event==="onboarding"?text:undefined;
+        if(!await pendingPreferenceAllowed(tx,data,"sms")){await update("disabled",reason("Recipient notification choice changed; this occurrence will not replay."));return null;}
+        if(!(await getSettings(tx,data.clinicId)).notificationsEnabled){await update("disabled",reason("Clinic notification gate is off; enable approved choices for future events."));return null;}
         const clinic=await one(clinics,data.clinicId,tx);
         const current=data.appointmentId?flatten((await tx.select().from(appointments).where(eq(appointments.id,data.appointmentId)))[0]):null;
         const snapshot=data.snapshot;
@@ -123,13 +133,18 @@ export async function processSmsNotifications(conn:any=db,send=sendNotificationS
           data.event==="reminder"?!reminderDispatchEligible(current,now):!["waiting","booked"].includes(current.status));
         if(data.appointmentId&&(!current||mismatch||invalidStatus)){await update("obsolete");return null;}
         const template=await resolvedTemplate(data.event,data.clinicId,tx,data.recipientGroup,"sms");
-        if(!template.content.enabled||template.activatedAt>data.createdAt){await update("disabled");return null;}
+        if(!template.content.enabled||template.activatedAt>data.createdAt){await update("disabled",reason("Published activation is off or changed after this event; old occurrences are not replayed."));return null;}
         const env=(await resolvedIntegration("notificationSms",tx)).env;
-        if(!notificationSmsEnabled(env)){await update("disabled");return null;}
-        if(!notificationSmsReadiness(env).ready){await update("configuration_failed");return null;}
+        if(!notificationSmsEnabled(env)){await update("disabled",reason("SMS notifications are disabled in Communication Settings."));return null;}
+        if(!notificationSmsReadiness(env).ready){await update("configuration_failed",reason("SMS provider configuration is not ready; check Communication Settings."));return null;}
         const targets=await targetAccounts(tx,data.recipientGroup,current||snapshot,clinic);
         const target=targets.find((a:any)=>data.recipientPatientId?a.targetPatientId===data.recipientPatientId:a.id===data.recipientUserId);
         const phone=notificationPhone(target?.mobile);
+        if(data.event==="onboarding") {
+          const reason=onboardingMobileReason(target);
+          if(reason){await update("no_recipient",reason);return null;}
+          if(!template.wordingPublished){await update("preparation_failed","Publish approved onboarding SMS wording before dispatch.");return null;}
+        }
         if(!target||target.status!=="active"||!phone||phoneKey(phone)!==data.recipientPhoneKey){await update("no_recipient");return null;}
          if(current && !snapshotIdentityMatches(snapshot,current,clinic)){
            await update("preparation_failed","Booking snapshot identity does not match this event");return null;
@@ -146,10 +161,10 @@ export async function processSmsNotifications(conn:any=db,send=sendNotificationS
          const missing=missingVisitVariables([content.body],values);
          if(missing.length){await update("preparation_failed",`Missing required template values: ${missing.join(", ")}`);return null;}
         const message=substitute(content.body,values);
-        if(message.length>1600){await update("preparation_failed");return null;}
+        if(message.length>1600){await update("preparation_failed",reason("Rendered SMS exceeds the permitted length; review the approved wording."));return null;}
         const cfg=notificationSmsConfig(env);
-         if(appointmentNotificationTarget(data.event,data.recipientGroup)&&
-           !smsMetadataReady(cfg,content)){await update("configuration_failed");return null;}
+         if((data.event==="onboarding"||appointmentNotificationTarget(data.event,data.recipientGroup))&&
+           !smsMetadataReady(cfg,content)){await update("configuration_failed",reason("SMS sender or DLT metadata is not ready; check this published template and approved sender."));return null;}
         await recordNotification(tx,data.historyKey||record.id,notificationEntry(data,"sms"),"sending",{
           sender:content.senderId||cfg.senderId,recipient:phone,message,provider:cfg.provider,
           ...templateSnapshot(template,data.event,data.recipientGroup,"sms"),dltTemplateId:content.dltTemplateId,
@@ -162,10 +177,20 @@ export async function processSmsNotifications(conn:any=db,send=sendNotificationS
       await withStaffDispatch(subjectIds, "notification", async () => {
       let state="delivery_unknown";
       let httpStatus:number|undefined;
-      try{state=await send(claim.env,claim.phone,claim.message,claim.content,code=>{httpStatus=code;});}catch{/* claim persists; never retry uncertain dispatch */}
-      const saved = await conn.update(settings).set({data:{...claim.data,state,claimedAt:now,attempts:claim.data.attempts+1,finishedAt:Date.now()}})
+      let diagnostic: string | undefined;
+      let preparationReason: string | undefined;
+      try{
+        if(claim.data.event==="onboarding") {
+          const [account]=await conn.select().from(users).where(eq(users.id,claim.data.recipientUserId));
+          preparationReason=onboardingMobileReason(account);
+          if(!preparationReason&&notificationPhone(account.mobile)!==claim.phone) preparationReason="Account mobile changed; verify the saved mobile for future events.";
+        }
+        state=preparationReason?"no_recipient":await send(claim.env,claim.phone,claim.message,claim.content,code=>{httpStatus=code;},info=>{diagnostic=storedSmsDiagnostic(info.code)?.code;});
+      }catch{/* claim persists; never retry uncertain dispatch */}
+      if(state==="provider_rejected"&&diagnostic)preparationReason=storedSmsDiagnostic(diagnostic)?.message;
+      const saved = await conn.update(settings).set({data:{...claim.data,state,preparationReason,providerDiagnosticCode:diagnostic,claimedAt:now,attempts:claim.data.attempts+1,finishedAt:Date.now()}})
         .where(sql`${settings.id}=${record.id} and ${settings.data}->>'state'='sending' and ${settings.data}->>'claimedAt'=${String(now)}`).returning({ id: settings.id });
-      if(saved.length)await recordNotification(conn,claim.data.historyKey||record.id,notificationEntry(claim.data,"sms"),state as any,undefined,[],Date.now(),httpStatus);
+      if(saved.length)await recordNotification(conn,claim.data.historyKey||record.id,{...notificationEntry(claim.data,"sms"),preparationReason},state as any,undefined,[],Date.now(),httpStatus);
       return state;
       }, conn, state => state === "delivery_unknown");
     }catch{

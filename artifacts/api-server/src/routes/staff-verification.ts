@@ -53,6 +53,10 @@ staffVerificationRouter.post("/staff-verification/request", async (req, res) => 
     assert(account?.status === "active", 403, "Your account is unavailable.");
     assert(!verifiedContact(account, channel), 409, "This contact is already verified.");
     const contact = channel === "email" ? account.email : eligibleStaffMobile(account.mobile);
+    if (channel === "sms" && account.role === "superAdmin") {
+      const { requireAccountMobile } = await import("../lib/owner-mobile");
+      requireAccountMobile(account.mobile);
+    }
     assert(contact && (channel === "email" || contact === account.mobile), 400, "Save a valid mobile number with country code in Profile first.");
     const recent = await tx.select().from(authChallenges).where(and(eq(authChallenges.userId, actor.id),
       eq(authChallenges.purpose, purpose(channel)), gte(authChallenges.createdAt, new Date(Date.now() - 3600000))));
@@ -70,7 +74,11 @@ staffVerificationRouter.post("/staff-verification/request", async (req, res) => 
     : await securitySms("staff_mobile_otp", actor.role, contact, values);
   if (outcome.status !== "provider_accepted") {
     await db.update(authChallenges).set({ consumedAt: new Date() }).where(eq(authChallenges.id, id));
-    throw new HttpError(503, "The code could not be sent. Wait a minute and try again.");
+    throw new HttpError(503, outcome.status === "disabled"
+      ? "Security delivery is disabled. Ask the System Admin to enable the published contact-verification template."
+      : outcome.status === "unavailable" ? "Verification delivery is not ready. Ask the System Admin to check the published OTP template, provider and sender/DLT settings."
+      : outcome.status === "provider_rejected" ? "The provider rejected the code. Ask the System Admin to check sender/DLT readiness before requesting again."
+      : "The code dispatch could not be confirmed. Wait before requesting another code; verification is not complete.");
   }
   await db.execute(sql`update auth_challenges set data=jsonb_set(data,'{deliveryReady}','true'::jsonb) where id=${id}`);
   res.json({ challengeId: id, expiresAt: expiresAt.toISOString(), resendAfterSeconds: 60 });

@@ -51,7 +51,7 @@ const [dropdownWorkspace] = useState(() => params.get("mode") === "dropdown-work
 if (dropdownWorkspace) return <DropdownWorkspaceFixture/>;
 if (params.get("mode") === "registration") return <RegistrationFixture/>;
 if (params.get("mode") === "onboarding") return <OnboardingFixture/>;
-if (params.get("mode") === "staff-verification") return <StaffVerificationFixture/>;
+if (params.get("mode") === "staff-verification") return <StaffVerificationFixture superAdminProfile={params.get("fixtureRole")==="superAdmin"}/>;
 if (params.get("mode") === "staff-login") return <StaffVerificationFixture login/>;
 if (params.get("mode") === "reschedule") return <RescheduleFixture/>;
 if(params.get("mode")==="booking"){

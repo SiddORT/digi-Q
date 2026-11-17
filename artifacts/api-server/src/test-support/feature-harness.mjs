@@ -118,7 +118,10 @@ export async function createFeatureHarness({files=false, s3ClientFactory, admini
       import { resourcesRouter as lookupResourcesRouter } from "./routes/resources";` : ""}
       ${administration || bookingLookups ? `import { nativeSession } from "./lib/native-auth";` : ""}
       ${administration ? `import { resourcesRouter } from "./routes/resources";
-      ${registration ? `import { clinicExpansionRouter } from "./routes/clinic-expansion";` : ""}
+      ${registration ? `import { clinicExpansionRouter } from "./routes/clinic-expansion";
+      ${!bookingLookups ? `import { db as ownerDb } from "@workspace/db";
+      import { processSmsNotifications as processOwnerSms } from "./lib/notification-sms-outbox";
+      export const dispatchSmsOutbox = (send, now) => processOwnerSms(ownerDb, send, now);` : ""}` : ""}
       import { identityRouter } from "./routes/identity";
       import { systemUsersRouter } from "./routes/system-users";
       import { permissionPolicyRouter } from "./routes/permission-policy";

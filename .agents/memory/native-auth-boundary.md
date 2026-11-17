@@ -77,6 +77,10 @@ The user requested keeping the preview recovery password in workspace Secrets an
 
 Independently submitted optional contact proof must not participate in the primary authentication form's validation or implicit submission.
 
+This optional-contact rule applies to patient signup, not the subsequently
+approved mobile-first clinic-owner gate. Required owner phone proof must still
+remain separate from required email identity; it never authenticates by itself.
+
 **Why:** Sharing stricter code entry can accidentally let a half-entered optional mobile code block completion of the required email proof, despite unchanged backend rules.
 
 **How to apply:** Keep the two submission/validation boundaries independent when composing registration controls. Test unfinished optional proof alongside valid primary proof; numeric keyboard and digit-length normalization must not make optional verification mandatory.

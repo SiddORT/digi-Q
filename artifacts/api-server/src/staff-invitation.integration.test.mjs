@@ -4,6 +4,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createFeatureHarness } from "./test-support/feature-harness.mjs";
 import { seedFeatureFixtures } from "./test-support/feature-fixtures.mjs";
+import { withOwnerMobileFixture } from "./test-support/owner-mobile-fixture.mjs";
 
 let h;
 before(async () => {
@@ -15,6 +16,7 @@ before(async () => {
   });
   h = await createFeatureHarness({ administration: true, simulatedMail: true });
   await seedFeatureFixtures(h.pg);
+  withOwnerMobileFixture(h);
 });
 after(async () => await h?.close());
 const rows = async (sql, params) => (await h.pg.query(sql, params)).rows;

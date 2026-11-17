@@ -1,4 +1,5 @@
-import { db, settings } from "@workspace/db";
+import { db, settings, users } from "@workspace/db";
+import { onboardingMobileReason } from "./onboarding-mobile-readiness";
 import type { SmsDiagnostic } from "./notification-sms-diagnostics";
 import { eq, sql } from "drizzle-orm";
 import { randomUUID, createHash } from "node:crypto";
@@ -48,7 +49,19 @@ export async function deliveryControlCatalog(conn:any,clinicId?:string,clinic?:a
     if(channel==="sms"&&smsConfig&&!smsMetadataReady(smsConfig,sms))reasons.push(smsConfig.provider==="keepInTouch"?"Publish a DLT Template ID for this event; Keep in Touch uses Sender ID but no Entity ID":"Configure Sender and Entity IDs, and publish a DLT Template ID for this event");
      if(gate===false&&!requiredEvent(event))reasons.push(clinicId?"Clinic notification gate is off":"Platform default notification gate is off; clinics may have explicit overrides");
     if(!template.content.enabled)reasons.push("Published activation is off");
+    const recipientBlockedReasons: string[] = [];
+    if(channel==="sms"&&event==="onboarding") {
+      if(!template.wordingPublished) reasons.push("Publish approved onboarding SMS wording before use");
+      const accounts = await conn.select().from(users).where(recipient === "superAdmin" ? eq(users.role,"superAdmin")
+        : clinic ? eq(users.id,clinic.adminId) : eq(users.role,"clinicAdmin"));
+      if(!accounts.length) recipientBlockedReasons.push(onboardingMobileReason(null)!);
+      for(const account of accounts) {
+        const reason=onboardingMobileReason(account);
+        if(reason&&!recipientBlockedReasons.includes(reason)) recipientBlockedReasons.push(reason);
+      }
+    }
      items.push({channel,event,recipient,required:requiredEvent(event),revision:template.local.revision,enabled:template.content.enabled,source:template.source,ready:reasons.length===0,blockedReasons:reasons,
+       ...(channel==="sms"&&event==="onboarding"?{recipientReady:recipientBlockedReasons.length===0,recipientBlockedReasons}:{}),
        timing:event==="booking_status_link"?"Manual only, after staff previews the eligible patient recipient and approved message and explicitly confirms. Never sent by automatic booking events.":
         requiredEvent(event)?"Platform security message sent on its authentication action when enabled at System Default. Optional Delivery does not apply. Disabling verification or setup delivery can prevent that action; SMS setup advisories do not replace the emailed link.":
         event==="staff_created_admin"?"After the staff account commits, only to the creating administrator's matching verified contact. Failed creation sends no notice.":

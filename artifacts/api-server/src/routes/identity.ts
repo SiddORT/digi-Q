@@ -47,6 +47,10 @@ identityRouter.patch("/me", async (req, res) => {
 });
 export async function saveOwnProfile(user: any, body: any, tx: any) {
     const [account] = await tx.select().from(users).where(eq(users.id,user.id)).for("update");
+    if (account.role === "superAdmin" && body.mobile) {
+      const { requireAccountMobile } = await import("../lib/owner-mobile");
+      body.mobile = requireAccountMobile(body.mobile);
+    }
     const mobileChanged = body.mobile !== undefined && body.mobile !== account.mobile;
     if (mobileChanged) await tx.execute(sql`update auth_challenges set consumed_at=now(),data='{}'::jsonb where user_id=${user.id} and purpose='staff-contact:sms'`);
     await change(users, user.id, { ...(body.fullName ? { fullName: body.fullName } : {}), ...(body.mobile !== undefined ? { mobile: body.mobile } : {}), data: { ...account.data, ...(body.photoUrl !== undefined ? { photoUrl: body.photoUrl } : {}), ...(mobileChanged ? { staffMobileProof: null } : {}) } }, tx);
