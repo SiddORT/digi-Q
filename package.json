@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "test:windows-dependencies": "node scripts/check-windows-dependencies.mjs && node --test scripts/windows-dependencies.test.mjs",
     "test:zod-migration": "node --test scripts/zod-migration.test.mjs",
     "test:qr-validation": "playwright test --config artifacts/clinicflow/workspace-regression/qr-validation.config.ts",
     "test:dependency-security": "node --test --test-concurrency=1 artifacts/api-server/src/dependency-security.test.mjs scripts/security-browser.test.mjs",

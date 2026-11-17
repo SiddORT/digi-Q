@@ -7,6 +7,7 @@ A new multi-clinic appointment and live queue platform. See README.md for the en
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
+- `pnpm test:windows-dependencies` — guard Windows/Linux x64 native optional dependencies and workspace/lockfile override agreement. Keep the four Windows x64 exclusions named in [Windows installation compatibility](docs/security/windows-installation-compatibility.md) **absent**; historical union-of-platform-exclusions guidance must not restore them, including future policy-completeness checks.
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
