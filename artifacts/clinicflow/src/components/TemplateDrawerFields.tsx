@@ -4,15 +4,16 @@ import { FormField } from "./FormField";
 import { previewText } from "../lib/template-preview";
 import { HelpTip } from "./HelpTip";
 import { NotificationInfo } from "./NotificationInfo";
+import { RegistrationSmsGuidance } from "./RegistrationSmsGuidance";
 
 type Content = api.NotificationTemplateContent;
 type Key = "subject" | "body" | "dltTemplateId";
 
 /** Compact primary fields for the template drawer. Email body is plain text (escaped by the server), not HTML. */
-export function TemplateDrawerFields({ form, sms, errors, variables, scopeName, set, templateKey, savedDltTemplateId, active, compact = false }: {
+export function TemplateDrawerFields({ form, sms, errors, variables, scopeName, set, templateKey, savedDltTemplateId, active, compact = false, recipient }: {
   form: Content; sms: boolean; errors: { subject?: string; body?: string };
   variables: string[]; scopeName: string; set: (k: Key, v: string) => void;
-  templateKey: string; savedDltTemplateId?: string; active: ReactNode; compact?: boolean;
+  templateKey: string; savedDltTemplateId?: string; active: ReactNode; compact?: boolean; recipient?: string;
 }) {
   const [preview, setPreview] = useState(false);
   const bodyLabel = sms ? "SMS Body" : "Email Body";
@@ -20,13 +21,14 @@ export function TemplateDrawerFields({ form, sms, errors, variables, scopeName, 
   return <>
     <dl className="td-summary" data-testid="panel-template-summary">
       {!compact && <div><dt>Template Key</dt><dd>{templateKey}</dd></div>}
-       <div><dt>Variables {compact ? <NotificationInfo label="About Template Variables">Dates and session times follow the clinic format and visit timezone; session times are not promised consultation times. Previews use placeholders, never real login codes.</NotificationInfo> : <HelpTip text="Dates and session times use the clinic's display format and the visit's local timezone. Session times are not guaranteed consultation times. recipient_name is the actual recipient, while patient_name remains the patient. queue_token includes the prefix (Q-007); token_number is numeric (7). Previous date/time fields apply only to rescheduling; appointment fields do not apply to clinic onboarding. Missing required visit values prevent dispatch. otp and expiry_minutes are supported only for the patient login SMS security template. Previews use example codes, never real login codes." />}</dt><dd>{variables.length ? variables.map(v => `{{${v}}}`).join(" ") : "None"}</dd></div>
+       <div><dt>Variables {compact ? <NotificationInfo label="About Template Variables">Only the listed placeholders are supported for this event. OTP events use code and expiry values; patient SMS login requires the code but supports expiry optionally. Dates and session times follow the clinic format and visit timezone; session times are not promised consultation times. Previews use fictional values, never real codes.</NotificationInfo> : <HelpTip text="Only the listed placeholders are supported for this event. OTP events require otp and expiry_minutes, except patient SMS login where expiry_minutes is optional. Dates and session times use the clinic's display format and visit timezone, not a promised consultation time. recipient_name is the recipient; patient_name is the patient. queue_token includes its prefix; token_number is numeric. Previous fields apply only to rescheduling. Previews use fictional values, never real codes." />}</dt><dd>{variables.length ? variables.map(v => `{{${v}}}`).join(" ") : "None"}</dd></div>
       {sms && !compact && <div><dt>DLT Template ID</dt><dd data-testid="text-saved-dlt">{savedDltTemplateId || "Not set"}</dd></div>}
     </dl>
     {active}
+    {sms && templateKey === "registration_mobile_otp" && <RegistrationSmsGuidance recipient={recipient}/>}
     {sms && <fieldset className="td-dlt" data-testid="block-dlt">
       <legend>DLT Registration (Indian SMS Compliance)</legend>
-      <FormField label="DLT Template ID" optional helper="Required to enable SMS. Sender ID is taken from Communication Settings; Keep in Touch does not need an Entity ID.">{a => <input {...a} type="text" maxLength={50} value={form.dltTemplateId ?? ""} onChange={e => set("dltTemplateId", e.target.value)} data-testid="input-dltTemplateId" />}</FormField>
+      <FormField label="DLT Template ID" optional helper="Publish the matching approved ID with this wording. Keep in Touch requires it and the configured Sender ID, but no Entity ID. Generic mappings require sender/entity/template metadata when DLT is required. Saving does not confirm approval.">{a => <input {...a} type="text" maxLength={50} value={form.dltTemplateId ?? ""} onChange={e => set("dltTemplateId", e.target.value)} data-testid="input-dltTemplateId" />}</FormField>
     </fieldset>}
     {!sms && <FormField label="Subject" required error={errors.subject}>{a => <input {...a} type="text" maxLength={180} value={form.subject} onChange={e => set("subject", e.target.value)} data-testid="input-subject" />}</FormField>}
     <div className="td-body">

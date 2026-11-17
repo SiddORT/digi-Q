@@ -29,3 +29,15 @@ provider rejection stages, without identifying every original account field.
 provider acceptance from handset receipt, and local fake-transport evidence
 from UAT verification. Never import Preview contacts/settings or certify legacy
 numbers automatically.
+
+Approved registration SMS wording must remain literal except for substituting
+approved variable slots with existing application placeholders. Incompatible
+code/expiry slots are a configuration compatibility issue, not permission to
+rewrite approved text, invent expiry semantics or borrow login-purpose approval.
+
+**Why:** The user explicitly limited preparation to existing supported variables
+and administrator-supplied approved wording/ID, with approval and live publication
+handled separately.
+
+**How to apply:** Explain incompatibility and retain fail-closed proof. Future
+wording requests do not implicitly authorize new variables or weaker validation.

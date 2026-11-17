@@ -11,7 +11,7 @@ export const securityTitles: Record<SecurityEvent, string> = {
   staff_mobile_otp: "Staff mobile verification",
   clinic_registration_otp: "Clinic Admin registration verification",
   patient_email_otp: "Patient email verification",
-  registration_mobile_otp: "Optional registration mobile verification",
+  registration_mobile_otp: "Registration mobile verification",
   doctor_setup: "Doctor password setup",
   staff_setup: "Staff password setup",
   password_setup_complete: "Password setup completed",

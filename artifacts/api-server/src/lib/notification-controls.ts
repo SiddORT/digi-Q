@@ -45,6 +45,8 @@ export async function deliveryControlCatalog(conn:any,clinicId?:string,clinic?:a
      if(channel==="sms"&&!requiredEvent(event)&&readiness.notificationSms.notificationsEnabled===false)reasons.push("SMS notifications are disabled in Communication Settings");
      if(channel==="email"&&!requiredEvent(event)&&readiness.smtp.notificationsEnabled===false)reasons.push("Email notifications are disabled in Communication Settings");
      if(channel==="sms"&&isSecurityEvent(event)&&!template.wordingPublished)reasons.push("Publish approved security SMS wording before use");
+     if(channel==="sms"&&event==="registration_mobile_otp"&&!validEventContent(event,template.content))
+       reasons.push("Edit and publish compatible registration SMS wording: include {{otp}} and {{expiry_minutes}}, use only this event's supported placeholders, and no literal links or email addresses");
     const sms=template.content as SmsTemplateContent;
     if(channel==="sms"&&smsConfig&&!smsMetadataReady(smsConfig,sms))reasons.push(smsConfig.provider==="keepInTouch"?"Publish a DLT Template ID for this event; Keep in Touch uses Sender ID but no Entity ID":"Configure Sender and Entity IDs, and publish a DLT Template ID for this event");
      if(gate===false&&!requiredEvent(event))reasons.push(clinicId?"Clinic notification gate is off":"Platform default notification gate is off; clinics may have explicit overrides");

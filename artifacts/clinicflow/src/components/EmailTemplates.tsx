@@ -9,6 +9,7 @@ import { useGetNotificationTemplates, getGetNotificationTemplatesQueryKey, useSa
 import { logoFileError, putToSignedUrl, LOGO_TYPES } from "./logo-upload";
 import { AppDialog, useAppDialogClose } from "./AppDialog";
 import { TemplateDrawerFields } from "./TemplateDrawerFields";
+import { RegistrationSmsGuidance } from "./RegistrationSmsGuidance";
 import { FormField } from "./FormField";
 import { HelpTip } from "./HelpTip";
 import { SearchableSelect } from "./SearchableSelect";
@@ -270,7 +271,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
           <p className="muted">Publishing changes wording only, not activation or delivery readiness. No message is sent.</p>
           <p className="muted">Reset is {resetUnavailable ? "unavailable: this template already uses default wording and has no saved draft." : "available: remove this scope’s saved wording and draft to use the inherited default."} {!dirty && "Save Draft is unavailable until wording changes."}</p>
         </div>}
-        <TemplateDrawerFields compact={notificationPage} form={form} templateKey={item.event} savedDltTemplateId={item.content.dltTemplateId} sms={sms} errors={errors} variables={variables} scopeName={scopeName} set={set}
+        <TemplateDrawerFields compact={notificationPage} recipient={recipient} form={form} templateKey={item.event} savedDltTemplateId={item.content.dltTemplateId} sms={sms} errors={errors} variables={variables} scopeName={scopeName} set={set}
           active={<div className="td-active" data-testid="row-enabled"><ActivationNote on={isOn} required={requiredSecurityEvent(event)} /></div>} />
         {unknown.length > 0 && <p role="alert" className="error-box">Unknown variables: {unknown.join(", ")}. Use only the variables listed above.</p>}
         {conflict && <div role="alert" className="error-box" data-testid="state-conflict">Someone else changed this template. Your edits are kept here.
@@ -298,6 +299,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
             <span className="et-rev">Revision {item.revision}</span>
           </div>
           <div className="et-toggle" data-testid="row-enabled"><ActivationNote on={isOn} required={requiredSecurityEvent(event)} /></div>
+          {sms && event === "registration_mobile_otp" && <RegistrationSmsGuidance recipient={recipient}/>}
           {(sms ? SMS_FIELDS : FIELDS).map(renderField)}
           <div className="et-vars" data-testid="list-variables">
             <span>Available Variables</span>

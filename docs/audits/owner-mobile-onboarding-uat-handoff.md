@@ -73,6 +73,78 @@ Preview's existing automatic onboarding no-send restriction remains intact.
 
 ## Required per-environment prerequisites — not supplied by Git
 
+### Administrator configuration handoff
+
+Once the application change is deployed through a separately authorized rollout,
+compatible wording/ID changes need only the existing controls; no new page,
+provider, environment variable, migration or further implementation is needed:
+
+1. As a real Superadmin, open **Notifications → System Default**. Find
+   **Registration mobile verification → SMS → Clinic Admin → Edit**. This row
+   serves both public clinic-owner signup and Superadmin-led owner setup.
+   The Patient row is separate optional phone proof during email registration.
+   Do not configure Patient login OTP, Staff mobile verification, Clinic Admin
+   registration **email**, or Clinic onboarding (the post-creation welcome).
+2. Obtain wording and its matching DLT Template ID from the separately approved
+   wording work. Nothing in this editor certifies provider/DLT approval.
+   In the SMS body, replace only the approved DLT variable slots with their
+   semantic application equivalents: code → `{{otp}}`, expiry in minutes →
+   `{{expiry_minutes}}`. Both are required; no other variables are supported.
+   Do not paste provider syntax such as `{#var#}`. Preserve all literal wording,
+   case, punctuation, spacing and line breaks; SMS bodies are not auto-trimmed.
+   Owner challenges currently last **10 minutes**. Wording without compatible
+   code/expiry slots, with unknown variables or literal URLs/email addresses
+   must be resolved separately, not silently rewritten or given invented
+   expiry semantics. Do not borrow the login template's wording or ID without
+   separately established provider-approved registration-purpose coverage.
+3. Enter the matching **DLT Template ID** alongside the body. Sender ID comes
+   from existing SMS Communication Settings. Keep in Touch requires its
+   configured credentials, Client ID, valid Sender ID and country-code format,
+   plus this event's Template ID; it does not require an Entity ID. Generic
+   providers retain their saved mapping: sender configuration is required,
+   and mappings requiring DLT additionally need Sender, Entity and Template IDs.
+   Inspect only the destination environment's authorized configuration; never
+   copy Preview settings or probe the provider to discover missing values.
+4. **Save Draft** is not publication. Requests continue to use the last
+   published body/ID, or remain blocked if there is none. Use **Save Template**
+   and confirm **Publish**. The Notifications wording action preserves saved
+   activation. Explicitly enable the **Clinic Admin SMS row** if it is off.
+   Switches do not approve wording, and neither publishing nor enabling sends.
+   Optional Delivery and the operational SMS switch do not govern this
+   platform-security action; its own activation does. Do not bypass it.
+5. With a configured provider and compatible publication, the row becomes
+   ready. Readiness is a local configuration check, not proof of DLT approval,
+   provider acceptance or handset receipt. Only the next explicit **Send SMS
+   code** in either owner flow requests this current body/ID. Account details
+   remain locked until the code for that exact mobile succeeds; email identity
+   and existing email/password access remain separate.
+
+Local evidence for this configuration work:
+
+- `pnpm --filter @workspace/api-server test:owner-mobile` exercises the actual
+  management save/publish/activation routes and owner request/verify routes
+  against disposable PostgreSQL with a fake SMS sender. It demonstrates
+  draft/unpublished/disabled and invalid content/metadata failures, readiness
+  after publication, exact literal text and matching ID on both flows, later
+  draft isolation and published replacement on explicit requests, proof gates,
+  wrong/expired codes and changed numbers. Patient/login/staff publications
+  remain unchanged. No real setting is published by this test.
+- `node --test artifacts/clinicflow/src/components/registration-sms-guidance.render.test.mjs`
+  renders the actual compact/full editor fields and checks recipient-specific
+  instructions, required placeholders, publication and provider prerequisites.
+- Configuration preparation verification on 2026-11-17: all 13 owner-mobile
+  integration checks, all 49 notification-settings integration checks and both
+  new editor-render checks passed. API and frontend TypeScript checks passed.
+  Both existing services restarted successfully. A read-only screenshot of
+  public registration confirmed the mobile-first page loaded without browser
+  errors. Signed-in interactive editor testing was not repeated; its changed
+  compact/full field markup was checked through server rendering, and its
+  save/publish/activation contracts through the isolated real HTTP routes.
+- These checks establish application provisions only. They do not establish
+  hosted deployment, provider-purpose coverage, approved live wording, real
+  publication, live delivery or UAT acceptance. Those remain separate,
+  explicitly authorized actions under the existing wording and rollout work.
+
 Obtain separately approved wording/publication through the existing wording
 work (Task #140); do not invent message text or registration IDs:
 

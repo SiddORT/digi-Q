@@ -232,3 +232,123 @@ test("future rejection history keeps only a safe provider category and dispatche
   await h.dispatchSmsOutbox(async()=>{dispatches++;return "provider_accepted";});
   assert.equal(dispatches,count);
 });
+
+test("existing administrator controls drive exact owner SMS wording and ID for both flows, without changing other rows",async()=>{
+  const event="registration_mobile_otp",recipient="clinicAdmin",channel="sms";
+  const key="sms-template:platform:registration_mobile_otp:clinicAdmin";
+  const controls=async()=>ok(await h.call("sa","GET","/management/event-controls")).items;
+  const row=async()=>(await controls()).find(r=>r.event===event&&r.recipient===recipient&&r.channel===channel);
+  const save=async(mode,content,status=200)=>{
+    const current=await row();
+    return ok(await h.call("sa","PUT","/management/templates",{event,recipient,channel,mode,revision:current.revision,content}),status);
+  };
+  const toggle=async(enabled,status=200)=>ok(await h.call("sa","PUT","/management/event-controls",
+    {event,recipient,channel,enabled,confirmed:true,revision:(await row()).revision}),status);
+  const content={enabled:false,subject:"Fictional registration",body:"  FICTIONAL owner registration: {{otp}}; valid {{expiry_minutes}} minutes.  ",
+    prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:"fictional-owner-a"};
+  await template(event,"patient",{body:"Fictional patient phone {{otp}} expires {{expiry_minutes}}."});
+  await h.pg.query("insert into settings(id,data) values($1,$2) on conflict(id) do update set data=excluded.data",
+    ["sms-template:platform:patient_login_otp",{revision:1,publishedRevision:1,published:{...content,enabled:true,body:"Fictional patient login {{otp}}.",dltTemplateId:"fictional-login"}}]);
+  const otherRows=await query("select id,data from settings where id like 'sms-template:%' and id<>$1 order by id",[key]);
+  const sent=h.sms.messages.length;
+  await h.pg.query("delete from settings where id=$1",[key]);
+  try {
+    assert.equal((await row()).ready,false);
+    await toggle(true,400);
+    await save("draft",content);
+    for(const flow of ["public","admin"]) {
+      await h.pg.query("delete from auth_rate_limits");
+      const p=await begin(flow);
+      assert.equal(p.status,"unavailable","an enabled default with a draft is not published");
+      assert.equal((await confirm(p,"123456")).status,400);
+    }
+    await toggle(false);
+    await toggle(true,400);
+    assert.equal(h.sms.messages.length,sent,"drafts and toggles never dispatch");
+    for(const flow of ["public","admin"]) {
+      await h.pg.query("delete from auth_rate_limits");
+      const p=await begin(flow);
+      assert.equal(p.status,"disabled");
+      assert.equal((await confirm(p,"123456")).status,400);
+    }
+    assert.equal(h.sms.messages.length,sent);
+    await save("publish",{...content,enabled:true,dltTemplateId:""},400);
+    await save("publish",{...content,body:"DLT literal {#var#}",enabled:true},400);
+    await save("publish",{...content,body:"Code {{otp}}",enabled:true},400);
+    await save("publish",{...content,body:"Code {{otp}} expires {{expiry_minutes}} for {{patient_name}}",enabled:true},400);
+    await save("publish",content);
+    assert.equal((await row()).ready,false,"published but disabled is blocked");
+    await h.pg.query("delete from auth_rate_limits");
+    assert.equal((await begin("admin")).status,"disabled");
+    await toggle(true);
+    assert.equal((await row()).ready,true);
+    assert.equal(h.sms.messages.length,sent,"publication and activation never send");
+    let next=content;
+    for(const flow of ["public","admin"]) {
+      await h.pg.query("delete from auth_rate_limits");
+      const p=await begin(flow);
+      const message=h.sms.messages.at(-1);
+      assert.equal(p.status,"provider_accepted");
+      assert.equal(message.text,next.body.replace("{{otp}}",p.code).replace("{{expiry_minutes}}","10"));
+      assert.equal(message.content.dltTemplateId,next.dltTemplateId);
+      const beforeVerification=flow==="public"
+        ? await call(null,"/auth/register/start",{fullName:"Fictional Config Owner",email:`config-${flow}@test.invalid`,password:OWNER_PASSWORD,mobile,mobileProofId:p.id},p.binding)
+        : await call("sa","/clinic-admin-onboarding",adminBody(p,`config-${flow}`));
+      assert.equal(beforeVerification.status,400,"no details may advance without proof");
+      assert.equal((await confirm(p,p.code==="123456"?"654321":"123456")).status,400);
+      ok(await confirm(p));
+      if(flow==="public") {
+        ok(await call(null,"/auth/register/start",{fullName:"Fictional Config Owner",email:`config-${flow}@test.invalid`,password:OWNER_PASSWORD,mobile,mobileProofId:p.id},p.binding));
+      } else {
+        assert.equal((await call("sa","/clinic-admin-onboarding",{...adminBody(p,`config-${flow}`),admin:{...adminBody(p,`config-${flow}`).admin,mobile:"+919876543211"}})).status,400);
+        ok(await call("sa","/clinic-admin-onboarding",adminBody(p,`config-${flow}`)),201);
+      }
+      // A later draft is not active; publication replaces only subsequent explicit requests.
+      next={...content,enabled:true,body:"FICTIONAL updated owner code {{otp}} expires in {{expiry_minutes}} minutes.",dltTemplateId:"fictional-owner-b"};
+      const count=h.sms.messages.length;
+      await save("draft",next);
+      assert.equal((await row()).ready,true,"valid published wording remains ready with a draft");
+      if(flow==="public") {
+        await h.pg.query("delete from auth_rate_limits");
+        const old=await begin("public");
+        assert.equal(h.sms.messages.at(-1).content.dltTemplateId,content.dltTemplateId,"draft never replaces publication");
+        ok(await confirm(old));
+      }
+      await save("publish",next);
+      assert.equal(h.sms.messages.length,count+(flow==="public"?1:0));
+    }
+    assert.deepEqual(await query("select id,data from settings where id like 'sms-template:%' and id<>$1 order by id",[key]),otherRows,
+      "patient registration, patient login and staff templates are unchanged");
+  } finally { await template(event,recipient); }
+});
+
+test("incompatible saved registration content is blocked by readiness and dispatch without fallback or rewriting",async()=>{
+  const key="sms-template:platform:registration_mobile_otp:clinicAdmin";
+  const body="Fictional stale code {{otp}} for {{patient_name}}.";
+  await template("registration_mobile_otp","clinicAdmin",{body});
+  const count=h.sms.messages.length;
+  try {
+    const controls=ok(await h.call("sa","GET","/management/event-controls"));
+    const row=controls.items.find(r=>r.event==="registration_mobile_otp"&&r.channel==="sms"&&r.recipient==="clinicAdmin");
+    assert.equal(row.ready,false);
+    assert.match(row.blockedReasons.join(" "),/Edit and publish compatible registration SMS wording/);
+    for(const flow of ["public","admin"]) {
+      await h.pg.query("delete from auth_rate_limits");
+      const p=await begin(flow);
+      assert.equal(p.status,"unavailable");
+      assert.equal((await confirm(p,"123456")).status,400);
+    }
+    assert.equal(h.sms.messages.length,count);
+    assert.equal((await query("select data from settings where id=$1",[key]))[0].data.published.body,body);
+  } finally { await template("registration_mobile_otp","clinicAdmin"); }
+});
+
+test("invalid registration DLT identifiers cannot publish or send",async()=>{
+  const current=ok(await h.call("sa","GET","/management/templates?channel=sms&recipient=clinicAdmin")).items.find(r=>r.event==="registration_mobile_otp");
+  const content={...current.content,dltTemplateId:"invalid template id!"};
+  const count=h.sms.messages.length;
+  const response=await h.call("sa","PUT","/management/templates",{channel:"sms",event:"registration_mobile_otp",recipient:"clinicAdmin",
+    mode:"publish",revision:current.revision,content});
+  assert.equal(response.status,400);
+  assert.equal(h.sms.messages.length,count);
+});
