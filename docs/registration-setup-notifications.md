@@ -1,5 +1,16 @@
 # Registration and setup notifications: verified boundary and operating guide
 
+## Later approved registration SMS publication
+
+The expressly approved wording/ID publication was limited to the two platform
+`registration_mobile_otp` SMS rows (`clinicAdmin` and `patient`) in the
+workspace/Preview. Both are now published, active and application-Ready; see
+[the exact pairs and non-sending verification](audits/registration-sms-publication.md).
+This does not approve staff setup/completion wording, change patient login,
+authorize live delivery tests or update a separately hosted environment.
+The implementation guide below describes the broader historical feature work,
+not additional wording-publication authorization.
+
 ## Authorization and evidence
 
 This is development implementation, not live delivery certification. No real
