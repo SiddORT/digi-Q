@@ -69,6 +69,97 @@ before(async()=>{
     }}]});
   api=await import(bundle);
 });
+test("approved registration SMS publication preserves literal wording, DLT pairs and patient login without sending",async()=>{
+  // Configuration fixtures from docs/audits/registration-sms-publication.md.
+  // Ready is application readiness only, not provider approval or delivery.
+  const pairs=[
+    {recipient:"clinicAdmin",dltTemplateId:"1777179491541503439",
+      body:"Dear Clinic, Your Digi-Q clinic registration OTP is {{otp}}. It is valid for {{expiry_minutes}} minutes. Do not share this OTP with anyone.– Digi-Q Team",
+      rendered:"Dear Clinic, Your Digi-Q clinic registration OTP is 123456. It is valid for 10 minutes. Do not share this OTP with anyone.– Digi-Q Team"},
+    {recipient:"patient",dltTemplateId:"1777179491551752035",
+      body:"Dear Clinic, Your Digi-Q patient registration OTP is {{otp}}. It is valid for {{expiry_minutes}} minutes. Do not share this OTP with anyone.– Digi-Q Team",
+      rendered:"Dear Clinic, Your Digi-Q patient registration OTP is 123456. It is valid for 10 minutes. Do not share this OTP with anyone.– Digi-Q Team"},
+  ];
+  const content=(body,dltTemplateId)=>({enabled:true,subject:"Digi-Q",body,
+    prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId});
+  const fictionalEnv={
+    NODE_ENV:"test",NOTIFICATION_SMS_PROVIDER:"keepInTouch",
+    NOTIFICATION_SMS_KEEP_IN_TOUCH_URL:"https://sms.example.invalid/send",
+    NOTIFICATION_SMS_KEY:"fictional-registration-key",NOTIFICATION_SMS_BEARER_TOKEN:"fictional-registration-bearer",
+    NOTIFICATION_SMS_CLIENT_ID:"fictional-registration-client",NOTIFICATION_SMS_SENDER_ID:"TESTDQ",
+    NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"plus",NOTIFICATION_SMS_ENABLED:"true",
+  };
+  const previousNetwork=globalThis.kitNetwork;
+  globalThis.kitNetwork=[];
+  const rollback=new Error("Roll back publication fixtures");
+  try {
+    await assert.rejects(h.db.transaction(tx=>context.run(tx,async()=>{
+      await tx.insert(api.integrationCredentials).values({provider:"notificationSms",
+        encrypted:api.encryptIntegration("notificationSms",fictionalEnv),revision:randomUUID()})
+        .onConflictDoUpdate({target:api.integrationCredentials.provider,set:{
+          encrypted:api.encryptIntegration("notificationSms",fictionalEnv),revision:randomUUID()}});
+      const loginKey=api.notificationTemplateKey("patient_login_otp",undefined,"patient","sms");
+      const loginContent=content("Dear User, your Digi-Q login OTP is {{otp}}. It is valid for {{expiry_minutes}} minutes. Do not share this OTP with anyone.","1777179188450254576");
+      const loginRecord={revision:1,publishedRevision:1,published:loginContent,activationEnabled:true};
+      await tx.insert(api.settings).values({id:loginKey,data:loginRecord})
+        .onConflictDoUpdate({target:api.settings.id,set:{data:loginRecord}});
+      const targets=new Set(pairs.map(pair=>api.notificationTemplateKey("registration_mobile_otp",undefined,pair.recipient,"sms")));
+      const settingsSnapshot=async()=>(await tx.select().from(api.settings).orderBy(api.settings.id)).filter(row=>!targets.has(row.id));
+      const beforeSettings=await settingsSnapshot();
+      const beforeCredentials=await tx.select().from(api.integrationCredentials).orderBy(api.integrationCredentials.provider);
+      const beforeLogin=await api.resolvedTemplate("patient_login_otp",undefined,tx,"patient","sms");
+      assert.deepEqual(beforeLogin.content,loginContent);
+      assert.equal(beforeLogin.wordingPublished,true);
+      assert.equal(beforeLogin.effectiveRevision,1);
+      for(const pair of pairs) {
+        const current=await api.resolvedTemplate("registration_mobile_otp",undefined,tx,pair.recipient,"sms");
+        const published=content(pair.body,pair.dltTemplateId);
+        const catalog=await api.saveTemplate(sa,{channel:"sms",event:"registration_mobile_otp",
+          recipient:pair.recipient,revision:current.local.revision,mode:"publish",content:published},tx);
+        assert.deepEqual(catalog.items.find(row=>row.event==="registration_mobile_otp").content,published);
+        const saved=await api.resolvedTemplate("registration_mobile_otp",undefined,tx,pair.recipient,"sms");
+        assert.deepEqual(saved.content,published,"publication must not normalize approved punctuation or salutation");
+        assert.deepEqual(saved.local.published,published);
+        assert.equal(saved.local.revision,current.local.revision+1);
+        assert.equal(saved.local.publishedRevision,saved.local.revision);
+        assert.equal(saved.effectiveRevision,saved.local.publishedRevision);
+        assert.equal(saved.wordingPublished,true);
+        assert.equal(saved.source,"platform");
+        assert.equal(saved.local.activationEnabled,true);
+        assert.equal(saved.content.enabled,true);
+        assert.deepEqual([...saved.content.body.matchAll(/\{\{([a-z_]+)\}\}/g)].map(match=>match[1]),["otp","expiry_minutes"]);
+        const rendered=api.substitute(saved.content.body,{otp:"123456",expiry_minutes:"10"});
+        assert.equal(rendered,pair.rendered);
+        const cfg=api.notificationSmsConfig((await api.resolvedIntegration("notificationSms",tx)).env);
+        const payload=api.smsPayload(cfg,"+12025550123",rendered,saved.content);
+        assert.deepEqual(JSON.parse(payload.body),{
+          countryCode:"+1",mobile:"2025550123",senderId:"TESTDQ",message:pair.rendered,
+          apiKey:"fictional-registration-key",clientId:"fictional-registration-client",templateId:pair.dltTemplateId,
+        });
+      }
+      const controls=await api.deliveryControlCatalog(tx);
+      for(const pair of pairs) {
+        const row=controls.items.find(row=>row.channel==="sms"&&row.event==="registration_mobile_otp"&&row.recipient===pair.recipient);
+        assert.ok(row);
+        assert.equal(row.source,"platform");
+        assert.equal(row.enabled,true);
+        assert.equal(row.required,true);
+        assert.equal(row.ready,true);
+        assert.deepEqual(row.blockedReasons,[]);
+      }
+      assert.deepEqual(await api.resolvedTemplate("patient_login_otp",undefined,tx,"patient","sms"),beforeLogin,
+        "the entire effective patient-login template and stored record must remain unchanged");
+      assert.deepEqual(await settingsSnapshot(),beforeSettings,"all unrelated settings must remain unchanged");
+      assert.deepEqual(await tx.select().from(api.integrationCredentials).orderBy(api.integrationCredentials.provider),beforeCredentials);
+      assert.equal(globalThis.kitNetwork.length,0,"saving, resolving, readiness and payload construction never dispatch");
+      throw rollback;
+    })),error=>error===rollback);
+  } finally {
+    assert.equal(globalThis.kitNetwork.length,0);
+    if(previousNetwork===undefined)delete globalThis.kitNetwork;
+    else globalThis.kitNetwork=previousNetwork;
+  }
+});
 test("every security template including patient login refuses real editor test sends before transport",async()=>{
  let calls=0;
  for(const event of ["patient_login_otp","staff_email_otp","staff_mobile_otp","registration_mobile_otp","staff_setup"]){
