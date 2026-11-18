@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { eventSections } from "../notification-catalog";
+import { administrationEvent } from "../../src/lib/mobile-verification-administration";
 
 // Stateful fictional API only. Real persistence and authorization are covered
 // separately against disposable PostgreSQL and native staff sessions.
@@ -312,7 +313,7 @@ test("Clinic Admin can save owned clinic gate, groups, Email and SMS activation 
 test("canonical unfiltered sections persist across two clinics; platform security stays informational and role-safe",async({page})=>{
   const {writes}=await setup(page,"superAdmin",2);
   const ids=()=>page.locator(".cm-event").evaluateAll(nodes=>nodes.map(n=>n.getAttribute("data-testid")));
-  const expected=eventSections.map(e=>`group-event-${e.id}`);
+  const expected=[...new Set(eventSections.map(e=>`group-event-${administrationEvent(e.id)}`))];
   expect(await ids()).toEqual(expected);
   for(const name of ["Fixture Clinic","Second Clinic"]){
     await page.getByRole("button",{name:"Notification Clinic",exact:true}).click();

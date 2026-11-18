@@ -17,7 +17,7 @@ async function template(event, recipient, options = {}) {
     ? "Digi-Q code {{otp}} expires in {{expiry_minutes}} minutes."
     : "Digi-Q {{recipient_name}} welcome to {{clinic_name}}.",
     prefix: "", footer: "", logoUrl: "", senderId: "TESTDQ", dltEntityId: "", dltTemplateId: "fictional-only", ...options };
-  const suffix = recipient === "clinicAdmin" && event === "onboarding" || recipient === "patient" && event === "registration_mobile_otp" || recipient === "receptionist" && event === "staff_mobile_otp" ? "" : `:${recipient}`;
+  const suffix = recipient === "clinicAdmin" && event === "onboarding" || recipient === "patient" && ["registration_mobile_otp","patient_login_otp"].includes(event) || recipient === "receptionist" && event === "staff_mobile_otp" ? "" : `:${recipient}`;
   await h.pg.query("insert into settings(id,data) values($1,$2) on conflict(id) do update set data=excluded.data",
     [`sms-template:platform:${event}${suffix}`, {revision:1, publishedRevision:1, published:content}]);
 }
@@ -351,4 +351,97 @@ test("invalid registration DLT identifiers cannot publish or send",async()=>{
     mode:"publish",revision:current.revision,content});
   assert.equal(response.status,400);
   assert.equal(h.sms.messages.length,count);
+});
+
+test("exact registration approvals route once per action and cannot authorize login or authenticated contact proof",async()=>{
+  const pairs=[
+    ["clinicAdmin","1777179491541503439","Dear Clinic, Your Digi-Q clinic registration OTP is {{otp}}. It is valid for {{expiry_minutes}} minutes. Do not share this OTP with anyone.– Digi-Q Team"],
+    ["patient","1777179491551752035","Dear Clinic, Your Digi-Q patient registration OTP is {{otp}}. It is valid for {{expiry_minutes}} minutes. Do not share this OTP with anyone.– Digi-Q Team"],
+  ];
+  const loginBody="Dear User, your Digi-Q login OTP is {{otp}}. It is valid for {{expiry_minutes}} minutes. Do not share this OTP with anyone.";
+  for(const [recipient,dltTemplateId,body] of pairs) await template("registration_mobile_otp",recipient,{dltTemplateId,body});
+  // Separate existing approvals, never borrow a registration ID for these purposes.
+  await template("patient_login_otp","patient",{body:loginBody,dltTemplateId:"1777179188450254576"});
+  await template("staff_mobile_otp","superAdmin",{body:"Fictional staff proof {{otp}} expires in {{expiry_minutes}} minutes.",dltTemplateId:"fictional-staff-only"});
+  const templateSnapshot=await query("select id,data from settings where id like '%-template:%' order by id");
+  const expectMessage=(start,pair,minutes)=>{
+    assert.equal(h.sms.messages.length,start+1,"one action produces exactly one intercepted SMS");
+    const msg=h.sms.messages.at(-1),code=otp();
+    assert.equal(msg.text,pair[2].replace("{{otp}}",code).replace("{{expiry_minutes}}",minutes));
+    assert.equal(msg.content.dltTemplateId,pair[1]);
+    return code;
+  };
+  for(const flow of ["public","admin"]) {
+    await h.pg.query("delete from auth_rate_limits");
+    const start=h.sms.messages.length;
+    const p=await begin(flow);
+    expectMessage(start,pairs[0],"10");
+    const challenge=(await query("select * from auth_challenges where id=$1",[p.id]))[0];
+    assert.equal(challenge.purpose,"owner-mobile");
+    assert.ok(Math.abs(new Date(challenge.expires_at)-new Date(challenge.created_at)-600000)<2000);
+    assert.equal((await call("sa","/staff-verification/confirm",{channel:"sms",challengeId:p.id,code:p.code})).status,400);
+    assert.equal((await call(null,"/auth/patient/verify",{channel:"sms",challengeId:p.id,code:p.code})).status,400);
+    ok(await confirm(p));
+  }
+  await h.pg.query("delete from auth_rate_limits");
+  const phone="+447911123456",start=h.sms.messages.length;
+  const patient=ok(await call(null,"/auth/patient/start",{email:"exact-optional@test.invalid",mobile:phone}));
+  const patientCode=expectMessage(start,pairs[1],"10");
+  const child=(await query("select c.* from auth_challenges c join auth_challenges p on p.data->>'mobileChallengeId'=c.id where p.id=$1",[patient.challengeId]))[0];
+  assert.equal(child.purpose,"registration-mobile");
+  const parent=(await query("select * from auth_challenges where id=$1",[patient.challengeId]))[0];
+  assert.ok(Math.abs(new Date(child.expires_at)-new Date(parent.expires_at))<1000);
+  assert.equal((await call(null,"/auth/patient/verify",{channel:"sms",challengeId:child.id,code:patientCode})).status,400);
+  ok(await call(null,"/auth/registration/mobile/verify",{challengeId:patient.challengeId,code:patientCode}));
+  const emailCode=h.mail.messages.at(-1).text.match(/\b\d{6}\b/)[0];
+  ok(await call(null,"/auth/patient/verify",{challengeId:patient.challengeId,code:emailCode}));
+  await h.pg.query("delete from auth_rate_limits");
+  const loginStart=h.sms.messages.length;
+  const login=ok(await call(null,"/auth/patient/start",{channel:"sms",mobile:phone}));
+  const loginCode=expectMessage(loginStart,["patient","1777179188450254576",loginBody],"10");
+  assert.equal((await call(null,"/auth/registration/mobile/verify",{challengeId:login.challengeId,code:loginCode})).status,400);
+  ok(await call(null,"/auth/patient/verify",{channel:"sms",challengeId:login.challengeId,code:loginCode}));
+  assert.equal((await call(null,"/auth/patient/verify",{channel:"sms",challengeId:login.challengeId,code:loginCode})).status,400);
+  // Optional registration remains usable with no phone and no SMS at all.
+  await h.pg.query("delete from auth_rate_limits");
+  const noPhone=h.sms.messages.length;
+  const emailOnly=ok(await call(null,"/auth/patient/start",{email:"exact-email-only@test.invalid"}));
+  assert.equal(emailOnly.channels.sms.status,"not_requested");
+  assert.equal(h.sms.messages.length,noPhone);
+  ok(await call(null,"/auth/patient/verify",{challengeId:emailOnly.challengeId,code:h.mail.messages.at(-1).text.match(/\b\d{6}\b/)[0]}));
+  // Existing-account profile proof retains its own five-minute lifetime and approved identity.
+  await h.pg.query("update users set mobile=$1,data=data-'staffMobileProof' where id='sa'",[mobile]);
+  await h.pg.query("delete from auth_challenges where user_id='sa' and purpose='staff-contact:sms'");
+  const staffStart=h.sms.messages.length;
+  const staff=ok(await call("sa","/staff-verification/request",{channel:"sms"}));
+  const staffCode=expectMessage(staffStart,["superAdmin","fictional-staff-only","Fictional staff proof {{otp}} expires in {{expiry_minutes}} minutes."],"5");
+  const staffRow=(await query("select * from auth_challenges where id=$1",[staff.challengeId]))[0];
+  assert.equal(staffRow.purpose,"staff-contact:sms");
+  assert.ok(Math.abs(new Date(staffRow.expires_at)-new Date(staffRow.created_at)-300000)<2000);
+  assert.equal((await call("adm","/staff-verification/confirm",{channel:"sms",challengeId:staff.challengeId,code:staffCode})).status,400);
+  ok(await call("sa","/staff-verification/confirm",{channel:"sms",challengeId:staff.challengeId,code:staffCode}));
+  assert.deepEqual(await query("select id,data from settings where id like '%-template:%' order by id"),templateSnapshot);
+  // Losing registration publication blocks that proof only: email-only completion
+  // remains optional and the existing approved SMS-login pair stays usable.
+  await h.pg.query("delete from settings where id='sms-template:platform:registration_mobile_otp'");
+  await h.pg.query("delete from auth_rate_limits");
+  const blockedStart=h.sms.messages.length;
+  const blocked=ok(await call(null,"/auth/patient/start",{email:"exact-blocked-optional@test.invalid",mobile:"+447911123457"}));
+  assert.equal(blocked.channels.sms.status,"unavailable");
+  assert.equal(h.sms.messages.length,blockedStart);
+  assert.equal((await call(null,"/auth/registration/mobile/verify",{challengeId:blocked.challengeId,code:"123456"})).status,400);
+  ok(await call(null,"/auth/patient/verify",{challengeId:blocked.challengeId,code:h.mail.messages.at(-1).text.match(/\b\d{6}\b/)[0]}));
+  assert.equal((await query("select mobile from users where email='exact-blocked-optional@test.invalid'"))[0].mobile,null);
+  await h.pg.query("delete from auth_rate_limits");
+  const preservedLogin=h.sms.messages.length;
+  ok(await call(null,"/auth/patient/start",{channel:"sms",mobile:phone}));
+  expectMessage(preservedLogin,["patient","1777179188450254576",loginBody],"10");
+  // Registration approval cannot fill the missing signed-in staff publication.
+  await h.pg.query("delete from settings where id='sms-template:platform:staff_mobile_otp:superAdmin'");
+  await h.pg.query("update users set data=data-'staffMobileProof' where id='sa'");
+  await h.pg.query("delete from auth_challenges where user_id='sa' and purpose='staff-contact:sms'");
+  const missingStaff=h.sms.messages.length;
+  assert.equal((await call("sa","/staff-verification/request",{channel:"sms"})).status,503);
+  assert.equal(h.sms.messages.length,missingStaff);
+  assert.equal(ok(await h.call("sa","GET","/staff-verification")).mobileVerified,false);
 });

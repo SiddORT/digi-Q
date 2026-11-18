@@ -41,6 +41,8 @@ before(async()=>{
     export * from "./lib/notification-outbox"; export * from "./lib/store"; export * from "@workspace/db";
     export * from "./lib/notification-history"; export * from "./lib/notification-test-dispatch";
     export * from "./lib/smtp-test-receipt";
+    export * from "./lib/approved-registration-sms";
+    export { sql } from "drizzle-orm";
     export * from "./lib/appointment-confirmation";
     export * from "./lib/notification-preferences";
     export * from "./lib/personal-notification-settings";
@@ -68,6 +70,89 @@ before(async()=>{
       b.onLoad({filter:/.*/,namespace:"fixture-auth"},()=>({contents:`export async function requireUser(req){const id=req.headers["x-user"];return {id,role:id==="ca"?"clinicAdmin":id||"patient",clinicIds:["c"]};} export async function findUser(){return null;} export function roles(u,rs){if(!rs.includes(u.role))throw Object.assign(new Error("Forbidden"),{status:403});}`}));
     }}]});
   api=await import(bundle);
+});
+test("explicit registration installer preserves the entire catalog and drafts, rejects drift and rolls back both pairs",async()=>{
+  const rollback=new Error("installer fixture rollback");
+  const network=globalThis.kitNetwork;
+  globalThis.kitNetwork=[];
+  try {
+    await assert.rejects(h.db.transaction(tx=>context.run(tx,async()=>{
+      const kit={NODE_ENV:"test",NOTIFICATION_SMS_PROVIDER:"keepInTouch",NOTIFICATION_SMS_KEY:"fictional",
+        NOTIFICATION_SMS_BEARER_TOKEN:"fictional",NOTIFICATION_SMS_CLIENT_ID:"fictional",
+        NOTIFICATION_SMS_SENDER_ID:"TESTDQ",NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"plus"};
+      const provider=async env=>tx.insert(api.integrationCredentials).values({provider:"notificationSms",
+        encrypted:api.encryptIntegration("notificationSms",env),revision:randomUUID()})
+        .onConflictDoUpdate({target:api.integrationCredentials.provider,set:{
+          encrypted:api.encryptIntegration("notificationSms",env),revision:randomUUID()}});
+      await provider(kit);
+      const targets=api.approvedRegistrationSms.map(p=>api.notificationTemplateKey("registration_mobile_otp",undefined,p.recipient,"sms"));
+      // Every other catalog pair has a pre-existing approved publication, not just patient login.
+      for(const channel of ["email","sms"]) for(const recipient of api.templateRecipients) for(const event of api.templateEvents) {
+        if(!api.validTemplateTarget(event,recipient,channel))continue;
+        const id=api.notificationTemplateKey(event,undefined,recipient,channel);
+        if(targets.includes(id))continue;
+        const current=await api.resolvedTemplate(event,undefined,tx,recipient,channel);
+        const record={revision:7,publishedRevision:5,published:{...current.content,enabled:false,
+          ...(channel==="sms"?{dltTemplateId:`approved-${event}-${recipient}`}:{})},
+          draft:{...current.content,body:"Unrelated draft"}};
+        await tx.insert(api.settings).values({id,data:record}).onConflictDoUpdate({target:api.settings.id,set:{data:record}});
+      }
+      const draft={enabled:false,subject:"Draft",body:"Unfinished draft",prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:""};
+      for(const id of targets) await tx.insert(api.settings).values({id,data:{revision:3,draft}});
+      const snapshot=async()=>(await tx.select().from(api.settings).orderBy(api.settings.id))
+        .filter(r=>!targets.includes(r.id)&&r.id!=="configuration-install:approved-registration-sms");
+      const allBefore=await snapshot();
+      const credentials=await tx.select().from(api.integrationCredentials);
+      const check=()=>api.inspectRegistrationSms(tx,"fixture","fixture-database");
+      let plan=(await check()).plan;
+      await assert.rejects(api.installRegistrationSms(tx,"sa",plan,"uat","other-database"),{status:409});
+      await assert.rejects(api.installRegistrationSms(tx,"ca",plan,"fixture","fixture-database"),{status:403});
+      // Concurrent draft edits invalidate the full-record fingerprint, even if a corrupt writer forgot revision.
+      await tx.execute(api.sql`update settings set data=jsonb_set(data,'{draft,body}','"New draft"') where id=${targets[0]}`);
+      await assert.rejects(api.installRegistrationSms(tx,"sa",plan,"fixture","fixture-database"),{status:409});
+      plan=(await check()).plan;
+      // Force second publication failure after first has saved: PostgreSQL savepoint must roll everything back.
+      await tx.execute(api.sql.raw(`create function pg_temp.reject_registration_pair() returns trigger language plpgsql as $$begin
+        if NEW.id='sms-template:platform:registration_mobile_otp' and NEW.data ? 'published' then raise exception 'fixture'; end if;
+        return NEW; end$$; create trigger reject_registration_pair before insert or update on settings for each row execute function pg_temp.reject_registration_pair();`));
+      const beforeFailure=await tx.select().from(api.settings).orderBy(api.settings.id);
+      await assert.rejects(api.installRegistrationSms(tx,"sa",plan,"fixture","fixture-database"));
+      assert.deepEqual(await tx.select().from(api.settings).orderBy(api.settings.id),beforeFailure);
+      await tx.execute(api.sql.raw("drop trigger reject_registration_pair on settings"));
+      await provider({...kit,NOTIFICATION_SMS_SENDER_ID:""});
+      await assert.rejects(api.installRegistrationSms(tx,"sa",plan,"fixture","fixture-database"),{status:400});
+      assert.deepEqual(await tx.select().from(api.settings).orderBy(api.settings.id),beforeFailure);
+      await provider(kit);
+      const saved=await api.installRegistrationSms(tx,"sa",plan,"fixture","fixture-database");
+      assert.equal(saved.installed,2);
+      assert.ok(saved.rows.every(r=>r.exact&&r.ready&&r.enabled&&r.draftPreserved));
+      assert.deepEqual(await snapshot(),allBefore,"every unrelated publication, ID, activation and draft is unchanged");
+      for(const pair of api.approvedRegistrationSms) {
+        const row=await api.resolvedTemplate("registration_mobile_otp",undefined,tx,pair.recipient,"sms");
+        assert.equal(row.content.body,pair.body);
+        assert.equal(row.content.dltTemplateId,pair.dltTemplateId);
+        assert.equal(row.local.draft.body,pair.recipient==="clinicAdmin"?"New draft":"Unfinished draft");
+      }
+      assert.equal((await api.installRegistrationSms(tx,"sa",saved.plan,"fixture","fixture-database")).installed,0);
+      await assert.rejects(api.installRegistrationSms(tx,"sa",plan,"fixture","fixture-database"),{status:409});
+      // A later explicit activation change remains off on rerun.
+      let row=await api.resolvedTemplate("registration_mobile_otp",undefined,tx,"patient","sms");
+      await api.changeActivation(sa,{channel:"sms",event:"registration_mobile_otp",recipient:"patient",revision:row.local.revision,enabled:false},tx);
+      const disabled=await check();
+      assert.equal((await api.installRegistrationSms(tx,"sa",disabled.plan,"fixture","fixture-database")).installed,0);
+      assert.equal((await check()).rows.find(r=>r.recipient==="patient").enabled,false);
+      row=await api.resolvedTemplate("registration_mobile_otp",undefined,tx,"patient","sms");
+      await api.saveTemplate(sa,{channel:"sms",event:"registration_mobile_otp",recipient:"patient",revision:row.local.revision,mode:"reset"},tx);
+      const reset=await check();
+      assert.equal(reset.rows.find(r=>r.recipient==="patient").action,"conflict","an explicit reset is not permission to reinstall");
+      await assert.rejects(api.installRegistrationSms(tx,"sa",reset.plan,"fixture","fixture-database"),{status:409});
+      assert.deepEqual(await snapshot(),allBefore);
+      // Encrypted values need not be identical after the deliberate fictional provider edits.
+      assert.equal(credentials.length,(await tx.select().from(api.integrationCredentials)).length);
+      throw rollback;
+    })),e=>e===rollback);
+    assert.equal(globalThis.kitNetwork.length,0);
+  } finally { globalThis.kitNetwork=network; }
 });
 test("approved registration SMS publication preserves literal wording, DLT pairs and patient login without sending",async()=>{
   // Configuration fixtures from docs/audits/registration-sms-publication.md.

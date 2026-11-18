@@ -1,3 +1,7 @@
+.cm-mobile-recipient > h3 { margin: .75rem 1rem .35rem; font-size: .95rem; }
+.cm-mobile-recipient .cm-preview-cell > small { display: block; overflow-wrap: anywhere; }
+.cm-mobile-purpose-controls { display: flex; flex-wrap: wrap; gap: .75rem; padding: .5rem 1rem; }
+.cm-mobile-purpose-control { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
 /* Route-owned overrides: do not change Communication Settings or other template callers. */
 .content:has(> .event-controls) > .page-heading { margin-bottom:12px }
 .event-controls.panel.padded { padding:16px; min-width:0 }

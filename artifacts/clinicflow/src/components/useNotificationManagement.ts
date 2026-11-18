@@ -87,6 +87,7 @@ export function securityDisableWarning(event: string, channel?: string) {
     ? "Setup SMS advisories will stop. The secure setup link is delivered only by enabled email."
     : "Disabling setup email prevents new invitations and resends. SMS advisories cannot replace the secure emailed link. Saved accounts are kept.";
   if (event === "registration_mobile_otp") return "New registration mobile codes will be unavailable. Unproved mobile numbers remain unverified and cannot be used for login.";
+   if (event === "staff_mobile_otp") return "New existing-account mobile verification codes will be unavailable. Saved contacts remain unverified until valid proof; registration codes cannot replace account proof.";
   return event === "patient_login_otp" ? "New SMS login codes will be unavailable. Patients must use enabled email login; no verification is bypassed."
     : "New email verification codes will be unavailable for this action. Login or registration cannot complete without valid proof; disabling SMS does not replace email verification.";
 }

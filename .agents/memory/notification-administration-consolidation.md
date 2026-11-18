@@ -43,3 +43,15 @@ wants the system context to be a real selectable entry, not an empty placeholder
 
 **How to apply:** Keep this rule confined to Notifications. Do not remove clinic
 context from unrelated routes or infer wider Clinic Admin permissions.
+
+The user approved consolidating registration and staff mobile-verification
+administration by recipient, but not combining their approvals or challenge purposes.
+All earlier approved catalog entries must survive additive registration configuration.
+
+**Why:** Similar-looking Clinic Admin cards caused confusion; registration DLT
+approval is not authority to send an existing-account contact-verification message.
+
+**How to apply:** Keep clearly labelled registration and existing-account contexts
+when independent wording or activation is needed. Never borrow a login or
+registration DLT ID for staff proof. Workspace publication does not configure a
+separately hosted UAT database; hosted rollout and live sends need separate approval.

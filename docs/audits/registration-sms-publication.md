@@ -1,5 +1,9 @@
 # Approved registration SMS publication — workspace/Preview
 
+> Historical snapshot evidence. For the later missing-record reconciliation,
+> repeatable installer, preservation checks and separate UAT rollout procedure,
+> see [Registration SMS administration](registration-sms-administration.md).
+
 Verified on **2026-11-18 at 11:49:44 UTC** against the workspace's development
 database. This is a saved configuration change, not a deployment or a code-default
 replacement. No separate hosted UAT or production environment was changed.
