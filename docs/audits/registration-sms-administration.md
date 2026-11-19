@@ -1,5 +1,34 @@
 # Registration SMS administration: configuration, preservation and rollout
 
+## Second Preview recovery verified on 2026-11-19
+
+After the user supplied a fresh Preview failure, a new read-only check again
+found both registration pairs at revision 0, unpublished, missing DLT IDs, with
+no installation receipt or publication audit entries. The endpoint/storage
+fingerprints and 141 unrelated settings/provider fingerprints matched the
+earlier evidence. This confirms recurrence, not the historical cause.
+
+With explicit user authorization, the guarded installer restored only the two
+approved pairs at **09:28:03 UTC**, using the configured active non-demo
+Superadmin as audit actor. It reported `installed: 2`, exact published wording
+and IDs, enabled/Ready states, empty blocked reasons, and unchanged unrelated
+settings/provider fingerprints. No SMS was requested or sent.
+
+Both managed app services initially had failed status while older process
+trees still held their ports. Stopping the managed services cleared those
+listeners; restarting the ordinary API and frontend succeeded without changing
+ports, service commands, or application code. The new API's startup diagnostic
+and a separate post-restart CLI check agreed on the recovered baseline,
+revision 1 pairs, receipt and two audit entries. The proxied registration page
+returned HTTP 200 and rendered without browser errors.
+
+Evidence: protected non-secret plans are in
+`generated-artifacts/preview-sms-repair-before.json` and
+`generated-artifacts/preview-sms-repair-after-restart.json` (ignored outputs).
+The failure's original configuration-loss cause is still unproven; this recovery
+does not certify permanent persistence across later database restores or merges,
+provider acceptance, handset receipt, or hosted UAT readiness.
+
 ## Preview recovery verified on 2026-11-19
 
 This section records a fresh recovery, not a claim that the earlier snapshot
