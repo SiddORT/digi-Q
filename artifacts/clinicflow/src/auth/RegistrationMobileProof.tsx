@@ -40,7 +40,7 @@ export function OwnerMobileProof({ flow, mobile, onChange, onProof }: {
         const result = await authRequest<{mobileVerified: boolean}>("owner-mobile/verify", { flow, challengeId: challenge, code });
         if (revision !== sequence.current) return;
         if (result.mobileVerified !== true) throw new Error("Mobile verification was not confirmed.");
-        setVerified(true); setCode(""); onProof(challenge);
+        setVerified(true); setCode(""); setNotice(""); onProof(challenge);
       } else {
         setWait(60); setCode(""); setChallenge(""); onProof("");
         const result = await authRequest<{challengeId: string; sms: {status: string}}>("owner-mobile/start", { flow, mobile });
@@ -49,10 +49,11 @@ export function OwnerMobileProof({ flow, mobile, onChange, onProof }: {
         if (status === "provider_accepted") {
           setChallenge(result.challengeId);
           setNotice("The provider accepted the code request. Enter the received SMS code; handset receipt is not yet confirmed.");
-        } else setError(status === "disabled" ? "Security SMS is disabled. Ask the System Admin to enable the published registration mobile OTP template."
-          : status === "unavailable" ? "SMS verification is not ready. Ask the System Admin to check the published registration mobile OTP template and provider sender/DLT settings."
-          : status === "provider_rejected" ? "The SMS provider rejected the request. Ask the System Admin to check sender/DLT settings."
-          : "The SMS dispatch is uncertain. Verification is not complete. Wait before explicitly requesting another code.");
+        } else setError(status === "provider_rejected"
+          ? "The SMS provider rejected the request. Please try again later."
+          : status === "disabled" || status === "unavailable" || status === "pre_dispatch_failed"
+            ? "We couldn’t send the SMS code. Please try again later."
+            : "We couldn’t confirm whether the SMS was sent. Please wait and check your phone before trying again.");
       }
     } catch (e) { if (revision === sequence.current) { setError(authErrorMessage(e, "Mobile verification could not be completed.")); setWait(n => Math.max(n, retryWaitSeconds(e))); } }
     finally { lock.current = false; setBusy(false); }

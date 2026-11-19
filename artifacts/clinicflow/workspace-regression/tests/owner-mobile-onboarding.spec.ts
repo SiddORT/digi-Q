@@ -29,7 +29,7 @@ async function verify(page:Page) {
 }
 test("public owner starts mobile-first, rejects extra digits, preserves international paste and still requires email",async({page},info)=>{
   const m=await mock(page);
-  await page.goto("/register-clinic");
+  await page.goto("/register-clinic?mode=app");
   const proof=page.getByTestId("owner-mobile-proof");
   await expect(proof.getByRole("button",{name:/^Selected item: \+91/})).toBeVisible();
   await expect(page.getByRole("textbox",{name:"Your Name",exact:true})).toBeHidden();
@@ -55,7 +55,7 @@ test("public owner starts mobile-first, rejects extra digits, preserves internat
 });
 test("admin keeps the existing setup in place behind exact-number proof and resets it when the mobile changes",async({page},info)=>{
   const m=await mock(page,"superAdmin");
-  await page.goto("/register-clinic");
+  await page.goto("/register-clinic?mode=app");
   const proof=page.getByTestId("owner-mobile-proof");
   await expect(page.getByTestId("registration-fullName")).toBeHidden();
   await proof.locator('input[type="tel"]').fill("9876543210");
@@ -73,18 +73,37 @@ test("admin keeps the existing setup in place behind exact-number proof and rese
 test("disabled and unknown SMS never unlock account fields or automatically retry",async({page})=>{
   const m=await mock(page);
   m.state.sms="disabled";
-  await page.goto("/register-clinic");
+  await page.goto("/register-clinic?mode=app");
   await page.getByTestId("owner-mobile-proof").locator('input[type="tel"]').fill("9876543210");
   await page.getByRole("button",{name:"Send SMS code",exact:true}).click();
-  await expect(page.getByRole("alert")).toContainText("disabled");
+  await expect(page.getByRole("alert")).toContainText("Please try again later.");
   await expect(page.getByRole("textbox",{name:"Your Name",exact:true})).toBeHidden();
   expect(m.calls.filter(c=>c.path.endsWith("owner-mobile/start"))).toHaveLength(1);
   await page.reload();
   m.state.sms="delivery_unknown";
   await page.getByTestId("owner-mobile-proof").locator('input[type="tel"]').fill("9876543210");
   await page.getByRole("button",{name:"Send SMS code",exact:true}).click();
-  await expect(page.getByRole("alert")).toContainText("uncertain");
+  await expect(page.getByRole("alert")).toContainText("Please wait and check your phone");
   await expect(page.getByRole("textbox",{name:"Your Name",exact:true})).toBeHidden();
+});
+for (const status of ["provider_rejected","unavailable","pre_dispatch_failed"]) test(`owner SMS ${status} keeps errors non-technical and sends only on the explicit button`,async({page})=>{
+  const m=await mock(page);m.state.sms=status;
+  await page.goto("/register-clinic?mode=app");
+  const proof=page.getByTestId("owner-mobile-proof");
+  await proof.locator('input[type="tel"]').fill("9876543210");
+  expect(m.calls.filter(c=>c.path.endsWith("owner-mobile/start"))).toHaveLength(0);
+  await proof.getByRole("button",{name:"Send SMS code",exact:true}).click();
+  await expect(proof.getByRole("alert")).toHaveText(status==="provider_rejected"
+    ? "The SMS provider rejected the request. Please try again later."
+    : "We couldn’t send the SMS code. Please try again later.");
+  await expect(proof.getByRole("alert")).not.toContainText(/DLT|sender|template|System Admin/i);
+  const requests=m.calls.filter(c=>c.path.endsWith("owner-mobile/start"));
+  expect(requests).toHaveLength(1);
+  expect(requests[0].body).toEqual({flow:"public",mobile:"+919876543210"});
+  await expect(proof.getByRole("button",{name:/Request SMS in/})).toBeDisabled();
+  await expect(proof.getByRole("textbox",{name:"SMS verification code",exact:true})).toHaveCount(0);
+  await expect(page.getByRole("textbox",{name:"Your Name",exact:true})).toBeHidden();
+  expect(m.calls.filter(c=>c.path.endsWith("owner-mobile/start"))).toHaveLength(1);
 });
 test("Super Admin uses the existing profile editor and separate saved-contact verification",async({page},info)=>{
   let mobile="",verified=false,sends=0;

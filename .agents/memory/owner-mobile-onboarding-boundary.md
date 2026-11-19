@@ -41,6 +41,16 @@ Patient Login templates and values; do not create additional templates.
 **Why:** The user reiterated this boundary when supplying the three approved
 DLT bodies and IDs after a provider rejection.
 
+Public registration failures must use simple retry-later wording, not DLT,
+sender or template configuration advice. Keep technical rejection categories
+private to server diagnostics.
+
+**Why:** The user explicitly requested that common users see only a provider
+rejection or general SMS error, not the underlying configuration terminology.
+
+**How to apply:** Preserve the actual delivery outcome and cooldown; an unknown
+delivery still requires waiting/checking the phone rather than an automatic retry.
+
 **Why:** The user explicitly limited preparation to existing supported variables
 and administrator-supplied approved wording/ID, with approval and live publication
 handled separately.

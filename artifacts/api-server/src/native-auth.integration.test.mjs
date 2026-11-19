@@ -534,6 +534,55 @@ test("patient OTP is platform-scoped, SMS-only, switchable and requires its code
   await api.changeActivation(sa,{channel:"sms",event:"patient_login_otp",recipient:"patient",revision:off.local.revision,enabled:true});
   await assert.rejects(api.saveTemplate(sa,{channel:"email",event:"booking",recipient:"patient",revision:0,mode:"publish",content:{...api.defaultTemplate("booking"),body:"Code {{otp}}"}}));
 });
+test("security SMS keeps safe rejection diagnostics server-side and never retries or leaks provider details",async()=>{
+  const id="sms-template:platform:registration_mobile_otp:clinicAdmin";
+  const content={enabled:true,subject:"Digi-Q",body:"Dear Clinic, Your Digi-Q clinic registration OTP is {{otp}}. It is valid for {{expiry_minutes}} minutes. Do not share this OTP with anyone.– Digi-Q Team",
+    prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:"1777179491541503439"};
+  await h.control.query("insert into settings(id,data) values($1,$2) on conflict(id) do update set data=excluded.data",
+    [id,{revision:1,publishedRevision:1,published:content}]);
+  const mobile="+919876543210",values={otp:"123456",expiry_minutes:"10"};
+  for(const [status,code,http,category] of [
+    ["provider_rejected","dlt_validation_failed",200,"dlt_validation_failed"],
+    ["provider_rejected","authentication_failed",401,"authentication_failed"],
+    ["provider_rejected","private-provider-response",403,"unspecified_rejection"],
+    ["delivery_unknown","authentication_failed",503,"delivery_unknown"],
+    ["pre_dispatch_failed",undefined,undefined,"pre_dispatch_failed"],
+  ]) {
+    let calls=0;
+    const outcome=await api.securitySms("registration_mobile_otp","clinicAdmin",mobile,values,
+      async(_env,to,text,meta,onStatus,onDiagnostic)=>{
+        calls++;
+        assert.equal(to,mobile);
+        assert.equal(text,content.body.replace("{{otp}}",values.otp).replace("{{expiry_minutes}}","10"));
+        assert.equal(meta.dltTemplateId,content.dltTemplateId);
+        if(http)onStatus(http);
+        if(code)onDiagnostic({code,message:"private-provider-response",phone:mobile,otp:values.otp});
+        return status;
+      });
+    assert.equal(calls,1,"a failed dispatch must never auto-retry");
+    assert.deepEqual(outcome,{status,destination:"***3210"},"technical details never enter the public response");
+    assert.deepEqual(globalThis.nativeAuthDiagnostics.at(-1),{
+      event:"registration_mobile_otp",recipient:"clinicAdmin",channel:"sms",category,
+      ...(http?{httpStatus:http}:{}),
+    });
+  }
+  const logCount=globalThis.nativeAuthDiagnostics.length;
+  await api.securitySms("registration_mobile_otp","clinicAdmin",mobile,values,async()=> "provider_accepted");
+  assert.equal(globalThis.nativeAuthDiagnostics.length,logCount,"acceptance does not emit a rejection");
+  assert.equal((await api.securitySms("registration_mobile_otp","clinicAdmin",mobile,values,
+    async(_env,_to,_text,_meta,onStatus,onDiagnostic)=>{
+      onStatus(NaN);onDiagnostic({code:"private-provider-response"});throw Error("private-provider-response");
+    })).status,"delivery_unknown");
+  assert.deepEqual(globalThis.nativeAuthDiagnostics.at(-1),{
+    event:"registration_mobile_otp",recipient:"clinicAdmin",channel:"sms",category:"delivery_unknown",
+  });
+  const logs=JSON.stringify(globalThis.nativeAuthDiagnostics);
+  for(const secret of ["private-provider-response",mobile,values.otp,content.body]) assert.ok(!logs.includes(secret));
+  await h.control.query("update settings set data=jsonb_set(data,'{published,enabled}','false') where id=$1",[id]);
+  const blocked=await api.securitySms("registration_mobile_otp","clinicAdmin",mobile,values,
+    async()=>assert.fail("disabled SMS must not dispatch"));
+  assert.equal(blocked.status,"disabled");
+});
 test("previously published OTP-only patient SMS wording stays usable and obeys activation",async()=>{
   await setupSmsPatient();
   const id="sms-template:platform:patient_login_otp";

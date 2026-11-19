@@ -9,6 +9,7 @@ import { assert, HttpError } from "./http";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { missingVisitVariables } from "./notification-template-values";
 import { logger } from "./logger";
+import { storedSmsDiagnostic, type SmsDiagnostic } from "./notification-sms-diagnostics";
 
 export type ChannelOutcome = { status: SmsOutcome | "disabled" | "unavailable" | "not_requested"; destination?: string };
 export type SecurityOutcomes = { email?: ChannelOutcome; sms?: ChannelOutcome };
@@ -84,10 +85,31 @@ export async function securitySms(event: SecurityEvent, recipient: TemplateRecip
     assert(!missingVisitVariables([content.body], values).length,503,"Required security template values are missing");
     message = substitute(content.body,values);
     smsPayload(cfg,mobile,message,content);
-  } catch(error: any) { return {status:error?.code === "SECURITY_DELIVERY_DISABLED" ? "disabled" : "unavailable",destination}; }
+  } catch(error: any) {
+    const status = error?.code === "SECURITY_DELIVERY_DISABLED" ? "disabled" : "unavailable";
+    logger.warn({event,recipient,channel:"sms",category:status},"Security SMS unsuccessful");
+    return {status,destination};
+  }
   try {
     await requireSecurityDelivery(event,recipient,"sms",conn);
   } catch(error: any) { return {status:error?.code === "SECURITY_DELIVERY_DISABLED" ? "disabled" : "unavailable",destination}; }
-  try { return {status:await send(env,mobile,message,content),destination}; }
-  catch { return {status:"delivery_unknown",destination}; }
+  // Keep diagnostic metadata server-side only. Never log a phone, code, message,
+  // credentials, raw provider response, or arbitrary diagnostic callback fields.
+  let httpStatus: number | undefined;
+  let diagnostic: SmsDiagnostic | undefined;
+  try {
+    const status = await send(env,mobile,message,content,
+      code => { if (Number.isInteger(code) && code >= 100 && code <= 599) httpStatus = code; },
+      info => { diagnostic = storedSmsDiagnostic(info?.code); });
+    if (status !== "provider_accepted") logger.warn({
+      event,recipient,channel:"sms",
+      category:status === "provider_rejected" ? diagnostic?.code || "unspecified_rejection" : status,
+      ...(httpStatus === undefined ? {} : {httpStatus}),
+    },"Security SMS unsuccessful");
+    return {status,destination};
+  } catch {
+    logger.warn({event,recipient,channel:"sms",category:"delivery_unknown",
+      ...(httpStatus === undefined ? {} : {httpStatus})},"Security SMS unsuccessful");
+    return {status:"delivery_unknown",destination};
+  }
 }

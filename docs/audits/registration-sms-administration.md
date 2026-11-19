@@ -1,5 +1,50 @@
 # Registration SMS administration: configuration, preservation and rollout
 
+## Registration button and rejection diagnostics, 2026-11-19
+
+The public owner's existing **Send SMS code** button posts the normalized mobile
+and `flow: public` to `/api/auth/owner-mobile/start`. The real route invokes
+`startOwnerMobile`, which uses `registration_mobile_otp / clinicAdmin`, renders
+the published clinic-registration body with the fresh code and ten-minute
+expiry, and passes its own DLT Template ID to the shared SMS transport. This
+purpose is distinct from patient registration and patient login; no additional
+template, provider, endpoint, or registration step was introduced.
+
+The reported new failure was `provider_rejected`, not missing application
+configuration. A code gap discarded the transport's safe rejection callback.
+The existing security SMS path now records only the event, recipient role,
+allowlisted category and bounded HTTP status in server logs. Public responses
+remain unchanged; raw provider data, contacts, OTPs, message bodies and
+credentials are never logged. Unknown delivery stays unknown with no automatic
+retry. The earlier live rejection cannot be retrospectively classified.
+
+Public owner errors now say **The SMS provider rejected the request. Please try
+again later.**, or **We couldn’t send the SMS code. Please try again later.**
+Unknown outcomes instruct the user to wait and check their phone. They expose no
+DLT, sender, template or administrator configuration advice.
+
+Focused fake-transport verification: **71 Node tests passed**, covering safe
+diagnostics, real owner routes, exact approved body/ID selection for both owner
+flows and patient registration/login, one dispatch per action, purpose-bound
+proof, rejected/unknown outcomes, transport classification and no sensitive
+logging. Shared-library, backend and frontend typechecks passed. The ordinary
+Preview services restarted cleanly and startup still reported both registration
+pairs enabled, exact and Ready. No live SMS, provider changes, template writes,
+UAT changes or deployment were performed for this code correction. Application
+readiness and fake-transport tests do not establish provider acceptance or
+handset receipt.
+
+The single browser investigation verified the actual Preview page with
+intercepted APIs at desktop and 390px: typing alone sent nothing; one button
+click made one normalized owner-proof request; rejected/unavailable/unknown
+responses stayed blocked with non-technical copy, cooldown and no automatic
+retry; accepted response plus mocked successful code proof unlocked details
+while preserving required email. It found an older fixture-navigation problem:
+the isolated fixture needs `?mode=app` for the public registration page. After
+correcting only those test URLs, all **6 focused owner browser cases passed**.
+Successful verification now also clears the obsolete pending-delivery notice.
+No real code request or registration was used by either browser check.
+
 ## Second Preview recovery verified on 2026-11-19
 
 After the user supplied a fresh Preview failure, a new read-only check again
