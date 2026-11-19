@@ -50,10 +50,12 @@ const OUTCOME: Record<string, string> = {
 };
 
 /** Test action for one event template: explicit recipient, values for used placeholders, confirmation, no auto retry. */
-export function EventTemplateTest({ channel, event, recipient: group, clinicId, revision, content }: {
-  channel: "email" | "sms"; event: string; recipient: string; clinicId: string; revision: number; content: Content;
+export function EventTemplateTest({ channel, event, recipient: group, clinicId, revision, content, onBusyChange }: {
+  channel: "email" | "sms"; event: string; recipient: string; clinicId: string; revision: number; content: Content; onBusyChange?: (busy: boolean) => void;
 }) {
-  const securityPreview = requiredSecurityEvent(event);
+  const registrationSmsTest = channel === "sms" && event === "registration_mobile_otp" && !clinicId && ["patient", "clinicAdmin"].includes(group);
+  const securityValues = requiredSecurityEvent(event);
+  const securityPreview = securityValues && !registrationSmsTest;
   const used = useMemo(() => usedPlaceholders(content, channel), [content, channel]);
   const [values, setValues] = useState<Record<string, string>>({});
   const inheritedPreferences = useDateTimePreferences();
@@ -68,12 +70,16 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
   const sending = useRef(false);
   const preview = usePreviewEventTemplate({ mutation: { retry: false } });
   const test = useTestEventTemplate({ mutation: { retry: false } });
+  useEffect(() => {
+    onBusyChange?.(test.isPending || preview.isPending);
+    return () => onBusyChange?.(false);
+  }, [test.isPending, preview.isPending, onBusyChange]);
   const readiness = useChannelReadiness(channel);
   const fictional:Record<string,string> = {otp:"123456",expiry_minutes:"10",setup_link:"https://example.invalid/set-password?token=fictional-preview-only",recipient_name:"Example Recipient",role_name:accountRoleLabel(group)};
   const exact = Object.fromEntries(used.map(k => {
-    return [k, securityPreview ? fictional[k] || "[Example value]" : templateTestValue(k, values[k] ?? "", preferences)];
+    return [k, securityValues ? fictional[k] || "[Example value]" : templateTestValue(k, values[k] ?? "", preferences)];
   }));
-  const complete = formatsReady && (securityPreview || used.every(k => k === "clinic_contact" || exact[k].trim() !== ""));
+  const complete = formatsReady && (securityValues || used.every(k => k === "clinic_contact" || exact[k].trim() !== ""));
   const sig = testSignature({ channel, event, group, clinicId, revision, content, values: exact });
   const rsig = `${sig}|${to}`;
   const first = useRef(true);
@@ -108,7 +114,8 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
     test.reset(); preview.reset(); setConfirmed(false);
   };
   return <section className="panel padded et-test" aria-label="Test this template" data-testid="panel-template-test">
-    <h3>{securityPreview ? "Preview security template" : "Test This Template"} <HelpTip text={securityPreview ? "Fictional preview only. No real codes, links or security bodies enter history. Delivery verification requires separate authorization." : "Uses your current edits, including drafts and disabled templates, without publishing or enabling anything. No appointment is created and nothing is queued. Sends one real message to the recipient you enter."} /></h3>
+    <h3>{securityPreview ? "Preview security template" : "Test This Template"} <HelpTip text={securityPreview ? "Fictional preview only. No real codes, links or security bodies enter history. Delivery verification requires separate authorization." : registrationSmsTest ? "Sends one real SMS using this recipient group's published registration template and fixed sample values. No verification challenge or account is created. Nothing is published or enabled by testing." : "Uses your current edits, including drafts and disabled templates, without publishing or enabling anything. No appointment is created and nothing is queued. Sends one real message to the recipient you enter."} /></h3>
+    {registrationSmsTest && <p role="note">Sends the published registration template with sample code 123456 and a 10-minute expiry. This is a delivery test only: the sample code cannot verify a mobile or create an account. Save and publish any template changes before testing.</p>}
     {!readiness.ready && <p role="note" className="error-box" data-testid="status-test-not-ready">{readiness.reason} <Link href={`/admin/settings?area=${channel === "sms" ? "sms" : "email"}`} className="text-link" data-testid="link-test-configure">Open {channel === "sms" ? "SMS" : "Email"} settings</Link>{!readiness.loading && <> <button type="button" onClick={readiness.retry} data-testid="button-test-recheck">Check Again</button></>}</p>}
     {!formatsReady && <p role="status">Clinic display formats {clinic.isError ? "could not be loaded." : "are loading…"} {clinic.isError && <button type="button" onClick={() => void clinic.refetch()}>Retry Clinic Formats</button>}</p>}
     {used.length === 0 ? <p className="muted">This template uses no placeholders.</p> : <div className="et-test-values">
@@ -120,7 +127,7 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
           const props = { ...a, form: "", required: k !== "clinic_contact", value: values[k] ?? "", onChange: (value: string) => setValues(v => ({ ...v, [k]: value })), "data-testid": `input-test-value-${k}` };
           return !securityPreview && notificationVariableField(k).kind === "date" ? <DateFormatInput {...props} preferences={preferences} disabled={!formatsReady} />
             : !securityPreview && notificationVariableField(k).kind === "time" ? <TimeFormatInput {...props} preferences={preferences} disabled={!formatsReady} />
-            : <input {...a} form="" type="text" maxLength={500} readOnly={securityPreview} value={securityPreview ? exact[k] : values[k] ?? ""} onChange={e => props.onChange(e.target.value)} data-testid={`input-test-value-${k}`} />;
+            : <input {...a} form="" type="text" maxLength={500} readOnly={securityValues} value={securityValues ? exact[k] : values[k] ?? ""} onChange={e => props.onChange(e.target.value)} data-testid={`input-test-value-${k}`} />;
         }}
       </FormField>)}
     </div>}

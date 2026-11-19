@@ -96,6 +96,11 @@ export async function prepareTemplateTest(user:any,input:unknown) {
   const effective=await resolvedTemplate(body.event,body.clinicId,db,body.recipientGroup,body.channel);
   assert(effective.local.revision===body.revision,409,"Template changed. Refresh before testing.");
   const content=(body.channel==="sms"?smsTemplateContent:templateContent).parse(body.content);
+  if(body.confirmed===true&&body.channel==="sms"&&body.event==="registration_mobile_otp") {
+    assert(effective.wordingPublished,400,"Publish the approved registration SMS template before testing.");
+    assert(JSON.stringify(content)===JSON.stringify(smsTemplateContent.parse(effective.content)),409,
+      "Registration SMS tests use the published template. Save changes and reopen Test.");
+  }
    assert(validEventContent(body.event,content),400,"Use this event's supported variables, including required code and expiry placeholders.");
    if(isSecurityEvent(body.event)) {
      assert(body.channel!=="email" || !["doctor_setup","staff_setup"].includes(body.event) || /\{\{\s*setup_link\s*\}\}/.test(content.body),400,"Setup email must include {{setup_link}}");
@@ -116,7 +121,9 @@ export async function prepareTemplateTest(user:any,input:unknown) {
 export async function testTemplate(user:any,prepared:Awaited<ReturnType<typeof prepareTemplateTest>>,
   smsSend=sendNotificationSms,emailSend=sendAuthEmail) {
   const {body,content,rendered}=prepared;
-   assert(!requiredEvent(body.event),400,"Security templates support fictional previews only. Verify real authentication delivery only with separate authorization.");
+   const registrationSmsTest=body.channel==="sms"&&body.event==="registration_mobile_otp"&&!body.clinicId&&
+     ["patient","clinicAdmin"].includes(body.recipientGroup);
+   assert(!requiredEvent(body.event)||registrationSmsTest,400,"Security templates support fictional previews only. Verify real authentication delivery only with separate authorization.");
   assert(body.confirmed===true&&body.requestId,400,"Confirm one real test send and provide a request ID");
   assert(body.recipient && (body.channel==="sms"?/^\+[1-9]\d{6,14}$/.test(body.recipient):validEmailAddress(body.recipient)),400,"Enter one valid explicit recipient");
   let diagnostic: SmsDiagnostic | undefined;

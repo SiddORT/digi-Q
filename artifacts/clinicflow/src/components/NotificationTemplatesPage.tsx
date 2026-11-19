@@ -21,7 +21,8 @@ import { useNotificationManagement } from "./useNotificationManagement";
 import { notificationGroup } from "../lib/notification-groups";
 import { Switch } from "./ui/switch";
 import { NotificationInfo } from "./NotificationInfo";
-import { administrationEvent, isMobileVerification, mobileVerificationContext, mobileVerificationEvents } from "../lib/mobile-verification-administration";
+import { EventTemplateTest } from "./EventTemplateTest";
+import { administrationEvent, isMobileVerification } from "../lib/mobile-verification-administration";
 import "./email-templates.css";
 import "./communication.css";
 import "./notification-settings.css";
@@ -36,7 +37,7 @@ const CHANNELS = ["email", "sms"] as const;
 function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, interactionLock, scopeChanging, changeScope }: { changeScope: (next: string) => Promise<void>; identity: api.Identity; clinicId: string; onDirty: (v: boolean) => void; onPending: (v: boolean) => void; scopeControl: ReactNode; interactionLock: MutableRefObject<boolean>; scopeChanging: boolean }) {
   const superAdmin = identity.user?.role === "superAdmin";
   const [f, setF] = useState({ q: "", channel: "", recipient: "", status: "" });
-  const [editing, setEditing] = useState<{ channel: "email" | "sms"; event: string; recipient: string } | null>(null);
+  const [editing, setEditing] = useState<{ channel: "email" | "sms"; event: string; recipient: string; test?: boolean } | null>(null);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
@@ -58,7 +59,13 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
     catalogs.forEach((c, i) => c.data?.items.forEach(it => m.set(`${combos[i].channel}|${it.event}|${combos[i].recipient}`, isMobileVerification(it.event) ? it.content.body : (it.draft ?? it.content).body)));
     return m;
   }, [catalogs]); // eslint-disable-line react-hooks/exhaustive-deps
-  const items: Row[] = controls.data?.items ?? [];
+  // Remove staff contact-proof rows from this administration view only.
+  // Their saved settings and authentication purposes remain untouched.
+  const items: Row[] = (controls.data?.items ?? []).filter(r => r.event !== "staff_mobile_otp");
+  const registrationLabel = (recipient: string) => recipient === "patient"
+    ? "Patient mobile verification during registration"
+    : "Clinic mobile verification during registration";
+  const testItem = editing?.test ? catalogs[combos.findIndex(c => c.channel === editing.channel && c.recipient === editing.recipient)]?.data?.items.find(it => it.event === editing.event) : undefined;
   const list: (ListRow & { row: Row })[] = items.map(r => ({ row: r, channel: r.channel, event: r.event, recipient: r.recipient, enabled: r.enabled, ready: r.ready && (r.required || controls.data?.notificationsEnabled === true), source: r.source,
     inherited: clinicId ? r.source !== "clinic" : r.source === "default", preview: previews.get(`${r.channel}|${r.event}|${r.recipient}`) ?? "" }));
   const shown = filterRows(list, f) as typeof list;
@@ -85,11 +92,11 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
     const labelMatch = !!q && `${m.id.replaceAll("_", " ")} ${m.label}`.toLowerCase().includes(q);
     const rows = (labelMatch ? filterRows(list, { ...f, q: "" }) as typeof list :
       m.id === "mobile_verification" ? filterRows(list.map(r => ({ ...r,
-        preview: `${r.preview} ${isMobileVerification(r.event) ? `${mobileVerificationContext(r.event)} ${r.event === "staff_mobile_otp" ? "Staff mobile verification" : "Registration mobile verification"}` : ""}` })), f) as typeof list : shown)
+        preview: `${r.preview} ${isMobileVerification(r.event) ? registrationLabel(r.recipient) : ""}` })), f) as typeof list : shown)
       .map(r => list.find(original => original.row === r.row)!)
       .filter(r => administrationEvent(r.event) === m.id);
     if (clinicId && !m.clinicApplicable) {
-      const aliases = m.id === "mobile_verification" ? "registration mobile verification staff mobile verification registration phone proof existing-account contact proof" : "";
+      const aliases = m.id === "mobile_verification" ? "patient clinic registration mobile verification" : "";
       const hit = !rowFilter && (!q || `${m.label} ${m.explanation} ${aliases} managed at system default`.toLowerCase().includes(q));
       return hit ? { m, rows: [], total: 0 } : null;
     }
@@ -161,25 +168,13 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
             {!mobile && group.optional.length > 0 ? <Switch className="cm-switch" aria-label={`${title}: all ${group.optional.length} options`} aria-describedby={`notification-group-guidance${!gateCan ? " notification-activation-permission" : ""}`} checked={group.checked} disabled={!gateCan || pending || !!editing || controls.isFetching} onCheckedChange={() => void management.changeGroup(event)} data-testid={`switch-group-${event}`} /> : <span className="cm-switch-spacer" aria-hidden="true" />}
           </div>
           <AccordionContent className="cm-event-content">
-           {mobile && <p className="muted">Registration and existing-account proof keep separate wording, approval and activation. Registration DLT approval does not authorize staff contact verification.</p>}
-           {mobile && <div className="cm-mobile-purpose-controls" aria-label="Purpose-specific bulk activation">{mobileVerificationEvents.map(targetEvent => {
-             const purposeGroup = notificationGroup(items, targetEvent);
-             const purposeLabel = mobileVerificationContext(targetEvent);
-             return <div key={targetEvent} className="cm-mobile-purpose-control">
-               <span>{purposeLabel}</span>
-               <span className={`et-chip ${purposeGroup.checked ? "live" : ""}`}>{purposeGroup.status === "Enabled" ? "All Enabled" : purposeGroup.status === "Disabled" ? "All Disabled" : purposeGroup.status === "Custom" ? "Mixed" : "Unavailable"}</span>
-               <Switch className="cm-switch" aria-label={`${purposeLabel}: all ${purposeGroup.optional.length} options`} aria-describedby="notification-group-guidance"
-                 checked={purposeGroup.checked} disabled={!gateCan || pending || !!editing || controls.isFetching || !purposeGroup.optional.length}
-                 onCheckedChange={() => void management.changeGroup(targetEvent)} data-testid={`switch-group-${targetEvent}`} />
-             </div>;
-           })}</div>}
           {!rows.length ? <p className="cm-required-note" data-testid={`empty-event-${event}`}>No channel or recipient options are available for this event in this scope.</p> : <>
           <div className="cm-cols" aria-hidden="true"><span>Channel &amp; Recipient</span><span>Status</span><span>Template Preview</span><span>Enabled</span><span>Action</span></div>
            {(mobile ? [...new Set(rows.map(r => r.recipient))] : [""]).map(recipient => <div key={recipient} className={mobile ? "cm-mobile-recipient" : undefined} data-testid={mobile ? `mobile-recipient-${recipient}` : undefined}>
            {mobile && <h3>SMS to {label(recipient)}</h3>}
            <ul className="cm-rows">{rows.filter(r => !mobile || r.recipient === recipient).map(r => {
              const event = r.event;
-             const context = mobile ? mobileVerificationContext(event) : title;
+             const context = mobile ? registrationLabel(r.recipient) : title;
             const reasons = rowDeliveryReasons(r.row, controls.data?.notificationsEnabled === false);
             const rowCan = r.row.canActivate ?? gateCan;
             const canEdit = r.row.canEdit !== false && (superAdmin || r.channel === "email" && !r.row.required && r.recipient !== "superAdmin");
@@ -207,12 +202,13 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
             <Switch className="cm-switch" aria-label={`${context} ${ch} to ${label(r.recipient)}`} aria-describedby={!rowCan ? "notification-activation-permission" : undefined} checked={r.enabled} disabled={!rowCan || unavailable || !!editing} onCheckedChange={() => void management.change(r.row)} data-testid={`switch-${r.channel}-${event}-${r.recipient}`} />
           </div>
           <div className="cm-cell cm-action">
+            {mobile && canEdit && superAdmin && <button type="button" className="button secondary small" aria-label={`Test ${context}`} disabled={unavailable || !!editing || !catalogs[combos.findIndex(c => c.channel === r.channel && c.recipient === r.recipient)]?.data?.items.find(it => it.event === event)} onClick={() => { if (!management.locked()) setEditing({ channel: r.channel, event, recipient: r.recipient, test: true }); }} data-testid={`button-test-${r.channel}-${event}-${r.recipient}`}>Test</button>}
             {canEdit && <button type="button" className="button secondary small cm-edit" aria-label={`Edit ${context} ${ch} to ${label(r.recipient)}`} disabled={unavailable || !!editing} onClick={() => { if (!management.locked()) setEditing({ channel: r.channel, event, recipient: r.recipient }); }} data-testid={`button-edit-${r.channel}-${event}-${r.recipient}`}>Edit</button>}
           </div></li>; })}</ul></div>)}</>}</AccordionContent>
         </AccordionItem>; })}</NotificationEventAccordion>}
     </ListingRegion>
-    {editing && <AppDialog open variant="drawer" onClose={requestClose} dirty={false} title="Edit Template" description={`${titleCase(editing.event.replaceAll("_", " "))} · ${editing.channel === "sms" ? "SMS" : "Email"} · ${label(editing.recipient)}`}>
-      <EmailTemplates key={`${editing.channel}|${editing.event}|${editing.recipient}|${clinicId}`} notificationPage identity={identity} channel={editing.channel} fixed={{ clinicId, event: editing.event, recipient: editing.recipient as any }} onDirtyChange={setDirty} onBusyChange={setBusy} />
+    {editing && <AppDialog open variant="drawer" onClose={requestClose} dirty={false} title={editing.test ? "Test Registration SMS" : "Edit Template"} description={editing.event === "registration_mobile_otp" ? registrationLabel(editing.recipient) : `${titleCase(editing.event.replaceAll("_", " "))} · ${editing.channel === "sms" ? "SMS" : "Email"} · ${label(editing.recipient)}`}>
+      {editing.test ? testItem ? <EventTemplateTest key={`${editing.channel}|${editing.event}|${editing.recipient}|${clinicId}`} channel={editing.channel} event={editing.event} recipient={editing.recipient} clinicId={clinicId} revision={testItem.revision} content={testItem.content} onBusyChange={setBusy} /> : <p role="alert">Template could not be loaded. Close and reopen Test.</p> : <EmailTemplates key={`${editing.channel}|${editing.event}|${editing.recipient}|${clinicId}`} notificationPage identity={identity} channel={editing.channel} fixed={{ clinicId, event: editing.event, recipient: editing.recipient as any }} onDirtyChange={setDirty} onBusyChange={setBusy} />}
     </AppDialog>}
     <AppDialog open={discard} onClose={() => setDiscard(false)} title="Discard Unsaved Changes?">
       <div className="et-dialog"><p>You have edits that are not saved. Closing discards them.</p>
