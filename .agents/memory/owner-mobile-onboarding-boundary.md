@@ -21,6 +21,8 @@ policy for this clinic-owner flow.
 
 **How to apply:** Require the same browser's exact, current, single-use owner
 mobile proof. The no-email path must not depend on SMTP or email activation.
+Apply the optional-email policy through final clinic creation as well as account
+creation; retain password confirmation and exact saved-mobile verification.
 
 **Why:** The user selected verification during onboarding rather than after
 first login and explicitly limited permission to necessary in-place changes.

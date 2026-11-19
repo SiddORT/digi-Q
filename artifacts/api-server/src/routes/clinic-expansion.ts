@@ -59,7 +59,9 @@ clinicExpansionRouter.post("/me/doctor-profile", async (req, res) => {
 clinicExpansionRouter.post("/clinic-registration", registrationLimit, async (req, res) => {
   const { userId } = requireSessionIdentity(req), body = parse(z.RegisterClinicBody, req.body);
   const [identity] = await db.select().from(users).where(eq(users.id, userId));
-  assert(identity?.emailVerifiedAt && identity.role === "clinicAdmin" && identity.status === "active", 403, "A verified clinic administrator is required");
+  // Email proof is optional for mobile-verified owners. The transaction below
+  // still requires proof for the exact saved account mobile before any writes.
+  assert(identity?.role === "clinicAdmin" && identity.status === "active", 403, "An active clinic administrator is required");
   assert(await verifyPassword(identity.passwordHash, body.password), 401, "Invalid password");
   const result = await db.transaction(async tx => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${userId}))`);
