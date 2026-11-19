@@ -35,6 +35,12 @@ approved variable slots with existing application placeholders. Incompatible
 code/expiry slots are a configuration compatibility issue, not permission to
 rewrite approved text, invent expiry semantics or borrow login-purpose approval.
 
+Update the respective existing Clinic Registration, Patient Registration and
+Patient Login templates and values; do not create additional templates.
+
+**Why:** The user reiterated this boundary when supplying the three approved
+DLT bodies and IDs after a provider rejection.
+
 **Why:** The user explicitly limited preparation to existing supported variables
 and administrator-supplied approved wording/ID, with approval and live publication
 handled separately.
