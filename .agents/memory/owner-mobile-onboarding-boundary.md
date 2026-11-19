@@ -41,3 +41,18 @@ handled separately.
 
 **How to apply:** Explain incompatibility and retain fail-closed proof. Future
 wording requests do not implicitly authorize new variables or weaker validation.
+
+For missing registration SMS configuration, reconcile the current running Preview
+database, effective publications, installation receipt and safe audit evidence
+before applying the explicit installer. Do not treat earlier successful reports
+as proof that the current database retained those settings, or infer a historical
+cause from their absence. Never recover automatically on startup.
+
+**Why:** A later fresh Preview inspection found both approvals, their receipt and
+audit entries absent while unrelated settings/provider fingerprints still matched
+an earlier successful report. That evidence did not establish how the loss occurred.
+
+**How to apply:** Repair only the authorized environment and approved pairs through
+the guarded transaction, preserve later administrator conflicts, and verify fresh
+runtime/tool fingerprints plus post-restart readiness. Keep hosted rollout and live
+delivery authorization separate from workspace recovery.

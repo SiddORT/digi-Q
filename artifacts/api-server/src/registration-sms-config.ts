@@ -1,7 +1,8 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { db, pool, settings, integrationCredentials } from "@workspace/db";
-import { configurationDigest, inspectRegistrationSms, installRegistrationSms, approvedRegistrationSms } from "./lib/approved-registration-sms";
+import { configurationDigest, installRegistrationSms, approvedRegistrationSms } from "./lib/approved-registration-sms";
 import { notificationTemplateKey } from "./lib/notification-template-store";
+import { registrationSmsDiagnostics } from "./lib/registration-sms-diagnostics";
 
 // Explicit operator CLI only. Not imported by app startup or seed.mjs.
 async function main() {
@@ -25,9 +26,9 @@ async function main() {
       approvedCount: unrelated.filter(r => /^(sms|notification)-template:/.test(r.id) && !!r.data?.published).length };
   };
   if (mode === "check") {
-    const result = await inspectRegistrationSms(db, environment, target);
+    const result = await registrationSmsDiagnostics(db, environment, process.env.DATABASE_URL!);
     await writeFile(planFile, JSON.stringify(result.plan, null, 2) + "\n", { mode: 0o600, flag: "wx" });
-    process.stdout.write(JSON.stringify({ environment, targetFingerprint: target, ...result, preservation: await snapshot(), sends: 0 }, null, 2) + "\n");
+    process.stdout.write(JSON.stringify({ ...result, preservation: await snapshot() }, null, 2) + "\n");
   } else {
     if (value("--confirm-environment") !== environment || !args.includes("--actor-id"))
       throw new Error("Apply requires --actor-id and --confirm-environment matching --environment.");

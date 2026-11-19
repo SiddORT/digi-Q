@@ -42,6 +42,7 @@ before(async()=>{
     export * from "./lib/notification-history"; export * from "./lib/notification-test-dispatch";
     export * from "./lib/smtp-test-receipt";
     export * from "./lib/approved-registration-sms";
+    export * from "./lib/registration-sms-diagnostics";
     export { sql } from "drizzle-orm";
     export * from "./lib/appointment-confirmation";
     export * from "./lib/notification-preferences";
@@ -104,6 +105,10 @@ test("explicit registration installer preserves the entire catalog and drafts, r
       const allBefore=await snapshot();
       const credentials=await tx.select().from(api.integrationCredentials);
       const check=()=>api.inspectRegistrationSms(tx,"fixture","fixture-database");
+      const diagnosticsBefore=await api.registrationSmsDiagnostics(tx,"fixture","postgres://fictional:never-print@fixture.invalid/fixture");
+      assert.equal(diagnosticsBefore.evidence.receiptPresent,false);
+      assert.match(diagnosticsBefore.storageFingerprint,/^[a-f0-9]{64}$/);
+      assert.ok(!JSON.stringify(diagnosticsBefore).includes("never-print"));
       let plan=(await check()).plan;
       await assert.rejects(api.installRegistrationSms(tx,"sa",plan,"uat","other-database"),{status:409});
       await assert.rejects(api.installRegistrationSms(tx,"ca",plan,"fixture","fixture-database"),{status:403});
@@ -125,6 +130,12 @@ test("explicit registration installer preserves the entire catalog and drafts, r
       await provider(kit);
       const saved=await api.installRegistrationSms(tx,"sa",plan,"fixture","fixture-database");
       assert.equal(saved.installed,2);
+      const diagnosticsAfter=await api.registrationSmsDiagnostics(tx,"fixture","postgres://other:secret@fixture.invalid/fixture");
+      assert.equal(diagnosticsAfter.evidence.receiptPresent,true);
+      assert.equal(diagnosticsAfter.evidence.auditCount,diagnosticsBefore.evidence.auditCount+2);
+      assert.equal(diagnosticsAfter.storageFingerprint,diagnosticsBefore.storageFingerprint);
+      assert.equal(diagnosticsAfter.targetFingerprint,diagnosticsBefore.targetFingerprint,"credentials never enter target identity");
+      assert.deepEqual(diagnosticsAfter.rows,saved.rows);
       assert.ok(saved.rows.every(r=>r.exact&&r.ready&&r.enabled&&r.draftPreserved));
       assert.deepEqual(await snapshot(),allBefore,"every unrelated publication, ID, activation and draft is unchanged");
       for(const pair of api.approvedRegistrationSms) {

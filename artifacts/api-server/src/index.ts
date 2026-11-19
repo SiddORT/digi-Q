@@ -4,6 +4,7 @@ import { startNotificationWorker } from "./lib/notification-outbox";
 import { initializeMedia } from "./lib/local-media";
 import { pincodeAssetStatus } from "./lib/pincode";
 import { db, provisionHealthcareVocabulary } from "@workspace/db";
+import { registrationSmsDiagnostics } from "./lib/registration-sms-diagnostics";
 
 const rawPort = process.env["PORT"];
 
@@ -21,6 +22,15 @@ if (Number.isNaN(port) || port <= 0) {
 
 await initializeMedia();
 await db.transaction(tx => provisionHealthcareVocabulary(tx));
+// Preview-only diagnosis, never installation or delivery. Production startup stays unchanged.
+if (process.env.NODE_ENV === "development") {
+  try {
+    logger.info(await registrationSmsDiagnostics(db, "workspace", process.env.DATABASE_URL!),
+      "Preview registration SMS readiness (no messages sent)");
+  } catch {
+    logger.warn("Preview registration SMS readiness check failed; no configuration was changed");
+  }
+}
 const pinAsset = pincodeAssetStatus();
 if (pinAsset.available) logger.info(pinAsset, "PIN directory loaded");
 else logger.warn("PIN directory missing: PIN assistance disabled, manual address entry continues");

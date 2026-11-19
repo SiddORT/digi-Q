@@ -1,5 +1,95 @@
 # Registration SMS administration: configuration, preservation and rollout
 
+## Preview recovery verified on 2026-11-19
+
+This section records a fresh recovery, not a claim that the earlier snapshot
+persisted. Before recovery, **both target records, their installation receipt,
+and their template audit entries were absent**: revision 0, default source,
+no draft, enabled but blocked by unpublished wording and missing DLT IDs.
+The 141 unrelated settings and encrypted provider fingerprints matched the
+earlier preservation table below exactly. That is evidence of the current
+state, **not proof of a particular restore, deletion, reset or database switch**.
+
+The ordinary running Preview API and operator check independently reported:
+
+| Evidence | Value |
+|---|---|
+| Endpoint target fingerprint | `ca6f98cdf3fe12ebbd30bf104db6d24e1d49419db4926674e094a1c8648596d8` |
+| Connected database/schema/server fingerprint | `53b63b9073281fadaaccba93676f7a9683ea7da054c2f5f9b7cae393428ab4a6` |
+| Pre-recovery target/receipt baseline | `47d51df573959dad4525b165334ebe560113089a22500affcc11a4c351750f9e` |
+| Post-recovery target/receipt baseline | `e2ce1cfa523943e6713887971596cc4796309f6d5e0794d07a4275daf57e26c4` |
+
+The endpoint fingerprint excludes username/password. The connected fingerprint
+hashes database, current schema, server address and port, without printing them.
+The baseline hashes complete target records and the receipt, not unrelated data.
+No credentials, connection strings, contacts, OTPs or message contents are logged.
+
+At **08:34:43 UTC**, the existing transaction-safe installer published exactly
+the two approved pairs in the table below, using the configured active real
+Superadmin audit actor. It reported `installed: 2`; both became revision 1,
+platform source, exact, enabled and Ready, with `blockedReasons: []`.
+The exact bodies below, including Patient's **Dear Clinic** and both **anyone.–**
+strings, were retained. The receipt is now present and exactly two normal
+publication audit entries were added. All unrelated settings, drafts, activations
+and provider records retained the identical fingerprints shown below.
+
+After ordinary API and frontend service restarts, a new independent CLI check
+and the API startup diagnostic reported the same connected/endpoint fingerprints,
+post-recovery baseline, receipt, revision 1 pairs and empty blocked reasons.
+The startup diagnostic is **read-only and development-only**. Failure logs a
+sanitized warning; it never installs, resets, activates, rewrites or sends.
+Production startup behavior and the normal installer conflict guards are unchanged.
+
+Investigation covered the API entrypoint, database client selection, seed entrypoint
+and seed core, post-merge script, appointment publication maintenance, template
+reset/save/activation logic, and disposable PostgreSQL/browser fixture paths.
+The normal client and CLI both use the same `DATABASE_URL`; no `.env` file was
+present. Seed only manages the Superadmin. Startup provisions vocabulary, not
+registration templates. Post-merge appointment maintenance is receipt-protected
+and limited to appointment events. Template reset preserves activation and
+revision history. Inspected destructive test setup uses isolated databases
+rather than the workspace connection. No demonstrated configuration-loss or
+database-targeting defect was found. **The historical cause remains unresolved.**
+Accordingly no automatic recovery/startup publication or database restore was added.
+
+Fresh focused verification:
+
+```sh
+node --test --test-concurrency=1 \
+  artifacts/api-server/src/owner-mobile.integration.test.mjs \
+  artifacts/api-server/src/notification-settings.integration.test.mjs
+pnpm --filter @workspace/api-server typecheck
+git diff --check
+```
+
+**65 passed, 0 failed**; TypeScript and whitespace checks passed.
+Real route handlers in disposable PostgreSQL with fake/intercepted transports
+verified the exact body/ID for both public and Superadmin-led owner proof, the
+separate patient registration pair, unchanged patient login, expiry, resend limits,
+single-use and purpose/actor binding. Installer checks cover rollback, full-catalog
+and draft preservation, wrong environment/actor, stale plans and later reset/disable
+conflicts. Added diagnostic assertions cover credential-free target identity,
+stable connected-database identity and receipt/audit transitions.
+
+One fresh signed-in browser pass used the ordinary `/sign-in` form and verified
+`/api/me` returned the real Superadmin role. At System Default
+`/admin/templates`, both registration editors showed their exact approved bodies
+and DLT IDs. Cancel, page reload, re-expansion and reopening retained both.
+The live event-controls API returned `enabled: true`, `ready: true` and empty
+blocked reasons for both recipients before and after reload. No editing, publish,
+reset, activation, template test or code request was performed. The test session
+was logged out (`/api/me` then returned 401). A final independent database check
+after this pass retained the same baseline, receipt, two audit entries and all
+unrelated/provider fingerprints. The anonymous screenshot verifies only the
+healthy sign-in screen; protected-editor evidence comes from the signed-in pass.
+
+Patient login remains independently published with ID `1777179188450254576`;
+registration approval was not applied to existing-account staff proof or
+`clinic_registration_otp` email. Preview configuration recovery is **not** the
+separate hosted UAT rollout. No UAT/production configuration, deployment,
+provider account change, live OTP/SMS/email request or delivery certification
+was performed. Merging code alone does not publish settings in another database.
+
 ## Environment and evidence boundary
 
 On **2026-11-18**, this work inspected and configured the ordinary workspace
