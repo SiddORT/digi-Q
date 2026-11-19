@@ -56,6 +56,8 @@ replacing the earlier combined registration/staff administration presentation.
 **How to apply:** Keep existing template IDs and approved text, with no new
 templates or borrowed staff/login registrations. The user approved real-SMS Test
 actions for these two rows, requiring an explicit recipient and confirmation.
+Keep testing inside the Edit side drawer's Advanced section, matching Booking
+confirmation → SMS to Patient; do not place Test buttons on notification rows.
 Use the published registration wording and fixed fictional code/expiry; a test
 must not create a usable verification challenge or account. Other security
 templates remain preview-only. Adding the test capability is not authorization
