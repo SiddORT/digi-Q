@@ -91,6 +91,7 @@ export * from './clinicList';
 export * from './clinicPolicy';
 export * from './clinicRegistrationCompletion';
 export * from './clinicRegistrationInput';
+export * from './clinicRegistrationVerificationInput';
 export * from './clinicSettingsInput';
 export * from './clinicSettingsPreview';
 export * from './clinicSettingsPreviewImpactsItem';

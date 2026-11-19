@@ -3738,6 +3738,7 @@ export const VerifyRegistrationMobileCodeResponse = zod.object({
 })
 
 
+export const startClinicRegistrationBodySkipEmailVerificationDefault = false;
 export const startClinicRegistrationBodyMobileProofIdMax = 100;
 
 export const startClinicRegistrationBodyFullNameMax = 200;
@@ -3751,6 +3752,7 @@ export const startClinicRegistrationBodyPasswordRegExp = new RegExp('^(?=[\\s\\S
 
 
 export const StartClinicRegistrationBody = zod.object({
+  "skipEmailVerification": zod.boolean().default(startClinicRegistrationBodySkipEmailVerificationDefault).describe('Prepare a mobile-proven owner registration without requiring SMTP or sending an email. Email remains required as an identity, but unverified.'),
   "mobileProofId": zod.string().max(startClinicRegistrationBodyMobileProofIdMax),
   "email": zod.email(),
   "fullName": zod.string().min(1).max(startClinicRegistrationBodyFullNameMax),
@@ -3800,14 +3802,15 @@ export const ResumeClinicRegistrationResponse = zod.object({
 })
 
 
-export const verifyClinicRegistrationBodyCodeMin = 6;
-export const verifyClinicRegistrationBodyCodeMax = 6;
-
-
+/**
+ * Completes clinic-owner registration using an email code, or skips email verification only with the same browser's valid, previously verified owner-mobile proof. Skipping never marks the email verified.
+ */
+export const verifyClinicRegistrationBodySkipEmailVerificationDefault = false;
 
 export const VerifyClinicRegistrationBody = zod.object({
   "challengeId": zod.string(),
-  "code": zod.string().min(verifyClinicRegistrationBodyCodeMin).max(verifyClinicRegistrationBodyCodeMax)
+  "code": zod.string().optional().describe('Required unless skipEmailVerification is true.'),
+  "skipEmailVerification": zod.boolean().default(verifyClinicRegistrationBodySkipEmailVerificationDefault)
 })
 
 export const VerifyClinicRegistrationResponse = zod.object({

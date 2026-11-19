@@ -9,6 +9,19 @@ email/password login, existing creation outcomes and completion receipts.
 Existing Super Admins correct and verify their own account contact through
 My Profile without losing login/recovery while it is missing.
 
+For public clinic-owner registration, entering an email remains required but
+verifying that email is optional after successful mobile verification. Owners
+can proceed to clinic setup without requesting an email, or skip a pending email
+step. Never mark the skipped email verified, bypass mobile proof, or apply this
+exception to patient registration or existing-account contact verification.
+
+**Why:** The user explicitly requested email input with optional verification
+after successful mobile verification, replacing the former required-email-proof
+policy for this clinic-owner flow.
+
+**How to apply:** Require the same browser's exact, current, single-use owner
+mobile proof. The no-email path must not depend on SMTP or email activation.
+
 **Why:** The user selected verification during onboarding rather than after
 first login and explicitly limited permission to necessary in-place changes.
 

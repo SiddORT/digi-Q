@@ -22,6 +22,8 @@
  */
 
 export interface StartClinicRegistrationInput {
+  /** Prepare a mobile-proven owner registration without requiring SMTP or sending an email. Email remains required as an identity, but unverified. */
+  skipEmailVerification?: boolean;
   /** @maxLength 100 */
   mobileProofId: string;
   email: string;

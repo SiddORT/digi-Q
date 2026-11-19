@@ -1942,6 +1942,8 @@ export interface OwnerMobileChallenge {
 }
 
 export interface StartClinicRegistrationInput {
+  /** Prepare a mobile-proven owner registration without requiring SMTP or sending an email. Email remains required as an identity, but unverified. */
+  skipEmailVerification?: boolean;
   /** @maxLength 100 */
   mobileProofId: string;
   email: string;
@@ -1959,6 +1961,13 @@ export interface StartClinicRegistrationInput {
      * @pattern ^(?=[\s\S]*[A-Za-z])(?=[\s\S]*[0-9])[\s\S]*$
      */
   password: string;
+}
+
+export interface ClinicRegistrationVerificationInput {
+  challengeId: string;
+  /** Required unless skipEmailVerification is true. */
+  code?: string;
+  skipEmailVerification?: boolean;
 }
 
 export interface RegistrationResumeIdentity {

@@ -344,13 +344,14 @@ authRouter.post("/auth/owner-mobile/invalidate", async (req, res) => {
 });
 authRouter.post("/auth/register/start", async (req, res) => {
   const body = parse(StartClinicRegistrationBody, req.body);
-  await requireSecurityDelivery("clinic_registration_otp","clinicAdmin","email");
+  const skipEmailVerification = body.skipEmailVerification === true;
+  if (!skipEmailVerification) await requireSecurityDelivery("clinic_registration_otp","clinicAdmin","email");
   const address = email(req.body?.email);
   const name = typeof req.body?.fullName === "string" ? req.body.fullName.trim() : "";
   if (!name || name.length > 200) throw new HttpError(400, "Full name required", "INVALID_NAME");
   passwordInput(req.body?.password);
   await limit(req, address, "clinic-register", 3);
-  smtpConfig((await resolvedIntegration("smtp")).env);
+  if (!skipEmailVerification) smtpConfig((await resolvedIntegration("smtp")).env);
   if (await localUser(address)) throw new HttpError(409, "Account already registered", "ACCOUNT_EXISTS");
   const hash = await hashPassword(req.body.password);
    const mobile = requireAccountMobile(body.mobile);
@@ -362,13 +363,18 @@ authRouter.post("/auth/register/start", async (req, res) => {
      assert(ttlMs>0,400,"Verify your mobile again; this registration attempt has expired.");
      if(proof.data.registrationId) {
        const [pending]=await tx.select().from(authChallenges).where(eq(authChallenges.id,String(proof.data.registrationId)));
-       if(pending?.email===address && pending.data.ownerRegistrationChannels) {
+       if(pending?.email===address && pending.data.ownerRegistrationChannels &&
+         pending.data.emailVerificationSkipped === skipEmailVerification) {
          await tx.update(authChallenges).set({data:{...pending.data,fullName:name,passwordHash:hash}}).where(eq(authChallenges.id,pending.id));
          return {challengeId:pending.id,channels:pending.data.ownerRegistrationChannels as SecurityOutcomes};
        }
      }
-     const result = await mailCode(address, "register", undefined, { fullName: name, passwordHash: hash,
-       mobile, mobileVerified: true, staffMobileProof, ownerMobileProofId: body.mobileProofId },ttlMs,tx);
+     const data = { fullName: name, passwordHash: hash, mobile, mobileVerified: true,
+       staffMobileProof, ownerMobileProofId: body.mobileProofId, emailVerificationSkipped: skipEmailVerification };
+     const result = skipEmailVerification
+       ? { challengeId: await createChallenge({email:address,purpose:"register",secret:randomBytes(32).toString("base64url"),ttlMs,data},tx),
+           channels:{email:{status:"not_requested" as const}} }
+       : await mailCode(address, "register", undefined, data,ttlMs,tx);
      await tx.execute(sql`update auth_challenges set data=data||jsonb_build_object('ownerRegistrationChannels',${JSON.stringify(result.channels)}::jsonb) where id=${result.challengeId}`);
      await tx.execute(sql`update auth_challenges set data=data||jsonb_build_object('registrationId',${result.challengeId}::text),
        expires_at=least(created_at+interval '30 minutes',(select expires_at from auth_challenges where id=${result.challengeId}))
@@ -421,22 +427,37 @@ authRouter.post("/auth/registration/resend", async (req, res) => {
 authRouter.post("/auth/register/verify", async (req, res) => {
   await consumeRateLimit(`register-verify:${req.ip || "unknown"}`, 25);
   const { challengeId, code: submitted } = req.body || {};
-  if (typeof challengeId !== "string" || typeof submitted !== "string") throw new HttpError(400, "Invalid verification", "INVALID_VERIFICATION");
-  const challenge = await consumeChallenge(challengeId, "register", submitted);
-  assert(challenge.data.mobileVerified === true && challenge.data.staffMobileProof &&
-    (challenge.data.staffMobileProof as any).contact === challenge.data.mobile, 400, "Restart registration and verify your mobile first.");
+  const skipEmailVerification = req.body?.skipEmailVerification === true;
+  if (typeof challengeId !== "string" || (!skipEmailVerification && typeof submitted !== "string")) throw new HttpError(400, "Invalid verification", "INVALID_VERIFICATION");
+  const subject = skipEmailVerification ? await ownerSubject(req,res,"public") : undefined;
+  if (skipEmailVerification) assert(getCookie(req,"digiq_registration") === challengeId,400,"Resume registration in the browser where you verified your mobile.");
+  const verifiedChallenge = skipEmailVerification ? undefined : await consumeChallenge(challengeId, "register", submitted);
   const user = await db.transaction(async tx => {
+    const challenge = verifiedChallenge ?? (await tx.select().from(authChallenges).where(eq(authChallenges.id,challengeId)).for("update"))[0];
+    assert(challenge?.purpose === "register" &&
+      (!skipEmailVerification || (!challenge.consumedAt && challenge.expiresAt > new Date() && challenge.attempts < 5)),
+      400,"This registration has expired. Restart registration and verify your mobile.");
+    assert(challenge.data.mobileVerified === true && challenge.data.staffMobileProof &&
+      (challenge.data.staffMobileProof as any).contact === challenge.data.mobile,400,"Restart registration and verify your mobile first.");
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"user-email:" + challenge.email}))`);
     const [existing] = await tx.select().from(users).where(sql`lower(${users.email})=${challenge.email}`).limit(1);
     assert(!existing, 409, "Account already registered");
     const [proof] = await tx.select().from(authChallenges).where(eq(authChallenges.id,String(challenge.data.ownerMobileProofId || ""))).for("update");
     assert(proof?.data.registrationId === challengeId && proof.data.verified === true && proof.data.used === true,
       400,"This registration was replaced. Use the latest email code.");
+    if (skipEmailVerification) {
+      assert(proof.purpose === "owner-mobile" && proof.expiresAt > new Date() &&
+        proof.data.subject === subject && proof.data.mobile === challenge.data.mobile,
+        400,"Verify this exact mobile number again before continuing.");
+      await tx.update(authChallenges).set({consumedAt:new Date()}).where(eq(authChallenges.id,challengeId));
+    }
     const record = await put(users, { id: uid(), email: challenge.email, fullName: String(challenge.data.fullName),
       role: "clinicAdmin", status: "active", passwordHash: String(challenge.data.passwordHash),
        mobile:challenge.data.mobileVerified === true && typeof challenge.data.mobile === "string" ? challenge.data.mobile : undefined,
        data:{mobileVerified:true,staffMobileProof:challenge.data.staffMobileProof},
-      emailVerifiedAt: new Date(), invitationStatus: "notRequired" }, tx);
+      emailVerifiedAt: skipEmailVerification ? null : new Date(), invitationStatus: "notRequired" }, tx);
+    // Retire the proof after account creation so it cannot authorize another account.
+    await tx.update(authChallenges).set({data:{...proof.data,registrationCompleted:true},expiresAt:new Date()}).where(eq(authChallenges.id,proof.id));
     await audit(record, "registerClinicAdmin", "users", record, tx);
     return record;
   });

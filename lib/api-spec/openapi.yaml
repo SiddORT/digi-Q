@@ -1068,7 +1068,8 @@ paths:
     post:
       operationId: verifyClinicRegistration
       security: []
-      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AuthCodeInput" } } } }
+      description: Completes clinic-owner registration using an email code, or skips email verification only with the same browser's valid, previously verified owner-mobile proof. Skipping never marks the email verified.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicRegistrationVerificationInput" } } } }
       responses:
         "200": { description: Administrator created, content: { application/json: { schema: { $ref: "#/components/schemas/AuthAuthenticated" } } } }
   /auth/forgot-password:
@@ -3069,11 +3070,19 @@ components:
       type: object
       required: [email, fullName, password, mobile, mobileProofId]
       properties:
+        skipEmailVerification: { type: boolean, default: false, description: "Prepare a mobile-proven owner registration without requiring SMTP or sending an email. Email remains required as an identity, but unverified." }
         mobileProofId: { type: string, maxLength: 100 }
         email: { type: string, format: email }
         fullName: { type: string, minLength: 1, maxLength: 200 }
         mobile: { type: string, pattern: '^\+[1-9][0-9]{6,14}$' }
         password: { type: string, minLength: 8, maxLength: 1024, pattern: '^(?=[\s\S]*[A-Za-z])(?=[\s\S]*[0-9])[\s\S]*$', description: "Requires letters and numbers; maximum 1024 UTF-8 bytes, enforced by server." }
+    ClinicRegistrationVerificationInput:
+      type: object
+      required: [challengeId]
+      properties:
+        challengeId: { type: string }
+        code: { type: string, description: Required unless skipEmailVerification is true. }
+        skipEmailVerification: { type: boolean, default: false }
     RegistrationResumeIdentity:
       type: object
       required: [email, fullName]

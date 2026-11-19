@@ -13,7 +13,7 @@ Normal staff password login must be independent of SMTP; successful password ver
 
 **Why:** The user explicitly removed the mandatory login email challenge after missing SMTP configuration blocked UAT password login. This is a deliberate authentication policy, not an error fallback.
 
-**How to apply:** Keep SMTP mandatory for operations that actually send email (registration verification, recovery requests, invitations, patient codes). Do not reintroduce email delivery as a prerequisite for ordinary staff password login.
+**How to apply:** Keep SMTP mandatory for operations that actually send email (requested registration email verification, recovery requests, invitations, patient codes). Public mobile-proven clinic owners may skip email verification; that path must not require SMTP. Do not reintroduce email delivery as a prerequisite for ordinary staff password login.
 
 Password recovery must not impose a per-account email-request cap. Keep IP abuse protection and reset-token controls separate from that policy.
 

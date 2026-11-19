@@ -4,7 +4,6 @@ import { EmailInput } from "@/components/EmailInput";
 import { PhoneInput } from "./PhoneInput";
 import { OwnerMobileProof } from "../auth/RegistrationMobileProof";
 import { type SecurityChannels } from "../auth/SecurityChannelNotice";
-import { RegistrationEmailNotice } from "../auth/RegistrationEmailNotice";
 import { registrationEmailAccepted, registrationEmailError } from "../auth/registration-email-feedback";
 import { useEffect, useRef, useState } from "react";
 import { useNativeAuth, authRequest } from "../auth/native-auth";
@@ -51,6 +50,7 @@ function RegistrationAccount() {
   const [email, setEmail] = useState(draft.data?.email || "");
   const [fullName, setFullName] = useState(draft.data?.fullName || "");
   const [password, setPassword] = useState("");
+  const [verifyEmailNow, setVerifyEmailNow] = useState(false);
   const [code, setCode] = useState("");
   const [mobile,setMobile] = useState(draft.data?.mobile || "");
   const [mobileProofId,setMobileProofId] = useState("");
@@ -62,6 +62,8 @@ function RegistrationAccount() {
   const [cooldown,setCooldown]=useState(0);
   const limit=useServerWait();
   const [resendNotice,setResendNotice]=useState("");
+  const optionalEmailError = (caught: unknown, action: "start" | "resend" | "verify") =>
+    registrationEmailError(caught,action).replace(/Email verification is still required\./gi,"You can continue with your verified mobile.");
   useEffect(() => { if (!fullName && !email && !mobile && step === "details") { clearRegistrationDraft(draftKey); return; } setStored(writeRegistrationDraft(draftKey, accountDraftSchema, { fullName, email, mobile, step })); }, [draftKey, fullName, email, mobile, step]);
   useEffect(() => {
     if (draft.data?.step !== "verify") return;
@@ -84,10 +86,24 @@ function RegistrationAccount() {
       setChannels(current=>({...current,...result.channels}));
       setChallengeId(result.challengeId);
       if(registrationEmailAccepted(result.channels)){setCode("");setResendNotice("Use the code in the latest verification email. Earlier codes no longer work.");notifySuccess("Verification email accepted for sending");}
-     }catch(caught){limit.record(caught);setError(registrationEmailError(caught,"resend"));if((caught as {status?:number})?.status===429)setCooldown(Math.max(60,retryWaitSeconds(caught)));}
+     }catch(caught){limit.record(caught);setError(optionalEmailError(caught,"resend"));if((caught as {status?:number})?.status===429)setCooldown(Math.max(60,retryWaitSeconds(caught)));}
     finally{submitLock.current=false;setBusy(false);}
   }
   const [fieldErrors,setFieldErrors]=useState<Record<string,string|undefined>>({});
+  async function finishWithMobile(id: string) {
+    const result = await authRequest<{authenticated:boolean}>("register/verify", {challengeId:id,skipEmailVerification:true});
+    if (!result.authenticated) throw new Error("Registration could not be completed. Please try again.");
+    clearRegistrationDraft(draftKey);
+    setCode(""); setPassword("");
+    await refresh();
+  }
+  async function skipEmail() {
+    if (submitLock.current || busy || limit.wait > 0 || !challengeId) return;
+    submitLock.current=true; setBusy(true); setError("");
+    try { await finishWithMobile(challengeId); }
+    catch (caught) { limit.record(caught); setError(friendlyError(caught,"auth","Could not continue. Verify your mobile again if this registration has expired.")); }
+    finally {submitLock.current=false;setBusy(false);}
+  }
   async function submit(event: React.FormEvent) {
     event.preventDefault();
      if (submitLock.current||busy||limit.wait>0) return;
@@ -103,10 +119,16 @@ function RegistrationAccount() {
     try {
        if (step === "details") {
         if (!password) { setStep("details"); throw new Error("Re-enter your password; passwords are never retained in temporary drafts."); }
-         const result = await authRequest<{ challengeId: string;channels?:SecurityChannels }>("register/start", { email: email.trim().toLowerCase(), fullName: fullName.trim(), password, mobile, mobileProofId });
-        if (!result.challengeId) throw new Error("Could not send the verification code. Please retry.");
+         const result = await authRequest<{ challengeId: string;channels?:SecurityChannels }>("register/start", { email: email.trim().toLowerCase(), fullName: fullName.trim(), password, mobile, mobileProofId, skipEmailVerification: !verifyEmailNow });
+        if (!result.challengeId) throw new Error("Could not prepare registration. Please retry.");
         setChallengeId(result.challengeId);
         setMobilePending(Boolean(mobile));
+        if (!verifyEmailNow) {
+          // Retain a resumable intent if session completion is interrupted.
+          setStep("verify");
+          await finishWithMobile(result.challengeId);
+          return;
+        }
         setChannels(result.channels);
         setCooldown(60);setResendNotice("");
         setPassword("");
@@ -118,14 +140,16 @@ function RegistrationAccount() {
         clearRegistrationDraft(draftKey);
         await refresh();
       }
-    } catch (caught) { limit.record(caught);setError(registrationEmailError(caught,step === "details" ? "start" : "verify")); }
+    } catch (caught) { limit.record(caught);setError(step === "details" && !verifyEmailNow
+      ? friendlyError(caught,"auth","Registration could not be completed. Please try again.")
+      : optionalEmailError(caught,step === "details" ? "start" : "verify")); }
      finally { submitLock.current = false; setBusy(false); }
   }
   return <AuthShell eyebrow="Register a Clinic" registration><div className="auth-card registration-account-card">
     <h1>Start with your secure account.</h1>
-    <PageDescription text="Create a verified owner account for your clinic." help="After email verification, set up your clinic, locations and opening hours." label="About clinic registration"/>
+    <PageDescription text="Create your clinic-owner account with a verified mobile." help="Enter your email for sign-in. Email verification is optional after mobile verification; then set up your clinic, locations and opening hours." label="About clinic registration"/>
     <nav aria-label="Account registration progress"><ol className="registration-account-steps">
-       {(["details", "verify"] as const).map((item, index) => <li key={item} aria-current={step === item ? "step" : undefined}><span>{index + 1}.</span> {item === "details" ? "Account details" : "Verify email"}</li>)}
+       {(["details", "verify"] as const).map((item, index) => <li key={item} aria-current={step === item ? "step" : undefined}><span>{index + 1}.</span> {item === "details" ? "Account details" : "Verify email (optional)"}</li>)}
     </ol></nav>
      <div className="registration-account-container"><h2 ref={stepHeading} tabIndex={-1} className="registration-form-title">{step === "details" ? "Create your account" : "Verify your email"}</h2>
       <form onSubmit={submit}>
@@ -133,14 +157,16 @@ function RegistrationAccount() {
         {step === "details" ? <>
           <fieldset hidden={!mobileProofId} disabled={!mobileProofId} style={{border:0,padding:0,minWidth:0}}>
           <FormField label="Your Name" required id="registration-account-fullName" error={fieldErrors.fullName}><input type="text" autoComplete="name" value={fullName} onChange={event => {setFullName(event.target.value);setFieldErrors(current=>({...current,fullName:undefined}));}}/></FormField>
-          <FormField label="Email Address" required id="registration-account-email" error={fieldErrors.email}><EmailInput data-testid="input-registration-email" value={email} onChange={event => {setEmail(event.target.value);setFieldErrors(current=>({...current,email:undefined}));}}/></FormField>
+          <FormField label="Email Address" required id="registration-account-email" error={fieldErrors.email} helper="Used for email/password sign-in. Verification is optional after your mobile is verified."><EmailInput data-testid="input-registration-email" value={email} onChange={event => {setEmail(event.target.value);setFieldErrors(current=>({...current,email:undefined}));}}/></FormField>
+          <label className="check-label"><input type="checkbox" checked={verifyEmailNow} onChange={event=>setVerifyEmailNow(event.target.checked)}/> Verify email now (optional)</label>
           <FormField label="Password" required id="registration-account-password" error={fieldErrors.password}><PasswordInput autoComplete="new-password" showChecklist value={password} onChange={event => {setPassword(event.target.value);setFieldErrors(current=>({...current,password:undefined}));}}/></FormField>
           </fieldset>
-         </> : <><p>Verification email destination: <strong>{email.trim().toLowerCase()}</strong></p><FormField label="Required email verification code" required id="registration-account-code"><VerificationCodeInput required value={code} onChange={setCode}/></FormField></>}
-         {step === "verify" && <RegistrationEmailNotice channels={channels}/>}
+         </> : <><p>Email: <strong>{email.trim().toLowerCase()}</strong></p><p>Your mobile has been verified. Email verification is optional; you can continue to register your clinic without an email code.</p><FormField label="Email verification code" id="registration-account-code"><VerificationCodeInput value={code} onChange={setCode}/></FormField></>}
+         {step === "verify" && channels?.email?.status && channels.email.status !== "provider_accepted" && <p role="status">The verification email was not confirmed as sent. You can continue with your verified mobile.</p>}
         {error && <div className="error-box" role="alert">{error}</div>}
         {step==="verify"&&resendNotice&&<p role="status">{resendNotice}</p>}
-          <button className="button auth-submit" type="submit" disabled={busy||limit.wait>0||step==="details"&&!mobileProofId}><ActionLabel>{busy ? "Please wait…" : limit.wait>0?`Try again in ${limit.wait}s`:step === "details" ? "Send verification code" : "Verify and continue"}</ActionLabel></button>
+          <button className="button auth-submit" type="submit" disabled={busy||limit.wait>0||(step==="details"?!mobileProofId:code.length!==6)}><ActionLabel>{busy ? "Please wait…" : limit.wait>0?`Try again in ${limit.wait}s`:step === "details" ? verifyEmailNow ? "Send email verification code" : "Continue to register clinic" : "Verify email and continue"}</ActionLabel></button>
+          {step==="verify"&&<button type="button" className="button secondary auth-submit" disabled={busy||limit.wait>0||!challengeId} onClick={()=>void skipEmail()}><ActionLabel>Continue without verifying email</ActionLabel></button>}
         <p className="registration-note" role="status">{stored ? fullName || email || mobile || step !== "details" ? "Name, email, mobile and stage are temporarily saved in this tab for up to 24 hours. Re-enter passwords and codes after reload." : "New non-secret details will be temporarily saved in this tab as you enter them." : "Browser storage is unavailable. Details remain only while this page is open."}</p>
         <button type="button" className="text-link" disabled={busy} onClick={() => { clearRegistrationDraft(draftKey); setMobile("");setMobileProofId("");setFullName(""); setEmail(""); setPassword(""); setCode(""); setChallengeId(""); setStep("details"); setError(""); setResendNotice(""); setCooldown(0); }}><ActionLabel>Discard account draft</ActionLabel></button>
          {step === "verify" && <><button className="text-link" type="button" disabled={busy||cooldown>0} onClick={()=>void resendCode()} data-testid="registration-resend-code"><ActionLabel>{cooldown>0?`Resend in ${cooldown}s`:"Resend code"}</ActionLabel></button><button className="text-link" type="button" disabled={busy} onClick={() => { setStep("details"); setPassword(""); setCode(""); setChallengeId(""); setChannels(undefined); setMobilePending(false); setError("");setResendNotice("");setCooldown(0); requestAnimationFrame(()=>document.getElementById("registration-account-email")?.focus()); }}><ActionLabel>Change email</ActionLabel></button></>}

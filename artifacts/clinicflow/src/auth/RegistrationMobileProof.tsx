@@ -59,7 +59,7 @@ export function OwnerMobileProof({ flow, mobile, onChange, onProof }: {
     finally { lock.current = false; setBusy(false); }
   }
   return <div data-testid="owner-mobile-proof">
-    <FormField label={flow === "admin" ? "Administrator mobile" : "Your mobile"} required helper="Verify this account mobile first. Email verification and email/password access remain separate.">
+    <FormField label={flow === "admin" ? "Administrator mobile" : "Your mobile"} required helper={flow === "public" ? "Verify your mobile first. Enter an email for sign-in; email verification is optional." : "Verify this account mobile first. Email verification and email/password access remain separate."}>
       <PhoneInput accountMobile value={mobile} disabled={busy} onChange={value=>{
         if(challenge) void authRequest("owner-mobile/invalidate",{flow,challengeId:challenge})
           .catch(()=>setError("The previous attempt could not be retired. Verification of the new number is still required."));

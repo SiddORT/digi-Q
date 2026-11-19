@@ -80,6 +80,7 @@ import type {
   ClinicList,
   ClinicRegistrationCompletion,
   ClinicRegistrationInput,
+  ClinicRegistrationVerificationInput,
   ClinicSettingsInput,
   ClinicSettingsPreview,
   ClinicSettingsResult,
@@ -7936,7 +7937,10 @@ export const getVerifyClinicRegistrationUrl = () => {
   return `/api/auth/register/verify`
 }
 
-export const verifyClinicRegistration = async (authCodeInput: AuthCodeInput, options?: Parameters<typeof customFetch>[1]): Promise<AuthAuthenticated> => {
+/**
+ * Completes clinic-owner registration using an email code, or skips email verification only with the same browser's valid, previously verified owner-mobile proof. Skipping never marks the email verified.
+ */
+export const verifyClinicRegistration = async (clinicRegistrationVerificationInput: ClinicRegistrationVerificationInput, options?: Parameters<typeof customFetch>[1]): Promise<AuthAuthenticated> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -7957,7 +7961,7 @@ return customFetch<AuthAuthenticated>(getVerifyClinicRegistrationUrl(),
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(authCodeInput)
+    body: JSON.stringify(clinicRegistrationVerificationInput)
   }
 );}
 
@@ -7995,11 +7999,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type VerifyClinicRegistrationMutationResult = NonNullable<Awaited<ReturnType<typeof verifyClinicRegistration>>>
-    export type VerifyClinicRegistrationMutationBody = BodyType<AuthCodeInput>
+    export type VerifyClinicRegistrationMutationBody = BodyType<ClinicRegistrationVerificationInput>
     export type VerifyClinicRegistrationMutationError = ErrorType<unknown>
-    export type VerifyClinicRegistrationMutationVariables = {data: BodyType<AuthCodeInput>}
+    export type VerifyClinicRegistrationMutationVariables = {data: BodyType<ClinicRegistrationVerificationInput>}
 
-    export const useVerifyClinicRegistration = <TError = ErrorType<unknown>,
+    /** Completes clinic-owner registration using an email code, or skips email verification only with the same browser's valid, previously verified owner-mobile proof. Skipping never marks the email verified. */
+export const useVerifyClinicRegistration = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyClinicRegistration>>, TError,VerifyClinicRegistrationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof verifyClinicRegistration>>,
