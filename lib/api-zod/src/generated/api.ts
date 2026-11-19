@@ -3663,11 +3663,49 @@ export const StartOwnerMobileBody = zod.object({
   "flow": zod.enum(['public', 'admin'])
 })
 
+export const startOwnerMobileResponseRequestGuidanceSubjectMinuteRemainingMin = 0;
+export const startOwnerMobileResponseRequestGuidanceSubjectMinuteRemainingMax = 60;
+
+export const startOwnerMobileResponseRequestGuidanceSubjectMinuteResetAfterSecondsMin = 0;
+export const startOwnerMobileResponseRequestGuidanceSubjectMinuteResetAfterSecondsMax = 3600;
+
+export const startOwnerMobileResponseRequestGuidanceMobileHourRemainingMin = 0;
+export const startOwnerMobileResponseRequestGuidanceMobileHourRemainingMax = 60;
+
+export const startOwnerMobileResponseRequestGuidanceMobileHourResetAfterSecondsMin = 0;
+export const startOwnerMobileResponseRequestGuidanceMobileHourResetAfterSecondsMax = 3600;
+
+export const startOwnerMobileResponseRequestGuidanceSourceIpRemainingMin = 0;
+export const startOwnerMobileResponseRequestGuidanceSourceIpRemainingMax = 60;
+
+export const startOwnerMobileResponseRequestGuidanceSourceIpResetAfterSecondsMin = 0;
+export const startOwnerMobileResponseRequestGuidanceSourceIpResetAfterSecondsMax = 3600;
+
+export const startOwnerMobileResponseRequestGuidanceRetryAfterSecondsMin = 0;
+export const startOwnerMobileResponseRequestGuidanceRetryAfterSecondsMax = 3600;
+
+
+
 export const StartOwnerMobileResponse = zod.object({
   "challengeId": zod.string(),
   "sms": zod.object({
   "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
+}),
+  "requestGuidance": zod.object({
+  "subjectMinute": zod.object({
+  "remaining": zod.int().min(startOwnerMobileResponseRequestGuidanceSubjectMinuteRemainingMin).max(startOwnerMobileResponseRequestGuidanceSubjectMinuteRemainingMax),
+  "resetAfterSeconds": zod.int().min(startOwnerMobileResponseRequestGuidanceSubjectMinuteResetAfterSecondsMin).max(startOwnerMobileResponseRequestGuidanceSubjectMinuteResetAfterSecondsMax)
+}),
+  "mobileHour": zod.object({
+  "remaining": zod.int().min(startOwnerMobileResponseRequestGuidanceMobileHourRemainingMin).max(startOwnerMobileResponseRequestGuidanceMobileHourRemainingMax),
+  "resetAfterSeconds": zod.int().min(startOwnerMobileResponseRequestGuidanceMobileHourResetAfterSecondsMin).max(startOwnerMobileResponseRequestGuidanceMobileHourResetAfterSecondsMax)
+}),
+  "sourceIp": zod.object({
+  "remaining": zod.int().min(startOwnerMobileResponseRequestGuidanceSourceIpRemainingMin).max(startOwnerMobileResponseRequestGuidanceSourceIpRemainingMax),
+  "resetAfterSeconds": zod.int().min(startOwnerMobileResponseRequestGuidanceSourceIpResetAfterSecondsMin).max(startOwnerMobileResponseRequestGuidanceSourceIpResetAfterSecondsMax)
+}),
+  "retryAfterSeconds": zod.int().min(startOwnerMobileResponseRequestGuidanceRetryAfterSecondsMin).max(startOwnerMobileResponseRequestGuidanceRetryAfterSecondsMax)
 })
 })
 

@@ -326,9 +326,8 @@ async function ownerSubject(req: any, res: any, flow: string, create = false) {
 }
 authRouter.post("/auth/owner-mobile/start", async (req, res) => {
   const body = parse(StartOwnerMobileBody, req.body);
-  await consumeRateLimit(`owner-mobile:ip:${req.ip || "unknown"}`, 20);
   const subject = await ownerSubject(req, res, body.flow, true);
-  res.set("Cache-Control", "no-store").json(await startOwnerMobile(subject, body.mobile));
+   res.set("Cache-Control", "no-store").json(await startOwnerMobile(subject, body.mobile, req.ip || "unknown"));
 });
 authRouter.post("/auth/owner-mobile/verify", async (req, res) => {
   const body = parse(ConfirmOwnerMobileBody, req.body);

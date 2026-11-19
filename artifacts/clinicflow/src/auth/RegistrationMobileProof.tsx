@@ -9,6 +9,8 @@ import { useServerWait } from "../lib/use-server-wait";
 import { useRef } from "react";
 import { PhoneInput } from "../components/PhoneInput";
 import { accountMobileProblem } from "@workspace/api-zod/account-mobile";
+import type { OwnerMobileChallenge } from "@workspace/api-zod";
+import { ownerMobileGuidance, ownerRequestFeedback, type RequestBudget } from "./owner-mobile-guidance";
 
 /** Required in-place mobile-first action; no identity or permanent new field is created. */
 export function OwnerMobileProof({ flow, mobile, onChange, onProof }: {
@@ -20,15 +22,25 @@ export function OwnerMobileProof({ flow, mobile, onChange, onProof }: {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [wait, setWait] = useState(0);
+  const [budget, setBudget] = useState<RequestBudget>();
+  const [safetyUntil, setSafetyUntil] = useState(0);
+  const [now, setNow] = useState(Date.now);
+  const feedback = ownerRequestFeedback(budget, now);
+  const wait = Math.max(feedback.wait, Math.max(0, Math.ceil((safetyUntil - now) / 1000)));
   const sequence = useRef(0);
   const lock = useRef(false);
   const proofCallback = useRef(onProof); proofCallback.current = onProof;
   useEffect(() => {
     sequence.current++; setChallenge(""); setCode(""); setVerified(false); setNotice(""); setError("");
+    setBudget(undefined); setSafetyUntil(0); setNow(Date.now());
     proofCallback.current("");
-  }, [mobile]);
-  useEffect(() => { if (wait > 0) { const timer = setTimeout(() => setWait(n => n - 1), 1000); return () => clearTimeout(timer); } return undefined; }, [wait]);
+    return () => { sequence.current++; };
+  }, [mobile, flow]);
+  useEffect(() => {
+    if (!budget && !safetyUntil) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [budget, safetyUntil]);
   async function act(confirm: boolean) {
     if (lock.current || busy || (!confirm && wait > 0)) return;
     const problem = accountMobileProblem(mobile);
@@ -42,10 +54,15 @@ export function OwnerMobileProof({ flow, mobile, onChange, onProof }: {
         if (result.mobileVerified !== true) throw new Error("Mobile verification was not confirmed.");
         setVerified(true); setCode(""); setNotice(""); onProof(challenge);
       } else {
-        setWait(60); setCode(""); setChallenge(""); onProof("");
-        const result = await authRequest<{challengeId: string; sms: {status: string}}>("owner-mobile/start", { flow, mobile });
+        setCode(""); setChallenge(""); onProof("");
+        const result = await authRequest<OwnerMobileChallenge>("owner-mobile/start", { flow, mobile });
         if (revision !== sequence.current) return;
+        const receivedAt = Date.now();
+        const guidance = ownerMobileGuidance(result.requestGuidance);
+        setNow(receivedAt);
+        setBudget(guidance ? {guidance, receivedAt} : undefined);
         const status = result.sms.status;
+        setSafetyUntil(status === "delivery_unknown" ? receivedAt + Math.max(60, guidance?.retryAfterSeconds || 0) * 1000 : 0);
         if (status === "provider_accepted") {
           setChallenge(result.challengeId);
           setNotice("The provider accepted the code request. Enter the received SMS code; handset receipt is not yet confirmed.");
@@ -55,7 +72,20 @@ export function OwnerMobileProof({ flow, mobile, onChange, onProof }: {
             ? "We couldn’t send the SMS code. Please try again later."
             : "We couldn’t confirm whether the SMS was sent. Please wait and check your phone before trying again.");
       }
-    } catch (e) { if (revision === sequence.current) { setError(authErrorMessage(e, "Mobile verification could not be completed.")); setWait(n => Math.max(n, retryWaitSeconds(e))); } }
+    } catch (e) { if (revision === sequence.current) {
+      const receivedAt = Date.now();
+      const guidance = ownerMobileGuidance((e as {requestGuidance?: unknown})?.requestGuidance);
+      setNow(receivedAt);
+      if (guidance) setBudget({guidance, receivedAt});
+      const seconds = retryWaitSeconds(e);
+      // A lost start response may have followed a send; never immediately invite
+      // another send or retry automatically when the outcome cannot be known.
+      const uncertain = !confirm && !guidance && !seconds;
+      setSafetyUntil(receivedAt + Math.max(seconds, uncertain ? 60 : 0) * 1000);
+      setError(guidance ? "" : uncertain
+        ? "We couldn’t confirm whether the SMS was sent. Please wait and check your phone before trying again."
+        : authErrorMessage(e, "Mobile verification could not be completed."));
+    } }
     finally { lock.current = false; setBusy(false); }
   }
   return <div data-testid="owner-mobile-proof">
@@ -67,13 +97,15 @@ export function OwnerMobileProof({ flow, mobile, onChange, onProof }: {
       }}/>
     </FormField>
     {flow==="admin"&&<p className="muted">The new clinic owner must supply the code received on their mobile.</p>}
-    {verified ? <><p role="status">Mobile verified. Continue with the existing account and clinic details.</p><button type="button" className="text-link" onClick={()=>{setVerified(false);setChallenge("");setCode("");setNotice("");onProof("");}}>Verify mobile again</button></> : <>
+      {verified ? <><p role="status">Mobile verified. Continue with the existing account and clinic details.</p><button type="button" className="text-link" onClick={()=>{setVerified(false);setChallenge("");setCode("");setNotice("");onProof("");}}>Verify mobile again</button></> : <>
       <button type="button" className="button secondary" disabled={busy || wait > 0} onClick={() => void act(false)}>{busy ? "Please wait…" : wait > 0 ? `Request SMS in ${wait}s` : challenge ? "Resend SMS code" : "Send SMS code"}</button>
       {challenge && <>
         <FormField label="SMS verification code"><VerificationCodeInput form="owner-mobile-code" value={code} onChange={setCode}/></FormField>
         <button type="button" className="button secondary" disabled={busy || code.length !== 6} onClick={() => void act(true)}>Verify mobile</button>
       </>}
     </>}
+    {!verified && feedback.text && <p role="status" data-testid="owner-request-budget">{feedback.text}</p>}
+    {!verified && wait > 0 && <p role="status" data-testid="owner-request-wait">Please wait {wait}s before requesting another SMS code. No request is sent automatically.</p>}
     {notice && <p role="status">{notice}</p>}
     {error && <p role="alert">{error}</p>}
   </div>;

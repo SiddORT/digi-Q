@@ -1936,9 +1936,40 @@ export interface SecurityChannelOutcome {
   destination?: string;
 }
 
+export interface OwnerMobileRequestWindow {
+  /**
+     * @minimum 0
+     * @maximum 60
+     */
+  remaining: number;
+  /**
+     * @minimum 0
+     * @maximum 3600
+     */
+  resetAfterSeconds: number;
+}
+
+export interface OwnerMobileRequestGuidance {
+  subjectMinute: OwnerMobileRequestWindow;
+  mobileHour: OwnerMobileRequestWindow;
+  sourceIp: OwnerMobileRequestWindow;
+  /**
+     * @minimum 0
+     * @maximum 3600
+     */
+  retryAfterSeconds: number;
+}
+
 export interface OwnerMobileChallenge {
   challengeId: string;
   sms: SecurityChannelOutcome;
+  requestGuidance: OwnerMobileRequestGuidance;
+}
+
+export interface OwnerMobileRequestError {
+  error: string;
+  code: string;
+  requestGuidance: OwnerMobileRequestGuidance;
 }
 
 export interface StartClinicRegistrationInput {

@@ -14,3 +14,14 @@ Ownership/capability tests must also install the real historical constraint-trig
 **Why:** Simplified SQL fixtures accepted a consulting administrator that the live database rejected through an older ownership trigger. Passing service tests did not prove compatibility with the deployed constraints.
 
 **How to apply:** When extending roles or assignment capabilities, exercise immediate and deferred guards with the actual migration chain, including foreign assignments, deactivation and last-owner removal. Keep migration changes explicit; never disable guards to make a new capability pass.
+
+Pass the owning transaction into notification preparation and activation reads
+when delivery occurs inside a transaction.
+
+**Why:** Increasing allowed parallel owner requests exposed connection-pool
+starvation: transactions held every connection while notification preparation
+waited for another connection. Ordinary serial checks did not expose this.
+
+**How to apply:** Exercise concurrency above the pool size with a fake transport.
+Do not let lock-waiting transactions or nested preparation reads require an
+additional pooled connection to finish the transaction already holding one.

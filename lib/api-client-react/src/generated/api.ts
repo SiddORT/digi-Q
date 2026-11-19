@@ -200,6 +200,7 @@ import type {
   OwnerMobileChallenge,
   OwnerMobileConfirmInput,
   OwnerMobileReference,
+  OwnerMobileRequestError,
   OwnerMobileStartInput,
   Patient,
   PatientActivityPage,
@@ -7291,7 +7292,7 @@ return customFetch<OwnerMobileChallenge>(getStartOwnerMobileUrl(),
 
 export const getStartOwnerMobileMutationKey = () => ['startOwnerMobile'] as const;
 
-export const getStartOwnerMobileMutationOptions = <TError = ErrorType<unknown>,
+export const getStartOwnerMobileMutationOptions = <TError = ErrorType<OwnerMobileRequestError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startOwnerMobile>>, TError,StartOwnerMobileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof startOwnerMobile>>, TError,StartOwnerMobileMutationVariables, TContext> => {
 
@@ -7320,11 +7321,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type StartOwnerMobileMutationResult = NonNullable<Awaited<ReturnType<typeof startOwnerMobile>>>
     export type StartOwnerMobileMutationBody = BodyType<OwnerMobileStartInput>
-    export type StartOwnerMobileMutationError = ErrorType<unknown>
+    export type StartOwnerMobileMutationError = ErrorType<OwnerMobileRequestError>
     export type StartOwnerMobileMutationVariables = {data: BodyType<OwnerMobileStartInput>}
 
     /** Explicitly request mobile-first clinic-owner proof, bound to an HttpOnly guest intent or the signed-in Super Admin. Never creates an identity or session. */
-export const useStartOwnerMobile = <TError = ErrorType<unknown>,
+export const useStartOwnerMobile = <TError = ErrorType<OwnerMobileRequestError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startOwnerMobile>>, TError,StartOwnerMobileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof startOwnerMobile>>,

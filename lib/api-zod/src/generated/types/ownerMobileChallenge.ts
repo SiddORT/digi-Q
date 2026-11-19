@@ -20,9 +20,11 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { OwnerMobileRequestGuidance } from './ownerMobileRequestGuidance';
 import type { SecurityChannelOutcome } from './securityChannelOutcome';
 
 export interface OwnerMobileChallenge {
   challengeId: string;
   sms: SecurityChannelOutcome;
+  requestGuidance: OwnerMobileRequestGuidance;
 }

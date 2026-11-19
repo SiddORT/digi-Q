@@ -1,5 +1,7 @@
 import { csrfFetch } from "./csrf";
 import { friendlyError, isFriendlyText } from "./friendly-error";
+import { ownerMobileGuidance } from "../auth/owner-mobile-guidance";
+import type { OwnerMobileRequestGuidance } from "@workspace/api-zod";
 
 /** Safe presentation plus machine-readable policy metadata; never retain a
  * response body that could contain provider diagnostics or credentials.
@@ -10,8 +12,9 @@ export class AuthRequestError extends Error {
   readonly code?: string;
   readonly retryAfter?: string;
   readonly retryAfterSeconds?: number;
+  readonly requestGuidance?: OwnerMobileRequestGuidance;
   readonly data: { error: string; code?: string };
-  constructor(response: Response, body: { error?: unknown; message?: unknown; code?: unknown }) {
+  constructor(response: Response, body: { error?: unknown; message?: unknown; code?: unknown; requestGuidance?: unknown }) {
     const status = response.status;
     const code = typeof body.code === "string" && /^[A-Z][A-Z0-9_]{0,79}$/.test(body.code) ? body.code : undefined;
     const safeMessage = [body.message, body.error].find(isFriendlyText);
@@ -21,6 +24,8 @@ export class AuthRequestError extends Error {
     this.status = status;
     this.code = code;
     this.data = { error: message, ...(code ? { code } : {}) };
+    if (code === "OWNER_MOBILE_RATE_LIMITED")
+      this.requestGuidance = ownerMobileGuidance(body.requestGuidance);
     const retryAfter = response.headers.get("Retry-After");
     if (retryAfter && (/^\d+$/.test(retryAfter) || Number.isFinite(Date.parse(retryAfter)))) {
       this.retryAfter = retryAfter;

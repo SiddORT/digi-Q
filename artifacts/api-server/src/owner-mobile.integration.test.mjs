@@ -1,6 +1,6 @@
 import { before, after, beforeEach, test } from "node:test";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import { createFeatureHarness } from "./test-support/feature-harness.mjs";
 import { seedFeatureFixtures } from "./test-support/feature-fixtures.mjs";
 import { ownerSetup, OWNER_PASSWORD } from "./test-support/owner-booking-harness.mjs";
@@ -45,6 +45,171 @@ before(async () => {
 });
 beforeEach(async () => { await h.pg.query("delete from auth_rate_limits"); h.sms.outcome="provider_accepted"; });
 after(async () => { await h?.close(); });
+
+const hash = value => createHash("sha256").update(value).digest("hex");
+const phoneKey = number => hash(`owner-mobile:phone:${hash(JSON.stringify(["phone",number]))}`);
+const expire = key => h.pg.query("update auth_rate_limits set expires_at=now()-interval '1 second' where key=$1",[key]);
+
+test("both flows permit exactly five subject requests per minute, including the first; resets do not refund the phone hour",async()=>{
+  for(const flow of ["public","admin"]) {
+    const number=flow==="public"?"+919876543212":"+919876543213";
+    let binding;
+    for(let i=1;i<=5;i++) {
+      const response=await call(flow==="admin"?"sa":null,"/auth/owner-mobile/start",{flow,mobile:number},binding);
+      const result=ok(response);binding ||= cookie(response);
+      assert.equal(result.requestGuidance.subjectMinute.remaining,5-i);
+      assert.equal(result.requestGuidance.mobileHour.remaining,10-i);
+      assert.equal(result.requestGuidance.retryAfterSeconds,i===5?60:0);
+    }
+    const blocked=await call(flow==="admin"?"sa":null,"/auth/owner-mobile/start",{flow,mobile:number},binding);
+    ok(blocked,429);
+    assert.equal(blocked.data.code,"OWNER_MOBILE_RATE_LIMITED");
+    assert.equal(Number(blocked.headers.get("Retry-After")),blocked.data.requestGuidance.retryAfterSeconds);
+    assert.equal(blocked.data.requestGuidance.subjectMinute.remaining,0);
+    const subject=hash(JSON.stringify([flow,flow==="admin"?"sa":binding.split("=")[1]]));
+    await expire(hash(`owner-mobile:subject:${subject}`));
+    const next=ok(await call(flow==="admin"?"sa":null,"/auth/owner-mobile/start",{flow,mobile:number},binding));
+    assert.equal(next.requestGuidance.subjectMinute.remaining,4);
+    assert.equal(next.requestGuidance.mobileHour.remaining,4);
+  }
+});
+
+test("one mobile shares exactly ten hourly requests across browsers and administrator proof; an hourly reset restores only that window",async()=>{
+  const number="+919876543214";
+  for(let i=1;i<=10;i++) {
+    const flow=i===10?"admin":"public";
+    const result=ok(await call(flow==="admin"?"sa":null,"/auth/owner-mobile/start",{flow,mobile:number}));
+    assert.equal(result.requestGuidance.mobileHour.remaining,10-i);
+    if(i===10)assert.equal(result.requestGuidance.retryAfterSeconds,3600);
+  }
+  const blocked=ok(await call(null,"/auth/owner-mobile/start",{flow:"public",mobile:number}),429);
+  assert.equal(blocked.requestGuidance.subjectMinute.remaining,4,"subject is consumed before exhausted phone check");
+  assert.equal(blocked.requestGuidance.mobileHour.remaining,0);
+  assert.equal(blocked.requestGuidance.retryAfterSeconds,3600);
+  await expire(phoneKey(number));
+  const next=ok(await call(null,"/auth/owner-mobile/start",{flow:"public",mobile:number}));
+  assert.equal(next.requestGuidance.mobileHour.remaining,9);
+});
+
+test("shared IP allows sixty requests per ten minutes and reconciles overlapping longer phone waits without leaking keys",async()=>{
+  h.sms.outcome="provider_rejected";
+  const sent=h.sms.messages.length;
+  for(let i=0;i<60;i++) {
+    const number=`+91987654${String(3300+Math.floor(i/10)).padStart(4,"0")}`;
+    const result=ok(await call(null,"/auth/owner-mobile/start",{flow:"public",mobile:number}));
+    assert.equal(result.requestGuidance.sourceIp.remaining,59-i);
+  }
+  assert.equal(h.sms.messages.length,sent+60);
+  const number="+919876543305";
+  const blocked=await call(null,"/auth/owner-mobile/start",{flow:"public",mobile:number});
+  ok(blocked,429);
+  assert.equal(blocked.data.requestGuidance.sourceIp.remaining,0);
+  assert.equal(blocked.data.requestGuidance.retryAfterSeconds,3600,"longest exhausted window wins");
+  assert.equal(blocked.data.requestGuidance.subjectMinute.remaining,5,"IP rejection does not consume later counters");
+  assert.doesNotMatch(JSON.stringify(blocked.data),/key|subject:|phone:|\\+919|[a-f0-9]{64}|provider/i);
+  const ipRow=(await query("select key from auth_rate_limits where attempts=60"))[0];
+  await expire(ipRow.key);
+  const reset=ok(await call(null,"/auth/owner-mobile/start",{flow:"public",mobile:"+919876543399"}));
+  assert.equal(reset.requestGuidance.sourceIp.remaining,59);
+  assert.equal(reset.requestGuidance.sourceIp.resetAfterSeconds,600);
+});
+
+test("failed preparation, rejection and unknown delivery consume allowances; only unknown adds a safety wait",async()=>{
+  for(const status of ["disabled","unavailable","pre_dispatch_failed","provider_rejected","delivery_unknown"]) {
+    // Keep each independent failure case on its own number and browser.
+    const number=`+9198765434${String(["disabled","unavailable","pre_dispatch_failed","provider_rejected","delivery_unknown"].indexOf(status)).padStart(2,"0")}`;
+    if(status==="disabled")await template("registration_mobile_otp","clinicAdmin",{enabled:false});
+    else if(status==="unavailable")await template("registration_mobile_otp","clinicAdmin",{body:"Invalid {{patient_name}}"});
+    else {await template("registration_mobile_otp","clinicAdmin");h.sms.outcome=status;}
+    const result=ok(await call(null,"/auth/owner-mobile/start",{flow:"public",mobile:number}));
+    assert.equal(result.sms.status,status);
+    assert.equal(result.requestGuidance.subjectMinute.remaining,4);
+    assert.equal(result.requestGuidance.mobileHour.remaining,9);
+    assert.equal(result.requestGuidance.retryAfterSeconds,status==="delivery_unknown"?60:0);
+  }
+  await template("registration_mobile_otp","clinicAdmin");
+});
+
+test("concurrent browser sessions cannot exceed the shared mobile or IP allowances",async()=>{
+  const number="+919876543215",sent=h.sms.messages.length;
+  const results=await Promise.all(Array.from({length:12},()=>call(null,"/auth/owner-mobile/start",{flow:"public",mobile:number})));
+  assert.equal(results.filter(r=>r.status===200).length,10);
+  assert.equal(results.filter(r=>r.status===429).length,2);
+  assert.equal(h.sms.messages.length,sent+10);
+  const ip=(await query("select key from auth_rate_limits where attempts=12"))[0].key;
+  await h.pg.query("update auth_rate_limits set attempts=59 where key=$1",[ip]);
+  const network=await Promise.all(Array.from({length:5},(_,i)=>call(null,"/auth/owner-mobile/start",{flow:"public",mobile:`+91987654322${i}`})));
+  assert.equal(network.filter(r=>r.status===200).length,1);
+  assert.equal(network.filter(r=>r.status===429).length,4);
+  assert.equal((await query("select attempts from auth_rate_limits where key=$1",[ip]))[0].attempts,60);
+});
+
+test("a request waiting on the actual IP lock starts its window at admission, not transaction start",async()=>{
+  const probe=await begin("public","+919876543219");
+  const subject=hash(JSON.stringify(["public",probe.binding.split("=")[1]]));
+  const ip=(await query("select key from auth_rate_limits where key<>$1 and key<>$2",
+    [phoneKey(probe.mobile),hash(`owner-mobile:subject:${subject}`)]))[0].key;
+  await expire(ip);
+  const gate=await h.pool.connect();
+  let pending;
+  try {
+    await gate.query("select pg_advisory_lock(hashtext($1))",["owner-mobile-limit:"+ip]);
+    pending=call(null,"/auth/owner-mobile/start",{flow:"public",mobile:"+919876543218"});
+    let waiting=false;
+    for(let i=0;i<100;i++) {
+      const rows=await query("select pid from pg_stat_activity where wait_event='advisory' and pid<>pg_backend_pid()");
+      if(rows.length){waiting=true;break;}
+      await new Promise(resolve=>setTimeout(resolve,10));
+    }
+    assert.ok(waiting,"a separate database connection must visibly wait on the IP lock");
+    await gate.query("select pg_sleep(1.1)");
+    await gate.query("select pg_advisory_unlock(hashtext($1))",["owner-mobile-limit:"+ip]);
+    ok(await pending);
+    const row=(await query("select extract(epoch from (expires_at-clock_timestamp()))::float as seconds from auth_rate_limits where key=$1",[ip]))[0];
+    assert.ok(row.seconds>599.5 && row.seconds<=600,`IP window started too early: ${row.seconds}`);
+  } finally {
+    await gate.query("select pg_advisory_unlock_all()");
+    gate.release();
+    if(pending)await pending;
+  }
+});
+
+test("mobile-proven owners can skip email directly or while pending and finish clinic setup without SMTP or email activation",async()=>{
+  const smtpKeys=["SMTP_HOST","SMTP_PORT","SMTP_USER","SMTP_PASSWORD","SMTP_FROM"];
+  const saved=Object.fromEntries(smtpKeys.map(key=>[key,process.env[key]]));
+  const emailKey="email-template:platform:clinic_registration_otp";
+  const original=(await query("select data from settings where id=$1",[emailKey]))[0];
+  const disableEmail=()=>h.pg.query("insert into settings(id,data) values($1,$2) on conflict(id) do update set data=excluded.data",
+    [emailKey,{revision:1,publishedRevision:1,published:{enabled:false,subject:"Code {{otp}}",body:"Code {{otp}} expires in {{expiry_minutes}}.",prefix:"",footer:"",logoUrl:""}}]);
+  try {
+    for(const pending of [false,true]) {
+      for(const key of smtpKeys)process.env[key]=saved[key];
+      if(original)await h.pg.query("update settings set data=$2 where id=$1",[emailKey,original.data]);
+      else await h.pg.query("delete from settings where id=$1",[emailKey]);
+      const p=await proof("public",pending?"+919876543217":"+919876543216");
+      const body={email:`optional-email-${pending}@test.invalid`,fullName:"Fictional Optional Email",password:OWNER_PASSWORD,mobile:p.mobile,mobileProofId:p.id};
+      let start;
+      const before=h.mail.messages.length;
+      if(pending)start=ok(await call(null,"/auth/register/start",body,p.binding));
+      for(const key of smtpKeys)delete process.env[key];
+      await disableEmail();
+      if(!pending)start=ok(await call(null,"/auth/register/start",{...body,skipEmailVerification:true},p.binding));
+      assert.equal(h.mail.messages.length,before+(pending?1:0));
+      const binding=`${p.binding}; digiq_registration=${start.challengeId}`;
+      ok(await call(null,"/auth/register/verify",{challengeId:start.challengeId,skipEmailVerification:true},binding));
+      const account=(await query("select * from users where email=$1",[body.email]))[0];
+      assert.equal(account.email_verified_at,null);
+      assert.equal(account.data.staffMobileProof.contact,p.mobile);
+      ok(await call(account.id,"/clinic-registration",{...ownerSetup(`optional-email-${pending}`,false),fullName:body.fullName,password:OWNER_PASSWORD}),201);
+      assert.equal((await query("select email_verified_at from users where id=$1",[account.id]))[0].email_verified_at,null);
+      assert.equal(h.mail.messages.length,before+(pending?1:0),"clinic completion did not require an email send");
+    }
+  } finally {
+    for(const key of smtpKeys) {if(saved[key]===undefined)delete process.env[key];else process.env[key]=saved[key];}
+    if(original)await h.pg.query("update settings set data=$2 where id=$1",[emailKey,original.data]);
+    else await h.pg.query("delete from settings where id=$1",[emailKey]);
+  }
+});
 
 test("account API rejects India short, long, trunk-prefixed and landline numbers and non-India landlines", async () => {
   const count = h.sms.messages.length;
@@ -118,9 +283,10 @@ test("wrong guesses, expiry, resend and racing requests cannot reuse codes", asy
   ok(await confirm(b));
   await h.pg.query("delete from auth_rate_limits");
   const sent=h.sms.messages.length;
-  const results=await Promise.all([1,2].map(()=>call("sa","/auth/owner-mobile/start",{flow:"admin",mobile})));
-  assert.deepEqual(results.map(r=>r.status).sort(),[200,429]);
-  assert.equal(h.sms.messages.length,sent+1);
+  const results=await Promise.all(Array.from({length:8},()=>call("sa","/auth/owner-mobile/start",{flow:"admin",mobile})));
+  assert.deepEqual(results.map(r=>r.status).sort(),[200,200,200,200,200,429,429,429]);
+  assert.equal(h.sms.messages.length,sent+5);
+  assert.deepEqual(results.filter(r=>r.status===200).map(r=>r.data.requestGuidance.subjectMinute.remaining).sort(),[0,1,2,3,4]);
 });
 
 test("number changes retire only the bound attempt and concurrent code confirmation has one winner",async()=>{

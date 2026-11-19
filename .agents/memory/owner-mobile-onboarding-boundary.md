@@ -37,6 +37,17 @@ Live OTP/onboarding sends, environment-data changes, template publication,
 deployment and historical replay require separate authorization. Generic old
 recipient failures do not establish a historical account-field cause.
 
+Owner SMS request allowances are a fixed, narrowly scoped product policy, not
+permission to add settings, change patient/email limits, refund failed sends,
+or reset existing allowances. Uncertain delivery still requires a safety wait,
+even when the request budget would otherwise allow another explicit request.
+
+**Why:** The user chose fixed owner-only allowance increases and explicitly
+excluded changing failure-counting semantics or automatically retrying messages.
+
+**How to apply:** Treat request capacity and uncertain-delivery safety as
+independent constraints; the visible wait must honor both.
+
 **Why:** Supplied UAT evidence separated missing recipient, disabled and actual
 provider rejection stages, without identifying every original account field.
 

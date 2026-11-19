@@ -1,7 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
+import type { OwnerMobileRequestGuidance } from "@workspace/api-zod";
 export class HttpError extends Error {
-  constructor(public status: number, message: string, public code = "REQUEST_FAILED") { super(message); }
+  constructor(public status: number, message: string, public code = "REQUEST_FAILED",
+    public ownerMobileGuidance?: OwnerMobileRequestGuidance) { super(message); }
 }
 export function assert(value: unknown, status: number, message: string): asserts value {
   if (!value) throw new HttpError(status, message);
@@ -60,5 +62,10 @@ export function errors(err: any, req: Request, res: Response, _next: NextFunctio
   // Never serialize exception objects here: auth parameters can include codes,
   // links, password verifiers and session tokens.
   if (status >= 500) req.log.error({ code: typeof err?.code === "string" ? err.code : "INTERNAL_ERROR" }, "Request failed");
+  if (err instanceof HttpError && err.code === "OWNER_MOBILE_RATE_LIMITED" && err.ownerMobileGuidance) {
+    res.set("Cache-Control", "no-store").set("Retry-After", String(err.ownerMobileGuidance.retryAfterSeconds));
+    res.status(429).json({ error: err.message, code: err.code, requestGuidance: err.ownerMobileGuidance });
+    return;
+  }
   res.status(status).json({ error: validation ? "Invalid input: " + err.issues.map((i: any) => `${i.path.join(".")} ${i.message}`).join("; ") : conflict ? "Record conflicts with existing data or references" : status >= 500 ? "Service unavailable. Please retry." : err.message, code: validation ? "VALIDATION_ERROR" : conflict ? "CONFLICT" : err.code || "REQUEST_FAILED" });
 }

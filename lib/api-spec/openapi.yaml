@@ -990,6 +990,7 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/OwnerMobileStartInput" } } } }
       responses:
         "200": { description: Safe SMS outcome, content: { application/json: { schema: { $ref: "#/components/schemas/OwnerMobileChallenge" } } } }
+        "429": { description: Owner SMS request allowance exhausted, headers: { Retry-After: { schema: { type: integer } } }, content: { application/json: { schema: { $ref: "#/components/schemas/OwnerMobileRequestError" } } } }
   /auth/owner-mobile/verify:
     post:
       operationId: confirmOwnerMobile
@@ -3062,10 +3063,34 @@ components:
         challengeId: { type: string, maxLength: 100 }
     OwnerMobileChallenge:
       type: object
-      required: [challengeId, sms]
+      required: [challengeId, sms, requestGuidance]
       properties:
         challengeId: { type: string }
         sms: { $ref: "#/components/schemas/SecurityChannelOutcome" }
+        requestGuidance: { $ref: "#/components/schemas/OwnerMobileRequestGuidance" }
+    OwnerMobileRequestWindow:
+      type: object
+      additionalProperties: false
+      required: [remaining, resetAfterSeconds]
+      properties:
+        remaining: { type: integer, minimum: 0, maximum: 60 }
+        resetAfterSeconds: { type: integer, minimum: 0, maximum: 3600 }
+    OwnerMobileRequestGuidance:
+      type: object
+      additionalProperties: false
+      required: [subjectMinute, mobileHour, sourceIp, retryAfterSeconds]
+      properties:
+        subjectMinute: { $ref: "#/components/schemas/OwnerMobileRequestWindow" }
+        mobileHour: { $ref: "#/components/schemas/OwnerMobileRequestWindow" }
+        sourceIp: { $ref: "#/components/schemas/OwnerMobileRequestWindow" }
+        retryAfterSeconds: { type: integer, minimum: 0, maximum: 3600 }
+    OwnerMobileRequestError:
+      type: object
+      required: [error, code, requestGuidance]
+      properties:
+        error: { type: string }
+        code: { type: string }
+        requestGuidance: { $ref: "#/components/schemas/OwnerMobileRequestGuidance" }
     StartClinicRegistrationInput:
       type: object
       required: [email, fullName, password, mobile, mobileProofId]

@@ -174,6 +174,24 @@ test("correcting owner email retires the prior registration challenge and its mo
   assert.equal(old.challengeId,null);
 });
 
+test("owner request guidance and Retry-After survive the actual HTTPS frontend error boundary without private response fields",async()=>{
+  for(let i=1;i<=5;i++) {
+    const result=await authRequest("owner-mobile/start",{flow:"public",mobile:"+919876543210"});
+    assert.equal(result.requestGuidance.subjectMinute.remaining,5-i);
+    assert.equal(result.requestGuidance.mobileHour.remaining,10-i);
+  }
+  await assert.rejects(authRequest("owner-mobile/start",{flow:"public",mobile:"+919876543210"}),error=>{
+    assert.equal(error.status,429);
+    assert.equal(error.code,"OWNER_MOBILE_RATE_LIMITED");
+    assert.equal(error.requestGuidance.subjectMinute.remaining,0);
+    assert.equal(error.requestGuidance.mobileHour.remaining,5);
+    assert.equal(error.retryAfterSeconds,error.requestGuidance.retryAfterSeconds);
+    assert.ok(error.retryAfterSeconds>0&&error.retryAfterSeconds<=60);
+    assert.doesNotMatch(JSON.stringify(error),/key|phone:|subject:|\\+919|[a-f0-9]{64}|provider/i);
+    return true;
+  });
+});
+
 test("actual HTTPS frontend transport completes Argon2 staff login, session and logout with all SMTP settings absent", async () => {
   const smtpKeys = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"];
   const savedSmtp = Object.fromEntries(smtpKeys.map(key => [key, process.env[key]]));

@@ -2,7 +2,8 @@ import { createHash, randomInt } from "node:crypto";
 import { db, authChallenges } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { accountMobileProblem } from "@workspace/api-zod/account-mobile";
-import { createChallenge, consumeChallenge, consumeRateLimit } from "./native-auth";
+import { createChallenge, consumeChallenge } from "./native-auth";
+import { consumeOwnerMobileRequests } from "./owner-mobile-limits";
 import { securitySms } from "./security-notifications";
 import { assert, HttpError } from "./http";
 
@@ -18,10 +19,9 @@ async function lock(conn: any, subject: string) {
   await conn.execute(sql`select pg_advisory_xact_lock(hashtext(${"owner-mobile:" + subject}))`);
 }
 /** Uses the existing hashed, expiring challenge store; the empty email is NOT an identity. */
-export async function startOwnerMobile(subject: string, value: unknown, deliver = securitySms) {
+export async function startOwnerMobile(subject: string, value: unknown, ip: string, deliver = securitySms) {
   const mobile = requireAccountMobile(value);
-  await consumeRateLimit(`owner-mobile:subject:${subject}`, 1, 60_000);
-  await consumeRateLimit(`owner-mobile:phone:${ownerMobileSubject("phone", mobile)}`, 5, 3600_000);
+  const requestGuidance = await consumeOwnerMobileRequests(subject, ownerMobileSubject("phone", mobile), ip);
   return db.transaction(async tx => {
     await lock(tx, subject);
     await tx.execute(sql`update auth_challenges set data='{}'::jsonb,consumed_at=now()
@@ -29,11 +29,15 @@ export async function startOwnerMobile(subject: string, value: unknown, deliver 
     const code = String(randomInt(100000, 1000000));
     const id = await createChallenge({ email: "", purpose, secret: code, ttlMs: 600_000,
       data: { subject, mobile, deliveryReady: false } },tx);
-    const outcome = await deliver("registration_mobile_otp", "clinicAdmin", mobile, { otp: code, expiry_minutes: "10" });
+    const outcome = await deliver("registration_mobile_otp", "clinicAdmin", mobile,
+      { otp: code, expiry_minutes: "10" }, undefined, tx);
     await tx.update(authChallenges).set(outcome.status === "provider_accepted"
       ? { data: { subject, mobile, deliveryReady: true } }
       : { data: {}, consumedAt: new Date() }).where(eq(authChallenges.id, id));
-    return { challengeId: id, sms: outcome };
+    // An uncertain outcome is not permission for an immediate duplicate send.
+    if (outcome.status === "delivery_unknown")
+      requestGuidance.retryAfterSeconds = Math.max(60, requestGuidance.retryAfterSeconds);
+    return { challengeId: id, sms: outcome, requestGuidance };
   });
 }
 export async function confirmOwnerMobile(subject: string, id: string, code: string) {
