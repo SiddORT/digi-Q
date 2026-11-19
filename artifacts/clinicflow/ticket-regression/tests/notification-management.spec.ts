@@ -7,8 +7,9 @@ import { administrationEvent } from "../../src/lib/mobile-verification-administr
 async function setup(page: Page, role = "superAdmin", clinicCount = 1, linked = "", longName = false) {
   const writes: any[] = [];
   const reads: string[] = [];
+  const directoryReads: URLSearchParams[] = [];
   const state = { fail: 0, revoke: false, delay: 0, readDelay: 0, staleReadback: false, readFail: false, empty: false };
-  const clinics = [{ id: "clinic-a", name: longName ? "Fixture Clinic — North and Central Multispeciality Care Group With a Very Long Complete Name" : "Fixture Clinic" }, { id: "clinic-b", name: "Second Clinic" }].slice(0, clinicCount);
+  const clinics = [{ id: "clinic-a", name: longName ? "Fixture Clinic — North and Central Multispeciality Care Group With a Very Long Complete Name" : "Fixture Clinic" }, { id: "clinic-b", name: "Second Clinic" }, ...Array.from({ length: Math.max(0, clinicCount - 2) }, (_, i) => ({ id: `clinic-${i + 3}`, name: `Fixture Clinic ${String(i + 3).padStart(2, "0")}` }))].slice(0, clinicCount);
   const scopes = new Map<string, any>();
   const scope = (id: string) => {
     if (!scopes.has(id)) scopes.set(id, {
@@ -37,7 +38,7 @@ async function setup(page: Page, role = "superAdmin", clinicCount = 1, linked = 
   };
   const catalog = (s: any, channel: string, recipient: string) => ({
     scopeName: s.scopeName, variables: ["clinic_name"],
-    items: ["booking", "patient_login_otp"].map(ev => template(s, channel, recipient, ev)),
+    items: [...new Set(["booking", "patient_login_otp", ...s.items.map((r: any) => r.event)])].map(ev => template(s, channel, recipient, ev as string)),
   });
   await page.route("**/api/**", async route => {
     const request = route.request(), url = new URL(request.url()), path = url.pathname;
@@ -99,21 +100,116 @@ async function setup(page: Page, role = "superAdmin", clinicCount = 1, linked = 
       return route.fulfill({ json: catalog(s, channel, recipient) });
     }
     if (path.endsWith("/clinics")) {
+      directoryReads.push(new URLSearchParams(url.searchParams));
       const search = url.searchParams.get("search")?.toLowerCase() || "";
       const items = clinics.filter(c => c.name.toLowerCase().includes(search));
-      return route.fulfill({ json: { items, total: items.length, page: 1 } });
+      const page = Number(url.searchParams.get("page") || 1), pageSize = Number(url.searchParams.get("pageSize") || 20);
+      return route.fulfill({ json: { items: items.slice((page - 1) * pageSize, page * pageSize), total: items.length, page } });
     }
     if (/\/clinics\/clinic-/.test(path)) return route.fulfill({ json: clinics.find(c => path.endsWith(c.id)) });
     return route.fulfill({ json: { items: [], total: 0 } });
   });
   await page.goto(`/?mode=templates&role=${role}${linked}`);
   if (["superAdmin", "clinicAdmin"].includes(role)) await expect(page.getByTestId("checkbox-clinic-gate")).toBeVisible();
-  return { state, writes, reads, scope, template, clinics };
+  return { state, writes, reads, directoryReads, scope, template, clinics };
 }
 
 const booking = async (page: Page) => { await page.getByTestId("button-event-booking").click(); };
 const confirm = (page: Page) => page.getByTestId("confirm-dialog-confirm").click();
 const saved = (page: Page) => expect(page.getByTestId("status-management-save")).toBeVisible();
+
+test("one canonical scope picker retains bounded search and later-page discovery without writes", async ({ page }) => {
+  const { writes, directoryReads } = await setup(page, "superAdmin", 45);
+  await expect(page.getByTestId("notification-scope")).toHaveCount(1);
+  await expect(page.getByTestId("notification-scope-list")).toHaveCount(0);
+  await expect(page.getByTestId("toggle-notification-scopes")).toHaveCount(0);
+  await page.getByRole("button", { name: "Notification Clinic", exact: true }).click();
+  const later = page.getByRole("option", { name: "Fixture Clinic 45", exact: true });
+  // Both the keyboard button and intersection loading use the same bounded pages.
+  for (let i = 0; i < 3 && !await later.count(); i++) {
+    const more = page.getByRole("button", { name: "Load More Options" });
+    if (await more.count()) await more.click();
+    await page.waitForTimeout(150);
+  }
+  await later.click();
+  await expect(page.getByTestId("notification-scope")).toContainText("Fixture Clinic 45");
+  expect(directoryReads.some(p => p.get("page") === "3")).toBe(true);
+  expect(directoryReads.every(p => Number(p.get("pageSize")) <= 20)).toBe(true);
+  await page.getByRole("button", { name: "Notification Clinic", exact: true }).click();
+  await page.getByRole("combobox", { name: "Search options" }).fill("Second");
+  await expect.poll(() => directoryReads.some(p => p.get("search") === "Second")).toBe(true);
+  await page.getByRole("option", { name: "Second Clinic", exact: true }).click();
+  expect(directoryReads.some(p => p.get("search") === "Second")).toBe(true);
+  expect(writes).toEqual([]);
+});
+
+for (const width of [1440, 360]) test(`search text clears its icon and heading words stay intact at ${width}px`, async ({ page }, testInfo) => {
+  await page.setViewportSize({ width, height: 900 });
+  await setup(page);
+  const search = page.getByTestId("input-search-events");
+  expect(await search.evaluate(input => {
+    const icon = input.parentElement!.querySelector("svg")!;
+    return input.getBoundingClientRect().left + parseFloat(getComputedStyle(input).paddingLeft) - icon.getBoundingClientRect().right;
+  })).toBeGreaterThanOrEqual(4);
+  const title = page.getByTestId("button-event-rescheduled").locator(".cm-event-title");
+  expect(await title.evaluate(el => {
+    const text = el.firstChild!;
+    const start = document.createRange(), end = document.createRange();
+    start.setStart(text, 0); start.setEnd(text, 1);
+    end.setStart(text, (text.textContent?.length ?? 1) - 1); end.setEnd(text, text.textContent?.length ?? 1);
+    return start.getBoundingClientRect().top === end.getBoundingClientRect().top;
+  })).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath(`corrected-header-${width}.png`), fullPage: true });
+});
+
+for (const channel of ["email", "sms"]) test(`${channel} matrix previews saved wording while Edit loads the separate draft`, async ({ page }) => {
+  const { template, scope, writes } = await setup(page);
+  const t = template(scope(""), channel, "patient", "booking");
+  t.source = "platform";
+  t.content.body = "Published fictional message";
+  t.content.dltTemplateId = "fictional-approved-id";
+  t.draft = { ...t.content, body: "Unpublished draft wording", dltTemplateId: "fictional-draft-id" };
+  await page.reload(); await booking(page);
+  const preview = page.getByTestId(`text-preview-${channel}-booking-patient`);
+  await expect(preview).toHaveText("Published fictional message");
+  await expect(page.getByTestId(`preview-version-${channel}-booking-patient`)).toHaveText("Published wording · Draft saved; Edit opens draft");
+  // Existing draft wording search remains supported, without presenting it as active.
+  await page.getByTestId("input-search-events").fill("Unpublished draft wording");
+  await expect(preview).toHaveText("Published fictional message");
+  await page.getByTestId(`button-edit-${channel}-booking-patient`).click();
+  await expect(page.getByTestId("input-body")).toHaveValue("Unpublished draft wording");
+  if (channel === "sms") await expect(page.getByTestId("input-dltTemplateId")).toHaveValue("fictional-draft-id");
+  await expect(page.getByTestId("text-wording-source")).toContainText("Unpublished Draft Loaded");
+  expect(t.content.body).toBe("Published fictional message");
+  expect(t.content.dltTemplateId).toBe("fictional-approved-id");
+  expect(writes).toEqual([]);
+});
+
+test("each visible template identity has one editor and hidden staff proof stays hidden", async ({ page }) => {
+  const { scope, writes } = await setup(page);
+  const s = scope("");
+  s.items.push(...["patient", "clinicAdmin"].map(recipient => ({
+    channel: "sms", event: "registration_mobile_otp", recipient, required: true,
+    enabled: true, ready: true, revision: 1, source: "platform", blockedReasons: [],
+  })), { channel: "sms", event: "staff_mobile_otp", recipient: "clinicAdmin", enabled: true, required: true, ready: false, revision: 1, source: "default", blockedReasons: [] });
+  await page.reload();
+  await page.getByTestId("input-search-events").fill(" ");
+  await page.getByTestId("button-event-mobile_verification").click();
+  await expect(page.getByTestId("mobile-recipient-patient")).toHaveCount(1);
+  await expect(page.getByTestId("mobile-recipient-clinicAdmin")).toHaveCount(1);
+  await expect(page.locator('[data-testid*="staff_mobile_otp"]')).toHaveCount(0);
+  await expect(page.getByTestId("switch-group-mobile_verification")).toHaveCount(0);
+  for (const recipient of ["patient", "clinicAdmin"]) {
+    const edit = page.getByTestId(`button-edit-sms-registration_mobile_otp-${recipient}`);
+    await expect(edit).toHaveCount(1);
+    await edit.click();
+    await expect(page.getByTestId("text-wording-source")).toBeVisible();
+    await expect(page.getByRole("dialog")).toContainText(recipient === "patient" ? "Patient mobile verification during registration" : "Clinic mobile verification during registration");
+    await page.getByTestId("button-cancel").click();
+  }
+  expect(writes).toEqual([]);
+});
 
 for (const role of ["superAdmin", "clinicAdmin"]) test(`compact layout and visible switches: ${role}`, async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1366, height: 768 });

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode, type MutableRefOb
 import { useQueries } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { useConfirm } from "./ConfirmDialog";
-import { FilterBar, ListingRegion, Pagination, SearchInput } from "./ListingControls";
+import { ListingRegion } from "./ListingControls";
 import { useWorkspaceLeaveGuard } from "../lib/use-workspace-leave-guard";
 import { AppDialog } from "./AppDialog";
 import { EmailTemplates, RECIPIENTS } from "./EmailTemplates";
@@ -54,8 +54,10 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
     return { queryKey: api.getGetNotificationTemplatesQueryKey(p), queryFn: () => api.getNotificationTemplates(p), enabled, staleTime: 15000 };
   }) });
   const previews = useMemo(() => {
-    const m = new Map<string, string>();
-    catalogs.forEach((c, i) => c.data?.items.forEach(it => m.set(`${combos[i].channel}|${it.event}|${combos[i].recipient}`, isMobileVerification(it.event) ? it.content.body : (it.draft ?? it.content).body)));
+    const m = new Map<string, { body: string; searchBody: string; hasDraft: boolean; source: string }>();
+    // Catalog server-rendered previews can describe drafts. The matrix instead
+    // previews effective saved wording; Edit deliberately loads a saved draft.
+    catalogs.forEach((c, i) => c.data?.items.forEach(it => m.set(`${combos[i].channel}|${it.event}|${combos[i].recipient}`, { body: it.content.body, searchBody: isMobileVerification(it.event) ? it.content.body : (it.draft ?? it.content).body, hasDraft: !!it.draft, source: it.source })));
     return m;
   }, [catalogs]); // eslint-disable-line react-hooks/exhaustive-deps
   // Remove staff contact-proof rows from this administration view only.
@@ -65,7 +67,7 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
     ? "Patient mobile verification during registration"
     : "Clinic mobile verification during registration";
   const list: (ListRow & { row: Row })[] = items.map(r => ({ row: r, channel: r.channel, event: r.event, recipient: r.recipient, enabled: r.enabled, ready: r.ready && (r.required || controls.data?.notificationsEnabled === true), source: r.source,
-    inherited: clinicId ? r.source !== "clinic" : r.source === "default", preview: previews.get(`${r.channel}|${r.event}|${r.recipient}`) ?? "" }));
+    inherited: clinicId ? r.source !== "clinic" : r.source === "default", preview: previews.get(`${r.channel}|${r.event}|${r.recipient}`)?.searchBody ?? "" }));
   const shown = filterRows(list, f) as typeof list;
   const filtered = !!(f.q.trim() || f.channel || f.recipient || f.status);
   const expansionKey = JSON.stringify([identity.user?.id, superAdmin, clinicId, f.q.trim(), f.channel, f.recipient, f.status]);
@@ -106,12 +108,16 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
   return <section className="panel padded event-controls" data-testid="page-notification-templates">
     {confirm.dialog}
     {management.dialog}
-    <FilterBar title={<h1>Notifications</h1>} secondary={<div className="listing-selects">
+    <div className="cm-notification-toolbar">
+      <div className="ns-heading-row"><h1>Notifications</h1>
+        <div className="ns-search"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Search Events" placeholder="Search events or wording" value={f.q} onChange={e => setF(x => ({ ...x, q: e.target.value }))} data-testid="input-search-events" /></div>
+      </div>
+      <div className="ns-controls"><div className="listing-selects">
       {sel("channel", f.channel, [["email", "Email"], ["sms", "SMS"]], "Channel")}
       {sel("recipient", f.recipient, RECIPIENTS.filter(r => superAdmin || r.value !== "superAdmin").map(r => [r.value, r.label]), "Recipient")}
       {sel("status", f.status, [["on", "On and Ready"], ["blocked", "On, Blocked"], ["off", "Off"]], "Status")}
       {filtered && <button type="button" className="button secondary small" onClick={() => setF({ q: "", channel: "", recipient: "", status: "" })} data-testid="button-clear-filters">Clear Filters</button>}
-    </div>} actions={<div className="ns-controls">
+    </div>
         {scopeControl}
         <div className="ns-gate"><Switch className="cm-switch" id="notification-delivery-gate" checked={controls.data?.notificationsEnabled ?? false} disabled={!enabled || !gateCan || unavailable || !!editing} onCheckedChange={() => void management.change()} data-testid="checkbox-clinic-gate" /><label htmlFor="notification-delivery-gate">Optional Delivery</label>
         <NotificationInfo label="About Optional Delivery">
@@ -119,10 +125,8 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
           {controls.data && <> Current gate: {controls.data.notificationsEnabled ? "On" : "Off"}. {controls.data.inherited ? clinicId ? "Inherited system value." : "Default system value." : clinicId ? "Saved clinic value." : "Saved system value."}</>}
         </NotificationInfo>
         </div>
-      </div>}>
-      <div className="ns-search"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Search Events" placeholder="Search events or wording" value={f.q} onChange={e => setF(x => ({ ...x, q: e.target.value }))} data-testid="input-search-events" /></div>
-    </FilterBar>
-    <p>Configure delivery and wording for appointment, security and onboarding messages.</p>
+      </div>
+    </div>
     {enabled && !controls.isError && controls.data && <>
       {!controls.data.notificationsEnabled && <p className="notice cm-gate-warning" data-testid="text-gate-off">{clinicId ? "Optional delivery is off for this clinic, including enabled operational options." : "Optional delivery is off for System Default. Clinics with explicit overrides may differ."} Platform security messages are controlled separately by their own switches.</p>}
       {!gateCan && <p id="notification-activation-permission" className="muted">Activation is read-only for your account. You can still manage the wording you are allowed to edit.</p>}
@@ -130,7 +134,7 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
     {management.pending && <p role="status">Waiting for confirmation or saving. Scope and other delivery actions are locked.</p>}
     {management.error && <p className="error-box" role="alert" data-testid="status-management-error">{management.error}</p>}
     {management.notice && <p className="et-notice" role="status" data-testid="status-management-save">{management.notice}</p>}
-    <p className="muted cm-group-guidance" id="notification-group-guidance">Group switches change all authorized options for that event, including filtered-out rows. From Mixed, switch on to enable all; from All Enabled, switch off to disable all. Optional Delivery is unchanged; enabling does not confirm delivery readiness. Future eligible events only; no replay.</p>
+    <p className="sr-only" id="notification-group-guidance">Group switches change all authorized options for that event, including filtered-out rows. From Mixed, switch on to enable all; from All Enabled, switch off to disable all. Optional Delivery is unchanged; enabling does not confirm delivery readiness. Future eligible events only; no replay.</p>
     {catalogs.some(c => c.isError) && <p className="error-box" role="alert">Some message previews could not be loaded. Activation settings are separate. <button type="button" onClick={() => catalogs.forEach(c => { if (c.isError) void c.refetch(); })}>Retry Previews</button></p>}
     <ListingRegion>
     {!enabled ? <div className="et-empty" data-testid="state-select-clinic">Select a clinic group to view its notification templates.</div>
@@ -155,14 +159,17 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
             </div></AccordionContent>
           </AccordionItem>;
            const group = notificationGroup(mobile ? items.map(r => ({ ...r, event: administrationEvent(r.event) })) : items, event);
+           const timing = items.find(row => administrationEvent(row.event) === event && row.timing)?.timing;
           const count = filtered && rows.length !== total ? `${rows.length} of ${total} options` : `${total} ${total === 1 ? "option" : "options"}`;
           return <AccordionItem key={event} value={event} className="cm-event" data-testid={`group-event-${event}`}>
           <div className="cm-event-toolbar">
           <AccordionTrigger className="cm-event-trigger" data-testid={`button-event-${event}`}>
             <span className="cm-event-icon"><Icon size={18} aria-hidden="true" /></span><span className="cm-event-title">{title}</span><span className="cm-count">{count}</span>
           </AccordionTrigger>
-           {items.find(row => row.event === event && row.timing)?.timing ? <NotificationInfo label={`About ${title}`}>{items.find(row => row.event === event && row.timing)?.timing}</NotificationInfo> : <span className="cm-info-spacer" aria-hidden="true" />}
-           <span className={`et-chip cm-group-status ${group.checked ? "live" : ""}`} data-testid={`status-event-${event}`}>{!total ? "No options" : group.status === "Enabled" ? "All Enabled" : group.status === "Disabled" ? "All Disabled" : group.status === "Custom" ? "Mixed" : "Unavailable"}</span>
+            <NotificationInfo label={`About ${title}`}>{timing || m.explanation || title}
+              {!mobile && group.optional.length > 0 && <> Group switch: all {group.optional.length} authorized options, including filtered-out rows. Mixed switches on all; All Enabled switches off all. Optional Delivery stays unchanged. Enabled does not mean ready. Future eligible events only; no replay.</>}
+            </NotificationInfo>
+            <span className={`et-chip cm-group-status ${group.checked ? "live" : ""}`} data-testid={`status-event-${event}`}>{!total ? "No options" : group.status === "Enabled" ? "All Enabled" : group.status === "Disabled" ? "All Disabled" : group.status === "Custom" ? "Mixed" : "Unavailable"}</span>
             {!mobile && group.optional.length > 0 ? <Switch className="cm-switch" aria-label={`${title}: all ${group.optional.length} options`} aria-describedby={`notification-group-guidance${!gateCan ? " notification-activation-permission" : ""}`} checked={group.checked} disabled={!gateCan || pending || !!editing || controls.isFetching} onCheckedChange={() => void management.changeGroup(event)} data-testid={`switch-group-${event}`} /> : <span className="cm-switch-spacer" aria-hidden="true" />}
           </div>
           <AccordionContent className="cm-event-content">
@@ -179,7 +186,8 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
             const ch = r.channel === "sms" ? "SMS" : "Email";
             const ChIcon = r.channel === "sms" ? MessageSquare : Mail;
             const status = !r.enabled ? "Off" : reasons.length || !r.row.required && controls.data?.notificationsEnabled === false ? "On, Blocked" : "On";
-            const full = r.preview ? previewText(r.preview, controls.data?.scopeName ?? "") : "";
+             const wording = previews.get(`${r.channel}|${event}|${r.recipient}`);
+             const full = wording?.body ? previewText(wording.body, controls.data?.scopeName ?? "") : "";
              return <li key={`${event}|${r.channel}|${r.recipient}`} className="cm-row" data-testid={`card-template-${r.channel}-${event}-${r.recipient}`}>
           <div className="cm-cell cm-who"><ChIcon size={18} aria-hidden="true" /><strong>{mobile ? context : `${ch} to ${label(r.recipient)}`}</strong></div>
           <div className="cm-cell cm-status" data-label="Status">
@@ -192,6 +200,7 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
           <div className="cm-cell cm-preview-cell" data-label="Template Preview">
             {r.channel === "sms" && !canEdit && !superAdmin ? <span className="cm-managed-sms" data-testid={`text-preview-${r.channel}-${event}-${r.recipient}`}>SMS wording managed by System Admin</span> : <>
             <OverflowText className="cm-preview" testId={`text-preview-${r.channel}-${event}-${r.recipient}`} value={full || (catalogs.some(c => c.isError) ? "Preview unavailable. Open Edit or retry previews." : "Loading Preview…")} />
+             {wording && <small className="cm-preview-version" data-testid={`preview-version-${r.channel}-${event}-${r.recipient}`}>{wording.source === "default" ? "Default wording" : clinicId && wording.source === "platform" ? "Inherited published wording" : "Published wording"}{wording.hasDraft && " · Draft saved; Edit opens draft"}</small>}
              </>}
              {mobile && <small>DLT Template ID: {catalogs[combos.findIndex(c => c.channel === r.channel && c.recipient === r.recipient)]?.data?.items.find(it => it.event === event)?.content.dltTemplateId || "Not published"}</small>}
             {reasons.length > 0 && <ul className="ec-blocked" data-testid={`setup-${r.channel}-${event}-${r.recipient}`}>{reasons.map(b => <li key={b}>{b}</li>)}</ul>}
@@ -249,43 +258,17 @@ function NotificationScope({ identity, initial = "", clinics }: { identity: api.
   };
   return <>
     {confirm.dialog}
-    {!superAdmin && (clinics?.length ?? 0) > 1 && <NotificationScopeList superAdmin={false} clinics={clinics} activeId={clinicId} disabled={pending || scopeChanging} onOpen={id => void changeScope(id)} />}
-    {!superAdmin && !clinicId ? null : <EventTemplates key={`${identity.user?.id}|${identity.user?.role}|${clinicId}`} identity={identity} clinicId={clinicId} onDirty={setDirty} onPending={setPending} interactionLock={interactionLock} scopeChanging={scopeChanging} changeScope={changeScope} scopeControl={
+    <EventTemplates key={`${identity.user?.id}|${identity.user?.role}|${clinicId}`} identity={identity} clinicId={clinicId} onDirty={setDirty} onPending={setPending} interactionLock={interactionLock} scopeChanging={scopeChanging} changeScope={changeScope} scopeControl={
       <div className="cm-notification-scope" data-testid="notification-scope">
         <span className="sr-only" id="notification-scope-label">Notification Clinic</span>
         {superAdmin ? <ResourceLookup resource="clinics" aria-labelledby="notification-scope-label" compactLabel clearable={false} emptyOption={{ value: "__system_default__", label: "System Default" }} value={clinicId} disabled={pending || scopeChanging} onChange={v => void changeScope(v)} placeholder="System Default" />
           : clinics?.length === 1 ? <OverflowText value={clinics[0].name} />
           : <SearchableSelect aria-labelledby="notification-scope-label" compactLabel clearable={false} value={clinicId} disabled={pending || scopeChanging} onChange={v => { if(v) void changeScope(v); }} placeholder="Choose a Clinic" options={clinics?.map(c => ({ value: c.id, label: c.name })) ?? []} />}
       </div>
-    } />}
-    {superAdmin && <NotificationScopeList superAdmin clinics={clinics} activeId={clinicId} disabled={pending || scopeChanging} onOpen={id => void changeScope(id)} />}
+    } />
   </>;
 }
 
-/** Read-only browsing of notification configuration scopes. Opening a row loads that one scope's existing
- *  matrix; nothing is merged, saved or activated from this list. */
-function NotificationScopeList({ superAdmin, clinics, activeId, disabled, onOpen }: { superAdmin: boolean; clinics?: { id: string; name: string }[]; activeId: string; disabled: boolean; onOpen: (id: string) => void }) {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [search, setSearch] = useState("");
-  const params = { search: search.trim() || undefined, page, pageSize };
-  const remote = api.useListClinics(params, { query: { queryKey: api.getListClinicsQueryKey(params), enabled: superAdmin } });
-  const local = (clinics ?? []).filter(c => !search.trim() || c.name.toLowerCase().includes(search.trim().toLowerCase()));
-  const rows = superAdmin ? (remote.data?.items ?? []).map((c: any) => ({ id: c.id as string, name: c.name as string })) : local.slice((page - 1) * pageSize, page * pageSize);
-  const total = superAdmin ? remote.data?.total ?? 0 : local.length;
-  const body = <section className="panel padded cm-scope-list" aria-label="Notification scopes" data-testid="notification-scope-list">
-    <p className="muted">{superAdmin ? "System Default applies to every clinic without its own setting. Open a scope to review or edit it." : "Choose a clinic to review its notification settings."}</p>
-    <SearchInput value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Search clinics…" label="Search Notification Scopes" />
-    {superAdmin && remote.isError && <div className="error-box" role="alert">Clinics could not be loaded. <button type="button" onClick={() => void remote.refetch()}>Retry</button></div>}
-    <ul className="cm-scope-rows">
-      {superAdmin && !search.trim() && page === 1 && <li><strong>System Default</strong><small>Platform scope</small><button type="button" className="button secondary small" disabled={disabled || activeId === ""} aria-current={activeId === "" ? "true" : undefined} onClick={() => onOpen("")} data-testid="button-open-scope-default">{activeId === "" ? "Open now" : "Open"}</button></li>}
-      {superAdmin && remote.isLoading ? <li className="skeleton">Loading clinics…</li> : rows.map(c => <li key={c.id} data-testid={`row-notification-scope-${c.id}`}><strong>{c.name}</strong><small>Clinic scope</small><button type="button" className="button secondary small" disabled={disabled || activeId === c.id} aria-current={activeId === c.id ? "true" : undefined} onClick={() => onOpen(c.id)} data-testid={`button-open-scope-${c.id}`}>{activeId === c.id ? "Open now" : "Open"}</button></li>)}
-      {!rows.length && !(superAdmin && remote.isLoading) && <li className="muted">No clinics match.</li>}
-    </ul>
-    <Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} onPageSizeChange={setPageSize} state={superAdmin && remote.isError ? "error" : superAdmin && remote.isLoading ? "loading" : "ready"} />
-  </section>;
-  return superAdmin ? <details className="cm-scope-details"><summary data-testid="toggle-notification-scopes">Browse notification scopes</summary>{body}</details> : body;
-}
 export function NotificationTemplatesPage({ identity }: { identity: api.Identity }) {
   if (!["superAdmin", "clinicAdmin"].includes(identity.user?.role ?? "")) return <p role="alert">You are not authorized to manage notifications.</p>;
   return identity.user?.role === "superAdmin" ? <NotificationScope key={identity.user.id} identity={identity} /> : <ClinicAdminTemplates key={identity.user?.id} identity={identity} />;

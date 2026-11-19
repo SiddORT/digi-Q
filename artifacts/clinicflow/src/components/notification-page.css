@@ -1,48 +1,101 @@
-.cm-mobile-recipient > h3 { margin: .75rem 1rem .35rem; font-size: .95rem; }
-.cm-mobile-recipient .cm-preview-cell > small { display: block; overflow-wrap: anywhere; }
-.cm-mobile-purpose-controls { display: flex; flex-wrap: wrap; gap: .75rem; padding: .5rem 1rem; }
-.cm-mobile-purpose-control { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
-/* Route-owned overrides: do not change Communication Settings or other template callers. */
-.content:has(> .event-controls) > .page-heading { margin-bottom:12px }
+/* Notifications route (NotificationTemplatesPage). Route-scoped to .event-controls;
+   the template editor drawer (.cm-template-editor) and info popovers are shared. */
+
+/* ---------- Panel ---------- */
 .event-controls.panel.padded { padding:16px; min-width:0 }
-.event-controls .cm-notification-toolbar { justify-content:flex-start; gap:12px 24px; margin-bottom:12px }
-.event-controls .cm-notification-scope { flex:0 1 400px; margin:0; min-width:0; max-width:100% }
+.content:has(> .event-controls) > .page-heading { margin-bottom:12px }
+.event-controls > p { margin:0 0 8px; font-size:var(--type-label); line-height:1.5 }
+
+/* ---------- Header: heading + search left, filters/scope/gate right ---------- */
+.event-controls .cm-notification-toolbar { display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:12px 24px; margin:0 0 8px; min-width:0 }
+.event-controls .ns-heading-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px 24px; flex:1 1 360px; min-width:0 }
+.event-controls .ns-heading-row h1 { margin:0; font-size:var(--type-page); line-height:1.25; white-space:nowrap }
+.event-controls .ns-search { position:relative; flex:1 1 220px; max-width:320px; min-width:0 }
+.event-controls .ns-search > svg { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--soft); pointer-events:none }
+.event-controls[data-testid="page-notification-templates"] .ns-search input[type=search] { width:100%; max-width:none; min-height:40px; margin:0; padding:8px 12px 8px 36px }
+.event-controls .ns-controls { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px 16px; flex:0 1 auto; min-width:0; max-width:100% }
+.event-controls .listing-selects { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px; flex:1 1 100%; min-width:0 }
+.event-controls .listing-selects select { flex:0 1 150px; width:auto; min-width:0; max-width:100%; min-height:40px; margin:0; padding:8px 12px }
+.event-controls .listing-selects .button { min-height:40px; margin:0; padding:8px 16px; white-space:nowrap }
+.event-controls .cm-notification-scope { flex:0 1 280px; min-width:0; max-width:100%; margin:0 }
 .event-controls .cm-notification-scope .searchable-select-control { min-height:40px }
 .event-controls .cm-notification-scope .searchable-select-control > span { display:flex; overflow:hidden }
 .event-controls .cm-notification-scope .ov-text { width:100% }
-.event-controls .cm-notification-scope > .ov-text { font-weight:600; padding-block:10px }
-.event-controls .ns-gate { gap:10px; min-height:44px; white-space:nowrap; font-size:var(--type-label) }
+.event-controls .cm-notification-scope > .ov-text { font-weight:600; padding-block:8px }
+.event-controls .ns-gate { display:flex; align-items:center; gap:8px; min-height:40px; white-space:nowrap; font-size:var(--type-label) }
+.event-controls .ns-gate label { margin:0 }
+
+/* ---------- Notices ---------- */
 .event-controls .cm-gate-warning { margin:8px 0; font-size:var(--type-label); line-height:1.5 }
-.event-controls .cm-group-guidance { margin:0 0 4px; font-size:var(--type-label); line-height:1.4 }
-.event-controls .cm-inline-filters { display:flex; flex-direction:row; flex-wrap:wrap; gap:8px; margin:4px 0; align-items:center }
-.event-controls .cm-inline-filters input[type=search] { flex:1 1 220px; width:auto; max-width:360px; min-height:40px }
-.event-controls .cm-inline-filters select { flex:0 1 155px; width:auto; min-height:40px; max-width:100% }
-.event-controls .cm-inline-filters select[aria-label=Channel] { flex-basis:132px }
-.event-controls .cm-inline-filters select[aria-label=Recipient] { flex-basis:176px }
-.event-controls .cm-inline-filters .button { min-height:40px; white-space:nowrap; margin:0 }
-.event-controls .cm-event-toolbar { display:grid; grid-template-columns:minmax(0,1fr) 40px auto 40px; gap:8px; padding:0 12px 0 0 }
+
+/* ---------- Event groups ---------- */
+.event-controls .cm-event { margin:0 0 8px; border-radius:10px; min-width:0 }
+.event-controls .cm-event[data-state=open] { border-color:#a9c3e6; box-shadow:inset 3px 0 0 var(--dq-blue) }
+.event-controls .cm-event-toolbar { display:grid; grid-template-columns:minmax(0,1fr) 40px 112px 44px; align-items:center; gap:8px; padding:0 12px 0 0 }
 .event-controls .cm-event-toolbar > h3 { min-width:0; margin:0 }
 .event-controls .cm-event-toolbar > .cm-group-status:last-child { grid-column:3 / 5 }
-.event-controls .cm-event-trigger { font-size:var(--type-body); min-width:0 }
-.event-controls .cm-event-trigger > svg { width:20px; height:20px; opacity:1 }
-.event-controls .cm-row { gap:12px; padding:8px 12px; flex-direction:row; align-items:center }
-.event-controls .cm-row-main { width:0; flex:1 1 0 }
-.event-controls .cm-row-meta { gap:6px; min-height:32px; line-height:1.4 }
-.event-controls .cm-recipient { border-left:1px solid var(--dq-line); padding-left:8px }
-.event-controls .cm-preview.ov-text { display:block; max-width:100%; white-space:nowrap; line-height:1.5; color:var(--muted); -webkit-line-clamp:unset }
-.event-controls .cm-row-actions { gap:12px; justify-content:flex-end }
-.event-controls .cm-edit.button { width:40px; min-width:40px; height:40px; min-height:40px; padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--ink,#172b4d) }
+.event-controls[data-testid="page-notification-templates"] .cm-event-trigger { min-height:44px; padding:8px 12px }
+.event-controls .cm-event-trigger { justify-content:flex-start; gap:10px; min-width:0; font-size:var(--type-body) }
+.event-controls .cm-event-trigger > svg { order:-1; flex:none; width:20px; height:20px; opacity:1 }
+.event-controls .cm-event-icon { display:inline-flex; color:var(--dq-blue); flex:none }
+.event-controls .cm-event-title { font-weight:600; color:var(--ink); min-width:0; overflow-wrap:anywhere }
+.event-controls .cm-count { font-size:var(--type-caption); background:#eef3f8; border-radius:6px; padding:2px 8px; color:var(--soft); white-space:nowrap }
+.event-controls .cm-group-status { justify-self:end }
+.event-controls .cm-switch-spacer { width:44px }
+.event-controls .cm-managed-note { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding:10px 16px 14px; color:var(--muted); font-size:var(--type-label) }
+.event-controls .cm-managed-note p { flex:1 1 280px; min-width:0 }
 .event-controls .cm-required-note { font-size:var(--type-label); color:var(--muted); margin:0; padding:4px 12px 10px; line-height:1.5 }
+
+/* ---------- Option rows (desktop table) ---------- */
+.event-controls .cm-cols,
+.event-controls .cm-row { display:grid; grid-template-columns:minmax(180px,1.1fr) minmax(120px,.7fr) minmax(0,2.4fr) 76px 64px; gap:12px; align-items:center; padding:8px 16px }
+.event-controls .cm-cols { background:#f3f7fc; border-block:1px solid var(--dq-line); font-size:var(--type-caption); font-weight:600; color:var(--soft); padding-block:6px }
+.event-controls .cm-cols span:nth-child(4) { text-align:center }
+.event-controls .cm-rows { list-style:none; margin:0; padding:0 }
+.event-controls .cm-row { border-bottom:1px solid var(--dq-line) }
+.event-controls .cm-row:last-child { border-bottom:0 }
+.event-controls .cm-cell { min-width:0; display:flex; align-items:center; gap:6px }
+.event-controls .cm-who { gap:8px; color:var(--dq-blue) }
+.event-controls .cm-who strong { color:var(--ink); font-size:var(--type-body); font-weight:600; min-width:0; overflow-wrap:anywhere }
+.event-controls .cm-state.live { color:#14673a; background:#e6f5ec }
 .event-controls .cm-blocked { color:var(--ink); background:var(--amber-light,#fff2cf) }
-.event-controls .ec-blocked { padding-left:16px; margin:0; font-size:var(--type-label); overflow-wrap:anywhere }
+.event-controls .cm-preview-cell { flex-wrap:wrap; row-gap:4px }
+.event-controls .cm-preview-cell .cm-preview { flex:1 1 0; min-width:0 }
+.event-controls .cm-preview.ov-text { display:block; max-width:100%; white-space:nowrap; line-height:1.5; color:var(--muted); -webkit-line-clamp:unset }
+.event-controls .cm-preview-version { flex:none; font-size:var(--type-caption); color:var(--soft); background:#eef3f8; border-radius:6px; padding:1px 6px; overflow-wrap:anywhere }
+.event-controls .cm-preview-cell > small { flex-basis:100%; overflow-wrap:anywhere }
+.event-controls .cm-preview-cell .ec-blocked { flex-basis:100% }
+.event-controls .ec-blocked { padding-left:16px; margin:0; font-size:var(--type-label); line-height:1.45; overflow-wrap:anywhere }
+.event-controls .cm-managed-sms { color:var(--soft); font-size:var(--type-label) }
+.event-controls .cm-enabled { justify-content:center }
+.event-controls .cm-action { justify-content:flex-end }
+.event-controls .cm-edit.button { width:auto; min-width:56px; height:36px; min-height:36px; margin:0; padding:0 14px; display:inline-flex; align-items:center; justify-content:center; color:var(--dq-blue); font-weight:600 }
+
+/* Mobile verification sub-groups */
+.event-controls .cm-mobile-recipient > h3 { margin:12px 16px 6px; font-size:var(--type-body) }
+
+/* ---------- Info buttons (route + editor drawer) ---------- */
 .event-controls button.cm-info,
 .cm-template-editor button.cm-info { display:inline-flex; align-items:center; justify-content:center; flex:none; width:40px; height:40px; min-height:40px; margin:0; padding:0; border:0; border-radius:6px; color:var(--ink,#172b4d); background:transparent; box-shadow:none }
 .event-controls button.cm-info:hover,
 .cm-template-editor button.cm-info:hover { background:var(--color-input,#eef3f8) }
 .event-controls button.cm-info:focus-visible,
 .cm-template-editor button.cm-info:focus-visible { outline:2px solid var(--teal,#2563eb); outline-offset:1px }
-.event-controls .cm-row-meta button.cm-info { width:36px; height:36px; min-height:36px }
+.event-controls .cm-status button.cm-info { width:36px; height:36px; min-height:36px }
+.event-controls button.cm-info > svg,
+.cm-template-editor button.cm-info > svg { width:20px; height:20px; flex:none }
 .cm-info-content { max-height:min(420px,calc(100dvh - 32px)); overflow:auto; overflow-wrap:anywhere }
+
+/* ---------- Switch protection: the staff shell's button:not(.button) rule outranks shared switch styles ---------- */
+.event-controls[data-testid="page-notification-templates"] button.cm-switch {
+  width:40px; min-width:40px; max-width:40px; height:24px; min-height:24px;
+  padding:2px; border:0; border-radius:999px; flex:0 0 40px;
+}
+.event-controls[data-testid="page-notification-templates"] button.cm-switch > span {
+  flex:0 0 20px; width:20px; height:20px; border-radius:50%;
+}
+
+/* ---------- Template editor drawer ---------- */
 .cm-template-editor .cm-wording-details { font-size:var(--type-label); line-height:1.5; border-bottom:1px solid var(--dq-line); padding-bottom:8px }
 .cm-template-editor .cm-wording-details p { margin:0 0 6px }
 .cm-template-editor .td-summary { margin:0; padding:8px 0 }
@@ -53,86 +106,15 @@
 .cm-template-editor .td-adv { margin-top:8px }
 .cm-template-editor .cm-template-footer { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; padding:12px 0; background:var(--dq-surface,#fff); position:sticky; bottom:0; z-index:1 }
 .cm-template-editor .cm-template-footer .button { min-height:40px; margin:0 }
-@media(max-width:767px) {
-  .event-controls.panel.padded { padding:12px }
-  .event-controls .cm-notification-scope { flex:1 1 100%; width:100% }
-  .event-controls .cm-inline-filters input[type=search] { flex:1 1 100%; width:100%; max-width:none; min-height:44px }
-  .event-controls .cm-inline-filters select { flex:1 1 125px; min-height:44px }
-  .event-controls .cm-inline-filters select[aria-label=Channel],
-  .event-controls .cm-inline-filters select[aria-label=Recipient] { flex:1 1 125px }
-  .event-controls .cm-inline-filters .button { min-height:44px }
-  .event-controls .cm-event-toolbar { grid-template-columns:minmax(0,1fr) 40px; padding:0 8px 8px 0; gap:0 8px }
-  .event-controls .cm-event-toolbar > h3 { grid-column:1; grid-row:1 }
-  .event-controls .cm-event-toolbar > .cm-info,
-  .event-controls .cm-event-toolbar > .cm-info-spacer { grid-column:2; grid-row:1 }
-  .event-controls .cm-event-toolbar > .cm-group-status { grid-column:1; grid-row:2; justify-self:start; margin-left:8px }
-  .event-controls .cm-event-toolbar > .cm-group-status:last-child { grid-column:1 / 3 }
-  .event-controls .cm-event-toolbar > .cm-switch { grid-column:2; grid-row:2; margin:10px 0 }
-  .event-controls .cm-row { padding:8px; gap:8px }
-  .event-controls .cm-row-actions { gap:10px }
-  .event-controls .cm-edit.button { width:44px; min-width:44px; min-height:44px }
-  .event-controls .cm-row-meta { gap:4px }
-  .event-controls .cm-row-meta button.cm-info { width:40px; height:44px; min-height:44px }
-  .cm-template-editor .cm-template-footer .button { min-height:44px; flex:1 1 auto }
-}
 
-/* Reference-aligned header, event groups and responsive option columns. */
-.event-controls .cm-notification-toolbar { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:12px 24px }
-.event-controls .ns-heading { flex:1 1 320px; min-width:0 }
-.event-controls .ns-heading h1 { font-size:var(--type-page); margin:0 }
-.event-controls .ns-heading p { color:var(--muted,#56657d); font-size:var(--type-label); margin-top:2px }
-.event-controls .ns-controls { display:flex; flex-wrap:wrap; align-items:center; gap:12px 24px; justify-content:flex-end; flex:0 1 auto }
-.event-controls .ns-search { position:relative; flex:1 1 260px; max-width:420px; min-width:0 }
-.event-controls .ns-search > svg { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--soft); pointer-events:none }
-.event-controls .cm-inline-filters .ns-search input[type=search] { width:100%; max-width:none; margin:0; padding-left:36px }
-.event-controls .cm-inline-filters select { margin:0 }
-.event-controls .cm-event { margin:0 0 8px; border-radius:10px }
-.event-controls .cm-event[data-state=open] { border-color:#a9c3e6; box-shadow:inset 3px 0 0 var(--dq-blue) }
-.event-controls .cm-event-trigger { justify-content:flex-start; gap:10px }
-.event-controls .cm-event-trigger > svg { order:-1; flex:none }
-.event-controls .cm-event-icon { display:inline-flex; color:var(--dq-blue); flex:none }
-.event-controls .cm-event-title { font-weight:600; color:var(--ink) }
-.event-controls .cm-count { font-size:var(--type-caption); background:#eef3f8; border-radius:6px; padding:2px 8px; color:var(--soft); white-space:nowrap }
-.event-controls .cm-event-toolbar { grid-template-columns:minmax(0,1fr) 40px 112px 44px }
-.event-controls .cm-switch-spacer { width:44px }
-.event-controls .cm-group-status { justify-self:end }
-.event-controls .cm-managed-note { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding:10px 16px 14px; color:var(--muted); font-size:var(--type-label) }
-.event-controls .cm-managed-note p { flex:1 1 280px }
-.event-controls .cm-cols, .event-controls .cm-row { display:grid; grid-template-columns:minmax(190px,1.1fr) minmax(120px,.7fr) minmax(0,2.4fr) 76px 64px; gap:12px; align-items:center; padding:8px 16px }
-.event-controls .cm-cols { background:#f3f7fc; border-block:1px solid var(--dq-line); font-size:var(--type-caption); font-weight:600; color:var(--soft); padding-block:6px }
-.event-controls .cm-cols span:nth-child(4) { text-align:center }
-.event-controls .cm-rows { list-style:none; margin:0; padding:0 }
-.event-controls .cm-row { border-bottom:1px solid var(--dq-line) }
-.event-controls .cm-row:last-child { border-bottom:0 }
-.event-controls .cm-cell { min-width:0; display:flex; align-items:center; gap:6px }
-.event-controls .cm-who { gap:8px; color:var(--dq-blue) }
-.event-controls .cm-who strong { color:var(--ink); font-size:var(--type-body); font-weight:600 }
-.event-controls .cm-preview-cell { flex-wrap:wrap }
-.event-controls .cm-preview-cell .cm-preview { flex:1 1 0; min-width:0 }
-.event-controls .cm-managed-sms { color:var(--soft); font-size:var(--type-label) }
-.event-controls .cm-enabled { justify-content:center }
-.event-controls .cm-dash { font-size:var(--type-caption); color:var(--soft); text-align:center }
-.event-controls .cm-state.live { color:#14673a; background:#e6f5ec }
-.event-controls .cm-edit.button { width:auto; min-width:56px; height:36px; min-height:36px; padding:0 14px; color:var(--dq-blue); font-weight:600 }
-.event-controls .cm-preview-cell .ec-blocked { flex-basis:100% }
-/* The staff shell's button:not(.button) rule has greater specificity than the
-   shared switch styles. Keep this protection local to Notifications. */
-.event-controls[data-testid="page-notification-templates"] button.cm-switch {
-  width:40px; min-width:40px; max-width:40px; height:24px; min-height:24px;
-  padding:2px; border:0; border-radius:999px; flex:0 0 40px;
+/* ---------- Tablet: header stacks, rows become cards ---------- */
+@media (max-width:1100px) {
+  .event-controls .ns-controls { flex:1 1 100%; justify-content:flex-start }
+  .event-controls .listing-selects { justify-content:flex-start }
 }
-.event-controls[data-testid="page-notification-templates"] button.cm-switch > span {
-  flex:0 0 20px; width:20px; height:20px; border-radius:50%;
-}
-.event-controls[data-testid="page-notification-templates"] button.cm-info {
-  width:40px; height:40px; min-height:40px; padding:0;
-}
-.event-controls[data-testid="page-notification-templates"] .cm-event-trigger {
-  min-height:44px; padding:8px 12px;
-}
-@media(max-width:900px) {
+@media (max-width:900px) {
   .event-controls .cm-cols { display:none }
-  .event-controls .cm-row { grid-template-columns:1fr auto; grid-template-areas:"who status" "prev prev" "en act"; gap:8px 12px; margin:8px; padding:12px; border:1px solid var(--dq-line); border-radius:10px }
+  .event-controls .cm-row { grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"who status" "prev prev" "en act"; gap:8px 12px; margin:8px; padding:12px; border:1px solid var(--dq-line); border-radius:10px }
   .event-controls .cm-row:last-child { border-bottom:1px solid var(--dq-line) }
   .event-controls .cm-who { grid-area:who }
   .event-controls .cm-status { grid-area:status; justify-self:end }
@@ -140,20 +122,37 @@
   .event-controls .cm-enabled { grid-area:en; justify-content:flex-start }
   .event-controls .cm-enabled::before { content:"Enabled"; font-size:var(--type-caption); color:var(--soft); margin-right:6px }
   .event-controls .cm-action { grid-area:act; justify-self:end }
-  .event-controls .cm-edit.button { min-height:44px }
-}
-@media(max-width:767px) {
-  .event-controls[data-testid="page-notification-templates"] button.cm-info { height:44px; min-height:44px }
-  .event-controls .ns-controls { justify-content:flex-start; width:100% }
-  .event-controls .ns-search { flex:1 1 100% }
-  .event-controls .cm-event-toolbar { grid-template-columns:minmax(0,1fr) 40px; }
-  .event-controls .cm-event-toolbar > .cm-switch-spacer { display:none }
+  .event-controls .cm-edit.button { min-height:44px; height:44px }
 }
 
-/* Read-only notification scope browser */
-.cm-scope-details { margin-bottom: var(--space-4); }
-.cm-scope-details > summary { cursor: pointer; font-weight: 600; font-size: var(--type-label); color: var(--teal); padding: var(--space-2) 0; }
-.cm-scope-list { margin-bottom: var(--space-4); display: grid; gap: var(--space-3); }
-.cm-scope-rows { list-style: none; margin: 0; padding: 0; }
-.cm-scope-rows li { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: var(--space-3); align-items: center; padding: var(--space-2) 0; border-bottom: 1px solid hsl(var(--border)); }
-.cm-scope-rows li small { margin: 0; }
+/* ---------- Phone ---------- */
+@media (max-width:767px) {
+  .event-controls.panel.padded { padding:12px }
+  .event-controls .ns-heading-row { flex-basis:100% }
+  .event-controls .ns-search { flex:1 1 100%; max-width:none }
+  .event-controls[data-testid="page-notification-templates"] .ns-search input[type=search],
+  .event-controls .listing-selects select,
+  .event-controls .listing-selects .button { min-height:44px }
+  .event-controls .listing-selects select { flex:1 1 120px }
+  .event-controls .listing-selects .button { flex:1 1 100% }
+  .event-controls .cm-notification-scope { flex:1 1 100%; width:100% }
+  .event-controls .ns-gate { min-height:44px; white-space:normal }
+  .event-controls[data-testid="page-notification-templates"] button.cm-info { height:44px; min-height:44px }
+  .event-controls .cm-status button.cm-info { width:40px; height:44px; min-height:44px }
+  .event-controls .cm-event-toolbar { grid-template-columns:minmax(0,1fr) 40px; padding:0 8px 8px 0; gap:0 8px }
+  .event-controls .cm-event-toolbar > .cm-event-trigger { grid-column:1; grid-row:1 }
+  .event-controls .cm-event-trigger { display:grid; grid-template-columns:20px 18px minmax(0,1fr); column-gap:8px; row-gap:4px }
+  .event-controls .cm-event-trigger > svg { grid-column:1; grid-row:1 }
+  .event-controls .cm-event-icon { grid-column:2; grid-row:1 }
+  .event-controls .cm-event-title { grid-column:3; grid-row:1; overflow-wrap:normal; word-break:normal }
+  .event-controls .cm-count { grid-column:3; grid-row:2; justify-self:start }
+  .event-controls .cm-event-toolbar > .cm-info,
+  .event-controls .cm-event-toolbar > .cm-info-spacer { grid-column:2; grid-row:1 }
+  .event-controls .cm-event-toolbar > .cm-group-status { grid-column:1; grid-row:2; justify-self:start; margin-left:8px }
+  .event-controls .cm-event-toolbar > .cm-group-status:last-child { grid-column:1 / 3 }
+  .event-controls .cm-event-toolbar > .cm-switch { grid-column:2; grid-row:2; margin:10px 0 }
+  .event-controls .cm-event-toolbar > .cm-switch-spacer { display:none }
+  .event-controls .cm-row { margin:8px 0; padding:10px; gap:8px }
+  .event-controls .cm-edit.button { min-width:56px }
+  .cm-template-editor .cm-template-footer .button { min-height:44px; flex:1 1 auto }
+}

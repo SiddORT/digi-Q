@@ -44,6 +44,17 @@ wants the system context to be a real selectable entry, not an empty placeholder
 **How to apply:** Keep this rule confined to Notifications. Do not remove clinic
 context from unrelated routes or infer wider Clinic Admin permissions.
 
+Notifications must distinguish effective saved wording from unpublished drafts.
+Keep existing draft-text search behavior even when the displayed matrix preview
+shows effective wording; opening Edit may intentionally load a saved draft.
+
+**Why:** The user approved preview accuracy without changing approved wording,
+publication provenance or existing search behavior. A draft match must not imply
+that its wording is active or that publication guarantees delivery readiness.
+
+**How to apply:** Preserve the separation between wording source, editing state,
+activation and delivery readiness in future Notifications presentation changes.
+
 Mobile verification in Notifications shows only the two registration SMS rows:
 "Patient mobile verification during registration" and
 "Clinic mobile verification during registration". Remove the four existing-account

@@ -24,6 +24,7 @@ test("shared recipient presentation retains original targets, saved previews, fi
   assert.match(ui,/useWorkspaceLeaveGuard/);
   assert.match(ui,/dirty \? setDiscard/);
   assert.match(ui,/!mobile && group\.optional\.length/,"no ambiguous switch activating both purposes");
-  assert.match(ui,/notificationGroup\(items, targetEvent\)/,"purpose bulk controls use the full unfiltered original event");
-  assert.match(ui,/management\.changeGroup\(targetEvent\)/,"existing purpose-specific batch operations are retained");
+  assert.match(ui,/filter\(r => r\.event !== "staff_mobile_otp"\)/,"existing-account contact proof stays hidden");
+  assert.match(ui,/management\.changeGroup\(event\)/,"non-mobile event bulk operations are retained");
+  assert.doesNotMatch(ui,/management\.changeGroup\("mobile_verification"\)/,"presentation aliases never become write targets");
 });
